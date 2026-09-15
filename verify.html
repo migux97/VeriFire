@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Verificación pública de autenticidad y estado de un producto Verifire.">
+  <title>Verifire | Verificación de producto</title>
+  <script src="common.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link rel="stylesheet" href="personal.css">
+</head>
+<body class="verify-page">
+  <main class="verify-shell">
+    <header class="verify-header">
+      <div class="brand" aria-label="Verifire"><span class="brand-mark">V</span><span>Verifire</span></div>
+      <span class="network-status"><span></span>Verificación pública</span>
+    </header>
+    <section class="verify-card" aria-labelledby="verify-title">
+      <div class="verify-intro">
+        <div class="verify-icon"><i class="fa-solid fa-shield-halved"></i></div>
+        <div>
+          <span class="eyebrow">QR público del producto</span>
+          <h1 id="verify-title">Verificá tu producto</h1>
+        </div>
+      </div>
+      <p id="verify-message" class="verify-message" aria-live="polite">Escaneá el QR de la caja o ingresá el código público del producto.</p>
+      <div id="verify-details" class="verify-details hidden"></div>
+
+      <form id="verification-form" class="verification-form">
+        <label for="verification-code">Código público del producto</label>
+        <div class="verification-input-row">
+          <input id="verification-code" name="token" type="text" placeholder="Ej. VF-001" autocomplete="off" spellcheck="false" required>
+          <button class="button button-primary" type="submit"><i class="fa-solid fa-magnifying-glass"></i> Verificar</button>
+        </div>
+        <span class="verification-hint">No hace falta iniciar sesión: esta página solo muestra información pública del producto.</span>
+      </form>
+    </section>
+  </main>
+  <script src="verify.js?v=2"></script>
+</body>
+</html>

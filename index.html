@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Acceso seguro a Verifire, verificación de productos y reclamo digital.">
+  <title>Verifire | Acceso</title>
+  <script src="common.js"></script>
+  <script>
+    // Already logged in: leave for the panel before the login form is drawn (except when returning from Google).
+    if (userSession.isActive() && !new URLSearchParams(window.location.search).has('cavos_auth_code')) {
+      document.documentElement.classList.add('is-redirecting');
+      window.location.replace('app.html');
+    }
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link rel="stylesheet" href="personal.css">
+</head>
+<body class="auth-page">
+  <div class="auth-shell">
+    <aside class="auth-visual">
+      <div class="auth-brand">
+        <span class="brand-mark">V</span>
+        <span>Verifire</span>
+      </div>
+
+      <h1>Tu verificación de productos, en una sola plataforma.</h1>
+      <p>
+        Accede con tu cuenta para consultar la seguridad, el estado y el reclamo de cualquier producto registrado.
+      </p>
+
+      <ul class="auth-features">
+        <li>Validación instantánea</li>
+        <li>Escaneo QR protegido</li>
+        <li>Seguimiento de reclamos</li>
+      </ul>
+    </aside>
+
+    <main class="auth-card">
+      <div class="auth-header">
+        <div class="auth-tabs" role="tablist" aria-label="Acceso de usuario">
+          <button class="auth-tab active" type="button" data-mode="login" aria-selected="true">Iniciar sesión</button>
+          <button class="auth-tab" type="button" data-mode="register" aria-selected="false">Registrarse</button>
+        </div>
+      </div>
+
+      <form class="auth-form" data-mode="login" novalidate>
+        <label>
+          <span>Nombre de usuario o correo electrónico</span>
+          <input id="email" type="text" placeholder="usuario_verifire o tu@gmail.com" autocomplete="username" required>
+        </label>
+
+        <div class="auth-field">
+          <label for="password">Contraseña</label>
+          <div class="password-field">
+            <input id="password" type="password" placeholder="Mínimo 8 caracteres" minlength="8" autocomplete="current-password" required>
+            <button class="password-toggle" type="button" data-password-toggle="password" aria-controls="password" aria-label="Mostrar contraseña" aria-pressed="false"><i class="fa-regular fa-eye" aria-hidden="true"></i></button>
+          </div>
+        </div>
+
+        <p class="auth-guide">Guía Cavos: Gmail válido, mínimo 8 caracteres, una mayúscula, una minúscula y un número.</p>
+
+        <button type="submit" class="button button-primary auth-submit">Entrar a Verifire</button>
+
+        <div class="auth-divider"><span>o continúa con</span></div>
+        <button id="google-login" type="button" class="button button-secondary google-login">
+          <i class="fa-brands fa-google" aria-hidden="true"></i> Continuar con Google
+        </button>
+      </form>
+
+      <form class="auth-form hidden" data-mode="register" novalidate hidden>
+        <label>
+          <span>Nombre de usuario</span>
+          <input id="username" type="text" placeholder="Ej. usuario_verifire" autocomplete="username" required>
+        </label>
+
+        <label>
+          <span>Correo electrónico</span>
+          <input id="registerEmail" type="email" placeholder="tu@gmail.com" pattern="^[^\s@]+@gmail\.com$" title="Usá una dirección terminada en @gmail.com" required>
+        </label>
+
+        <div class="auth-field">
+          <label for="registerPassword">Contraseña</label>
+          <div class="password-field">
+            <input id="registerPassword" type="password" placeholder="Mínimo 8 caracteres" minlength="8" autocomplete="new-password" required>
+            <button class="password-toggle" type="button" data-password-toggle="registerPassword" aria-controls="registerPassword" aria-label="Mostrar contraseña" aria-pressed="false"><i class="fa-regular fa-eye" aria-hidden="true"></i></button>
+          </div>
+        </div>
+
+        <p class="auth-guide">Guía Cavos: mínimo 8 caracteres, una mayúscula, una minúscula y un número.</p>
+
+        <button type="submit" class="button button-primary auth-submit">Crear cuenta</button>
+      </form>
+
+      <form id="email-verification-form" class="email-verification-form hidden" novalidate hidden>
+        <div class="verification-badge"><i class="fa-solid fa-envelope-circle-check"></i></div>
+        <h2 id="verification-title">Revisá tu correo</h2>
+        <p id="verification-description">Enviamos un código de 6 dígitos a tu Gmail.</p>
+        <label for="verification-code">Código de verificación</label>
+        <input id="verification-code" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="000000" required>
+        <button type="submit" class="button button-primary">Verificar código</button>
+        <div class="magic-link-status"><i class="fa-regular fa-clock"></i><span>El código vence en 10 minutos.</span></div>
+        <button id="resend-verification-code" type="button" class="button button-secondary">Reenviar código</button>
+        <button id="back-to-register" type="button" class="verification-back-button">Volver</button>
+      </form>
+
+      <p class="auth-message" aria-live="polite"></p>
+    </main>
+  </div>
+
+  <script src="cavos-config.js"></script>
+  <script src="auth.js?v=2"></script>
+</body>
+</html>

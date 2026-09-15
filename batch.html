@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Verificación pública de un lote de productos Verifire.">
+  <title>Verifire | Lote de productos</title>
+  <script src="common.js"></script>
+  <link rel="stylesheet" href="personal.css">
+</head>
+<body class="verify-page">
+  <main class="verify-shell">
+    <header class="verify-header">
+      <div class="brand" aria-label="Verifire"><span class="brand-mark">V</span><span>Verifire</span></div>
+      <span class="network-status"><span></span>Verificación pública</span>
+    </header>
+    <section class="verify-card" aria-labelledby="batch-title">
+      <span class="eyebrow">QR público del lote</span>
+      <h1 id="batch-title">Verificando productos...</h1>
+      <p id="batch-message" class="verify-message" aria-live="polite">Consultando autenticidad y estado.</p>
+      <div id="batch-details" class="verify-details hidden"></div>
+    </section>
+  </main>
+  <script src="batch.js"></script>
+</body>
+</html>

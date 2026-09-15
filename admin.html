@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Compra de tokens y etiquetas QR para empresas en Verifire.">
+  <title>Verifire | Compra empresarial</title>
+  <script src="common.js"></script>
+  <link rel="stylesheet" href="personal.css">
+</head>
+<body class="verify-page">
+  <main class="verify-shell admin-shell">
+    <header class="verify-header">
+      <a class="brand" href="index.html"><span class="brand-mark">V</span><span>Verifire</span></a>
+      <span class="network-status"><span></span>Panel de empresa</span>
+    </header>
+    <section class="verify-card" aria-labelledby="admin-title">
+      <span class="eyebrow">Compra empresarial</span>
+      <h1 id="admin-title">Comprá tus tokens con Cosmos Pay</h1>
+      <p class="verify-message">Cada token tiene un precio fijo en XLM. El total se calcula al crear el pago y se valida antes de generar el lote.</p>
+      <form id="mint-form" class="claim-form">
+        <label for="product-model">Modelo del producto</label>
+        <input id="product-model" name="model" placeholder="Ej. Zapatilla Runner X" maxlength="120" required>
+        <label for="product-lot">Lote de fabricación</label>
+        <input id="product-lot" name="lot" placeholder="Ej. 1043" maxlength="60" required>
+        <label for="product-destination">Destino comercial</label>
+        <input id="product-destination" name="destination" placeholder="Ej. AR" maxlength="10" required>
+        <label for="token-quantity">Cantidad de tokens</label>
+        <input id="token-quantity" name="quantity" type="number" min="1" max="500" value="3" required>
+        <button class="button button-primary" type="submit">Crear pago Cosmos Pay</button>
+      </form>
+      <div id="mint-result" class="verify-details hidden"></div>
+      <div id="batch-result" class="verify-details hidden"></div>
+    </section>
+  </main>
+  <script src="admin.js?v=2"></script>
+</body>
+</html>
