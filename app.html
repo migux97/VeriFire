@@ -14,6 +14,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="personal.css">
 </head>
 <body class="catalog-body">
@@ -25,7 +26,8 @@
       </div>
 
       <div class="user-actions">
-        <a class="wallet-button buy-button" href="admin.html">Comprar tokens para empresa</a>
+        <a class="wallet-button" href="lotes.html"><i class="fa-solid fa-boxes-stacked" aria-hidden="true"></i> Mis lotes</a>
+        <a class="wallet-button buy-button" href="admin.html"><i class="fa-solid fa-plus" aria-hidden="true"></i> Comprar tokens</a>
         <div class="profile-menu">
           <button id="profile-button" class="icon-button" aria-label="Mi perfil" aria-haspopup="dialog" aria-expanded="false" aria-controls="profile-popover" type="button" data-action="profile"><i class="fa-regular fa-user"></i></button>
           <div id="profile-popover" class="profile-popover" role="dialog" aria-label="Mi perfil" hidden>
@@ -36,6 +38,7 @@
                 <span id="profile-email">Correo no disponible</span>
               </div>
             </div>
+            <button id="enable-devices-button" class="profile-action" type="button" data-action="enable-devices" hidden><i class="fa-solid fa-mobile-screen" aria-hidden="true"></i> Habilitar en mis otros dispositivos</button>
             <button id="logout-button" class="profile-action" type="button" data-action="logout"><i class="fa-solid fa-arrow-right-from-bracket"></i> Cerrar sesión</button>
           </div>
         </div>
@@ -66,6 +69,15 @@
       <form id="claim-form" novalidate hidden>
         <button class="button button-primary" type="submit">Activar Garantía Oficial</button>
       </form>
+      <form id="enable-devices-form" class="device-form" novalidate hidden>
+        <label for="enable-devices-password">Tu contraseña de Verifire</label>
+        <input id="enable-devices-password" type="password" autocomplete="current-password" placeholder="La misma con la que entrás" required>
+        <p class="field-hint">Con tu contraseña habilitamos tu cuenta para usarla en el celular. Es una sola vez y no se guarda en ningún lado. Hacelo desde la dirección donde creaste la cuenta: es la que tiene tu llave de firma.</p>
+        <div class="device-form-actions">
+          <button class="button button-primary" type="submit">Habilitar</button>
+          <button id="enable-devices-cancel" class="button button-secondary" type="button">Cancelar</button>
+        </div>
+      </form>
     </section>
 
     <section class="vault" aria-labelledby="vault-title">
@@ -91,7 +103,9 @@
     </div>
   </footer>
 
+  <!-- Gives the Cavos kit the global Buffer it expects; it must load before the kit is imported. -->
+  <script src="buffer.bundle.js"></script>
   <script src="cavos-config.js"></script>
-  <script src="app.js?v=22"></script>
+  <script src="app.js?v=31"></script>
 </body>
 </html>

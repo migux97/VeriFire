@@ -6,7 +6,8 @@ const passwordPattern = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d).{8,}$/;
 const cavosAppId = window.CAVOS_APP_ID || '';
 // Cavos rejects a new code request within 60 seconds of the previous one.
 const resendCooldownMs = 60 * 1000;
-const passwordHashIterations = 310000;
+// The Gmail is confirmed with a code on registration and again on the first login after this long.
+const emailCheckIntervalMs = 7 * 24 * 60 * 60 * 1000;
 const pendingAuthKey = 'verifirePendingCavosAuth';
 // Cavos only accepts redirect URIs registered for the app, so Google login always returns here.
 const callbackUrl = () => `${window.location.origin}/index.html`;
@@ -23,28 +24,6 @@ const describeAuthError = (error, fallback) => {
   const message = error?.message || '';
   const match = authErrorMessages.find(([pattern]) => pattern.test(message));
   return match ? match[1]() : message || fallback;
-};
-
-const bytesToBase64 = (bytes) => btoa(String.fromCharCode(...bytes));
-const base64ToBytes = (value) => Uint8Array.from(atob(value), (character) => character.charCodeAt(0));
-
-// Only a salted PBKDF2 hash is stored; the password itself never leaves the form.
-const hashPassword = async (password, salt = crypto.getRandomValues(new Uint8Array(16)), iterations = passwordHashIterations) => {
-  if (!window.crypto?.subtle) {
-    throw new Error('Abrí Verifire con HTTPS (o localhost) para poder proteger tu contraseña.');
-  }
-  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']);
-  const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt, iterations }, key, 256);
-  return { salt: bytesToBase64(salt), hash: bytesToBase64(new Uint8Array(bits)), iterations };
-};
-
-const verifyPassword = async (user, password) => {
-  if (user.passwordHash) {
-    const { salt, hash, iterations } = user.passwordHash;
-    return (await hashPassword(password, base64ToBytes(salt), iterations)).hash === hash;
-  }
-  // Accounts created before hashing kept the password in plain text.
-  return Boolean(user.password) && user.password === password;
 };
 
 const persistUser = (user) => {
@@ -73,23 +52,28 @@ const requestEmailCode = async (email) => {
   return { auth, nonce };
 };
 
-const showEmailVerification = (email) => {
+const showEmailVerification = (email, { resetCooldown = true } = {}) => {
   document.querySelectorAll('.auth-tab, .auth-form').forEach((element) => {
     element.classList.add('hidden');
     if (element.matches('form')) element.hidden = true;
   });
   const verificationForm = document.getElementById('email-verification-form');
   const isLogin = pendingEmailVerification?.mode === 'login';
-  document.getElementById('verification-title').textContent = isLogin ? 'Vinculá tu wallet' : 'Revisá tu correo';
-  document.getElementById('verification-description').innerHTML = isLogin
-    ? `Por única vez, ingresá el código de 6 dígitos que enviamos a <strong>${escapeHtml(email)}</strong> para vincular tu wallet Cavos. La próxima vez vas a entrar solo con tu contraseña.`
+  const isNewDevice = Boolean(pendingEmailVerification?.newDevice);
+  document.getElementById('verification-title').textContent = isNewDevice ? 'Recuperá tu cuenta' : isLogin ? 'Confirmá tu correo' : 'Revisá tu correo';
+  document.getElementById('verification-description').innerHTML = isNewDevice
+    ? `Este dispositivo todavía no conoce tu cuenta. Ingresá el código de 6 dígitos que enviamos a <strong>${escapeHtml(email)}</strong> y vas a entrar con tu misma wallet y tus mismas garantías.`
+    : isLogin
+    ? `Por seguridad te pedimos un código cada 7 días. Ingresá el código de 6 dígitos que enviamos a <strong>${escapeHtml(email)}</strong>. Durante los próximos 7 días vas a entrar solo con tu contraseña.`
     : `Enviamos un código de 6 dígitos a <strong>${escapeHtml(email)}</strong>. Ingresalo para crear tu cuenta Verifire y vincular Cavos.`;
   verificationForm.reset();
   verificationForm.classList.remove('hidden');
   verificationForm.hidden = false;
   document.getElementById('verification-code')?.focus();
   showAuthMessage('');
-  startResendCooldown();
+  // Coming back to a code that was already sent keeps its countdown instead of starting a new one.
+  if (resetCooldown) startResendCooldown();
+  else updateResendCooldown();
 };
 
 const startResendCooldown = () => {
@@ -128,26 +112,42 @@ const updateResendCooldown = () => {
   resendCooldownTimer = window.setInterval(update, 1000);
 };
 
-// Opens the panel for a verified account. The wallet address is saved in the account when the
-// Gmail is verified, so later logins only need the password.
-const enterApp = (user, mode) => {
+// Opens the panel for a verified account. The wallet address and the verification date are saved
+// in the account when the Gmail is verified, so logins in the next 7 days only need the password.
+const enterApp = (user, mode, warning = '') => {
   persistUser(user);
   rememberWallet(user.walletAddress);
   userSession.start(user.email);
-  showAuthMessage(mode === 'login' ? 'Sesión iniciada correctamente. Redirigiendo...' : 'Cuenta creada correctamente. Redirigiendo...', 'success');
+  // A warning (for example, a device that cannot sign yet) is readable before the panel opens.
+  showAuthMessage(warning || (mode === 'login' ? 'Sesión iniciada correctamente. Redirigiendo...' : 'Cuenta creada correctamente. Redirigiendo...'), warning ? 'info' : 'success');
   window.setTimeout(() => {
     window.location.href = 'app.html';
-  }, 700);
+  }, warning ? 3200 : 700);
 };
 
 const finishAuthFlow = async (identity) => {
-  const { user, mode, auth } = pendingEmailVerification;
+  const { user, mode, auth, deviceCode } = pendingEmailVerification;
   if (identity.email && identity.email.toLowerCase() !== user.email.toLowerCase()) {
     throw new Error('La verificación de Cavos corresponde a otro correo. Iniciá el proceso nuevamente.');
   }
-  const walletAddress = await connectCavosWallet(auth, identity);
+  // Cavos already accepted the code, and a code is single-use: only Cavos failing to return the wallet is fatal
+  // here. A device that could not be enabled to sign gets in anyway, with the reason shown.
+  let connection;
+  try {
+    connection = await connectCavosWallet(auth, identity, deviceCode);
+  } catch (error) {
+    throw new Error(`${error.message} Ese código ya fue usado: pedí uno nuevo para volver a intentar.`);
+  }
   pendingEmailVerification = null;
-  enterApp({ ...user, walletAddress }, mode);
+  // Starts the 7 days during which logging in only needs the password. The Cavos user id lets the panel reconnect
+  // the same wallet to sign on Stellar after a password-only login (see connectSigningWallet in common.js).
+  enterApp({
+    ...user,
+    walletAddress: connection.address,
+    cavosUserId: identity.userId,
+    emailVerifiedAt: Date.now(),
+    deviceFactorAt: connection.deviceFactor ? Date.now() : 0
+  }, mode, connection.deviceError);
 };
 
 const startGoogleLogin = async () => {
@@ -203,6 +203,7 @@ const handleAuthSubmit = async (event) => {
   const mode = target.dataset.mode;
   const identifierField = mode === 'register' ? target.querySelector('#registerEmail') : target.querySelector('#email');
   const passwordField = mode === 'register' ? target.querySelector('#registerPassword') : target.querySelector('#password');
+  const confirmField = mode === 'register' ? target.querySelector('#registerPasswordConfirm') : null;
   const username = mode === 'register' ? target.querySelector('#username')?.value?.trim() : '';
   const identifier = identifierField?.value?.trim() || '';
   const email = mode === 'register' ? identifier : '';
@@ -225,17 +226,26 @@ const handleAuthSubmit = async (event) => {
     return;
   }
 
+  if (confirmField && confirmField.value.trim() !== password) {
+    showAuthMessage('Las contraseñas no coinciden. Escribí la misma contraseña en los dos campos.', 'error');
+    confirmField.focus();
+    return;
+  }
+
   if (mode === 'register' && !username) {
     showAuthMessage('Ingresa un nombre de usuario para crear tu cuenta.', 'error');
     return;
   }
 
   const existingUser = storedUser();
+  // Accounts live in each browser. On a new device (a phone that scanned a QR) signing in with the Gmail and its
+  // code rebuilds the account here, and Cavos returns the same wallet, so the warranties are the same ones.
+  const newDevice = mode === 'login' && gmailPattern.test(identifier)
+    && existingUser?.email?.toLowerCase() !== identifier.toLowerCase();
 
-  if (mode === 'login') {
+  if (mode === 'login' && !newDevice) {
     if (!existingUser) {
-      showAuthMessage('No encontramos una cuenta con estos datos. Debés crear una cuenta Verifire antes de iniciar sesión.', 'error');
-      setAuthMode('register');
+      showAuthMessage('En este navegador todavía no hay ninguna cuenta. Ingresá con tu Gmail y te enviamos un código para recuperarla, o creá una cuenta nueva.', 'error');
       return;
     }
 
@@ -255,6 +265,9 @@ const handleAuthSubmit = async (event) => {
     let user;
     if (mode === 'register') {
       user = { name: username, email, passwordHash: await hashPassword(password) };
+    } else if (newDevice) {
+      // The code sent to the Gmail is what proves who this is; the password is only this device's local gate.
+      user = { name: identifier.split('@')[0], email: identifier, passwordHash: await hashPassword(password) };
     } else {
       if (!(await verifyPassword(existingUser, password))) {
         showAuthMessage('El nombre de usuario, correo o contraseña no coinciden.', 'error');
@@ -266,17 +279,30 @@ const handleAuthSubmit = async (event) => {
         user = { ...account, passwordHash: await hashPassword(password) };
         persistUser(user);
       }
-      // The Gmail was verified with a code when the account was created: logging in only needs the password.
-      // Accounts created before the wallet was saved in them are asked for the code once.
-      if (isStellarAddress(user.walletAddress)) {
+      // The Gmail is confirmed with a code when the account is created and again every 7 days;
+      // in between, logging in only needs the password.
+      const emailRecentlyVerified = Date.now() - Number(user.emailVerifiedAt || 0) < emailCheckIntervalMs;
+      // An account created before the multi-device factor existed is asked for the code once, so entering it is
+      // enough on any other device from then on.
+      if (isStellarAddress(user.walletAddress) && emailRecentlyVerified && user.deviceFactorAt) {
+        // Kept for this tab so the panel can repair an account whose multi-device access was never saved.
+        rememberDeviceCode(await deviceCodeFor(user.email, password));
         redirecting = true;
         enterApp(user, 'login');
         return;
       }
     }
 
+    const deviceCode = await deviceCodeFor(user.email, password);
+    // A code already sent to this address stays valid: reuse it instead of asking Cavos for another one, which it
+    // refuses within a minute of the previous request.
+    if (pendingEmailVerification?.email === user.email) {
+      pendingEmailVerification = { ...pendingEmailVerification, user, mode, newDevice, deviceCode };
+      showEmailVerification(user.email, { resetCooldown: false });
+      return;
+    }
     const { auth, nonce } = await requestEmailCode(user.email);
-    pendingEmailVerification = { auth, nonce, email: user.email, user, mode };
+    pendingEmailVerification = { auth, nonce, email: user.email, user, mode, newDevice, deviceCode };
     showEmailVerification(user.email);
   } catch (error) {
     showAuthMessage(describeAuthError(error, 'No se pudo preparar tu cuenta Cavos. Intentá nuevamente.'), 'error');
@@ -427,15 +453,14 @@ const initializeAuth = () => {
   document.getElementById('resend-verification-code')?.addEventListener('click', resendEmailVerification);
   updateResendCooldown();
   document.getElementById('back-to-register')?.addEventListener('click', () => {
-    // Return to the form the user came from, with the tabs visible again.
+    // Return to the form the user came from, keeping the code alive: Cavos only sends a new one once a minute.
     const mode = pendingEmailVerification?.mode === 'register' ? 'register' : 'login';
-    pendingEmailVerification = null;
     const verificationForm = document.getElementById('email-verification-form');
     verificationForm.classList.add('hidden');
     verificationForm.hidden = true;
     document.querySelectorAll('.auth-tab').forEach((tab) => tab.classList.remove('hidden'));
-    showAuthMessage('');
     setAuthMode(mode);
+    showAuthMessage(pendingEmailVerification ? 'Tu código sigue siendo válido: tocá "Entrar a Verifire" para volver a ingresarlo.' : '', 'info');
   });
 
   const existingUser = storedUser();
@@ -449,7 +474,8 @@ const initializeAuth = () => {
 
 const sessionNotices = {
   expirada: ['Tu sesión expiró por seguridad. Iniciá sesión nuevamente.', 'info'],
-  cerrada: ['Tu sesión se cerró. Iniciá sesión cuando quieras volver.', 'success']
+  cerrada: ['Tu sesión se cerró. Iniciá sesión cuando quieras volver.', 'success'],
+  verificar: ['Para registrar tu garantía en Stellar necesitamos confirmar tu correo. Iniciá sesión y te enviaremos un código.', 'info']
 };
 
 const showSessionNotice = () => {

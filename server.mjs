@@ -7,6 +7,10 @@ import { fileURLToPath } from 'node:url';
 import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import { Client } from '@cosmosapp/pay_sdk';
 import QRCode from 'qrcode';
+import { countries, destinationForCountry } from './countries.mjs';
+import {
+  activationKeyFor, activationMessage, adminAddress, buildActivation, chainEnabled, explorerTxUrl, isTxHash, mintOnChain, submitActivation
+} from './stellar.mjs';
 
 const root = fileURLToPath(new URL('.', import.meta.url));
 const port = Number(process.env.PORT || 5501);
@@ -24,9 +28,10 @@ const stateFile = process.env.DATA_FILE || join(root, 'data', 'verifire-state.js
 const publicFiles = new Set([
   '/index.html', '/app.html', '/admin.html', '/batch.html', '/verify.html',
   '/common.js', '/auth.js', '/app.js', '/admin.js', '/batch.js', '/verify.js',
-  '/cavos.bundle.mjs', '/personal.css'
+  '/lotes.html', '/lotes.js', '/favicon.svg',
+  '/cavos.bundle.mjs', '/buffer.bundle.js', '/personal.css'
 ]);
-const contentTypes = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8' };
+const contentTypes = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml' };
 // Browser libraries served straight from node_modules.
 const vendorFiles = { '/vendor/jsQR.js': 'node_modules/jsqr/dist/jsQR.js' };
 
@@ -50,7 +55,7 @@ const products = new Map([
     token: 'VF-001',
     model: 'Smartwatch X9 Pro',
     lot: '1043',
-    destination: 'AR',
+    destination: 'Argentina · LATAM',
     secretHash: hashSecret('VF-SECRET-DEMO-001'),
     claimed: false,
     owner: null
@@ -170,7 +175,10 @@ const statusOf = (product) => (product.claimed ? 'CLAIMED_IN_WARRANTY' : 'SEALED
 
 const productResponse = (product, includeSecret = false) => {
   const verificationUrl = appUrl('verify.html', { token: product.token });
+  // What the buyer may see is the certification only: the activation transaction signed by the issuing account.
+  // The Cosmos Pay payment that bought the batch moves company money and never leaves the company panel.
   return {
+    certificateUrl: isTxHash(product.claimTransaction) ? explorerTxUrl(product.claimTransaction) : null,
     tokenId: product.tokenId,
     token: product.token,
     model: product.model,
@@ -185,7 +193,9 @@ const productResponse = (product, includeSecret = false) => {
     activationUrl: `${publicAppUrl}/app.html`,
     network,
     contractId,
-    blockchainBacked: Boolean(contractId),
+    // True only for products registered in the contract, not merely because a contract is configured.
+    blockchainBacked: Boolean(product.chain),
+    chainTokenId: product.chain?.tokenId ?? null,
     ...(includeSecret ? { secretCode: product.secretCode, secretUrl: secretUrlFor(product) } : {})
   };
 };
@@ -201,7 +211,7 @@ const publicProductResponse = (product) => ({
   claimedAt: product.claimedAt || null,
   warrantyUntil: warrantyUntil(product.claimedAt),
   network,
-  blockchainBacked: Boolean(contractId)
+  blockchainBacked: Boolean(product.chain)
 });
 
 const batchResponse = async (batch, includeSecrets = false) => {
@@ -224,9 +234,10 @@ const batchResponse = async (batch, includeSecrets = false) => {
     publicUrl,
     ...(includeSecrets ? { publicQr: await qrImage(publicUrl) } : {}),
     tokens,
-    payment: { amount: batch.amount, asset: 'XLM', pricePerToken: amount },
+    // What the batch cost is company data: it travels only with the secret codes, never on the public lot page.
+    ...(includeSecrets ? { payment: { amount: batch.amount, asset: 'XLM', pricePerToken: amount } } : {}),
     network,
-    blockchainBacked: Boolean(contractId)
+    blockchainBacked: chainEnabled()
   };
 };
 
@@ -234,11 +245,13 @@ const readProductFields = (body) => {
   const fields = {
     model: String(body.model || body.name || '').trim(),
     lot: String(body.lot || '').trim(),
-    destination: normalizeId(body.destination)
+    // The market comes from the list of countries, and the server (not the browser) turns it into the destination
+    // printed on the labels. Free text is still accepted for batches created before the list existed.
+    destination: destinationForCountry(body.country) || String(body.destination || '').trim()
   };
   const valid = fields.model && fields.model.length <= 120
     && fields.lot && fields.lot.length <= 60
-    && fields.destination && fields.destination.length <= 10;
+    && fields.destination && fields.destination.length <= 40;
   return valid ? fields : null;
 };
 
@@ -249,6 +262,41 @@ const mintProduct = (fields) => {
   const product = { tokenId, token, ...fields, secretCode, secretHash: hashSecret(secretCode), claimed: false, owner: null, createdAt: new Date().toISOString() };
   products.set(token, product);
   return product;
+};
+
+// Key the browser derives from the QR to find its product without sending the secret. The seed product has no
+// secret code, so it keeps the local demo claim.
+const activationKeyOf = (product) => {
+  if (!product.secretCode) return '';
+  product.activationKey ||= activationKeyFor(product.secretCode).toString('hex');
+  return product.activationKey;
+};
+
+// Registers unclaimed products in the Stellar contract, one transaction each. A failure is logged and retried on
+// the next pass: new products, a claim attempt for an unregistered product, or a server restart.
+let anchoring = null;
+let anchorAgain = false;
+const anchorPendingProducts = () => {
+  if (!chainEnabled()) return;
+  if (anchoring) {
+    anchorAgain = true;
+    return;
+  }
+  anchoring = (async () => {
+    do {
+      anchorAgain = false;
+      for (const product of [...products.values()].filter((candidate) => candidate.secretCode && !candidate.chain && !candidate.claimed)) {
+        try {
+          product.chain = await mintOnChain(product);
+          saveState();
+        } catch (error) {
+          console.error(`No se pudo registrar ${product.token} en Stellar:`, error.message);
+        }
+      }
+    } while (anchorAgain);
+  })().finally(() => {
+    anchoring = null;
+  });
 };
 
 const createBatchPayment = async (request, response) => {
@@ -273,7 +321,11 @@ const createBatchPayment = async (request, response) => {
       msg: `Verifire emisión ${quantity} tokens ${fields.model}`
     });
     const purchaseId = `PUR-${randomUUID()}`;
-    purchases.set(purchaseId, { purchaseId, quantity, ...fields, total, intentId: intent.id });
+    // The payment QR is kept so a pending purchase can be reopened from the company's list of batches.
+    purchases.set(purchaseId, {
+      purchaseId, quantity, ...fields, total, intentId: intent.id,
+      createdAt: new Date().toISOString(), paymentQr: intent.qr || null, paymentUri: intent.uri || null
+    });
     saveState();
     sendJson(response, 201, {
       purchaseId,
@@ -300,27 +352,70 @@ const finalizePurchase = (purchase, txHash) => {
     batches.set(batchId, { batchId, tokens, model, lot, destination, amount: purchase.total, txHash });
     Object.assign(purchase, { batchId, txHash });
     saveState();
+    // Registers the new products in the contract in the background; the QR sheet does not wait for it.
+    anchorPendingProducts();
   }
   return batches.get(purchase.batchId);
 };
 
+// What the company's list of batches shows for a purchase: no secret codes and no QR images.
+const purchaseSummary = (purchase) => {
+  const tokens = batches.get(purchase.batchId)?.tokens || [];
+  return {
+    purchaseId: purchase.purchaseId,
+    model: purchase.model,
+    lot: purchase.lot,
+    destination: purchase.destination,
+    quantity: purchase.quantity,
+    amount: purchase.total,
+    asset: 'XLM',
+    // Purchases made before createdAt was stored use the date their products were created.
+    createdAt: purchase.createdAt || tokens[0]?.createdAt || null,
+    batchId: purchase.batchId || null,
+    payment: purchase.batchId ? null : { qr: purchase.paymentQr || null, uri: purchase.paymentUri || null },
+    issuanceTxUrl: isTxHash(purchase.txHash) ? explorerTxUrl(purchase.txHash) : null,
+    registeredOnChain: tokens.filter((product) => product.chain).length,
+    // Same selection as anchorPendingProducts: unclaimed products still waiting for the contract.
+    pendingOnChain: chainEnabled() ? tokens.filter((product) => product.secretCode && !product.chain && !product.claimed).length : 0,
+    claimed: tokens.filter((product) => product.claimed).length
+  };
+};
+
+// GET /api/purchases/:id checks the payment and returns the batch with its secret codes and QR images.
+// With ?summary=1 it returns only purchaseSummary, for the list of batches.
 const getPurchaseStatus = async (request, response, purchaseId) => {
   const purchase = purchases.get(purchaseId);
   if (!purchase) {
     sendJson(response, 404, { error: 'La compra no existe.' });
     return;
   }
+  const summaryOnly = new URL(request.url, 'http://localhost').searchParams.has('summary');
 
   try {
     if (!purchase.batchId) {
-      const intent = await getClient().paymentIntents.fetch(purchase.intentId);
+      let intent;
+      try {
+        intent = await getClient().paymentIntents.fetch(purchase.intentId);
+      } catch (error) {
+        // The list still shows a pending purchase when Cosmos Pay cannot be reached; the next check retries.
+        if (!summaryOnly) throw error;
+        console.error('Cosmos status error (summary):', error.message);
+        sendJson(response, 200, { status: 'unknown', succeeded: false, purchase: purchaseSummary(purchase) });
+        return;
+      }
       if (!intent.isSucceeded) {
-        sendJson(response, 200, { status: intent.status, succeeded: false, txHash: intent.txHash || null });
+        sendJson(response, 200, { status: intent.status, succeeded: false, txHash: intent.txHash || null, purchase: purchaseSummary(purchase) });
         return;
       }
       finalizePurchase(purchase, intent.txHash || null);
     }
-    sendJson(response, 200, { status: 'succeeded', succeeded: true, paymentValidated: true, batch: await batchResponse(batches.get(purchase.batchId), true) });
+    sendJson(response, 200, {
+      status: 'succeeded',
+      succeeded: true,
+      paymentValidated: true,
+      purchase: purchaseSummary(purchase),
+      ...(summaryOnly ? {} : { batch: await batchResponse(batches.get(purchase.batchId), true) })
+    });
   } catch (error) {
     sendError(response, error, 502, 'No se pudo consultar automáticamente el pago.', 'Cosmos automatic status error:');
   }
@@ -349,6 +444,7 @@ const createProduct = async (request, response) => {
     }
     const product = mintProduct(fields);
     saveState();
+    anchorPendingProducts();
     sendJson(response, 201, productResponse(product, true));
   } catch (error) {
     sendError(response, error, 500, 'No se pudo crear el producto.', 'Create product error:');
@@ -373,32 +469,138 @@ const readClaimBody = async (request, response) => {
   }
 };
 
+const qrNotFound = 'Este QR no corresponde a ningún producto registrado. Revisá que sea el QR de la etiqueta interna del empaque.';
+
+// Returns [status, message] when the product cannot be claimed by this owner.
+const claimRejection = (product, owner) => {
+  if (product.claimed) return [409, product.owner === owner ? 'Esta garantía ya está activada a tu nombre.' : 'Este producto ya fue reclamado.'];
+  if (!isStellarAddress(owner)) return [400, 'Indica una dirección pública Stellar válida (G...).'];
+  return null;
+};
+
 // Called synchronously after the request body was read, so two concurrent claims cannot both pass the check.
-const completeClaim = (response, product, owner) => {
-  if (product.claimed) {
-    const error = product.owner === owner ? 'Esta garantía ya está activada a tu nombre.' : 'Este producto ya fue reclamado.';
-    sendJson(response, 409, { error });
-    return;
-  }
-  if (!isStellarAddress(owner)) {
-    sendJson(response, 400, { error: 'Indica una dirección pública Stellar válida (G...).' });
+const completeClaim = (response, product, owner, claimTransaction = `demo-${randomUUID()}`) => {
+  const rejection = claimRejection(product, owner);
+  if (rejection) {
+    sendJson(response, rejection[0], { error: rejection[1] });
     return;
   }
 
-  Object.assign(product, { claimed: true, owner, claimedAt: new Date().toISOString(), claimTransaction: `demo-${randomUUID()}` });
+  Object.assign(product, { claimed: true, owner, claimedAt: new Date().toISOString(), claimTransaction });
   saveState();
   sendJson(response, 200, productResponse(product));
 };
 
-// Claim from the buyer's panel: the secret read from the QR identifies the product.
+// ---- Claim on Stellar ----
+// 1. prepare: the browser derives the activation key from the QR and gets the message to sign with it.
+// 2. transaction: with that signature the server builds the activation; the buyer's wallet authorizes it.
+// 3. POST /api/warranties with signedXdr: the admin account submits it and the claim is saved with its hash.
+// The secret never reaches the server in this flow: the product is found by its activation public key.
+
+// Checks shared by the three steps. Sends the error and returns null when the claim cannot go on.
+const validateOnChainClaim = (response, body) => {
+  if (!chainEnabled()) {
+    sendJson(response, 409, { error: 'La activación en Stellar no está configurada en este servidor.' });
+    return null;
+  }
+  const key = String(body.activationKey || '').toLowerCase();
+  const product = /^[0-9a-f]{64}$/.test(key) && [...products.values()].find((candidate) => activationKeyOf(candidate) === key);
+  if (!product) {
+    sendJson(response, 404, { error: qrNotFound });
+    return null;
+  }
+  const owner = String(body.owner || '').trim();
+  const rejection = claimRejection(product, owner);
+  if (rejection) {
+    sendJson(response, rejection[0], { error: rejection[1] });
+    return null;
+  }
+  if (!product.chain) {
+    anchorPendingProducts();
+    sendJson(response, 409, { error: 'Este producto todavía se está registrando en Stellar. Probá de nuevo en unos minutos.', retryable: true });
+    return null;
+  }
+  return { product, owner, tokenId: product.chain.tokenId };
+};
+
+const prepareClaim = async (request, response) => {
+  const body = await readClaimBody(request, response);
+  if (!body) return;
+  // Without a contract the browser falls back to the demo claim.
+  if (!chainEnabled()) {
+    sendJson(response, 200, { onChain: false });
+    return;
+  }
+  const claim = validateOnChainClaim(response, body);
+  if (!claim) return;
+  try {
+    const message = await activationMessage(claim.tokenId, claim.owner);
+    // feeAccount: an existing account for the payment with which the Cavos kit creates a new buyer account.
+    sendJson(response, 200, { onChain: true, message: message.toString('base64'), feeAccount: adminAddress() });
+  } catch (error) {
+    sendError(response, error, 502, 'No se pudo preparar la activación en Stellar.', 'Stellar prepare error:');
+  }
+};
+
+const buildClaimTransaction = async (request, response) => {
+  const body = await readClaimBody(request, response);
+  if (!body) return;
+  const claim = validateOnChainClaim(response, body);
+  if (!claim) return;
+  const signature = Buffer.from(String(body.signature || ''), 'base64');
+  if (signature.length !== 64) {
+    sendJson(response, 400, { error: 'La firma del QR no es válida.' });
+    return;
+  }
+  try {
+    sendJson(response, 200, { xdr: await buildActivation({ tokenId: claim.tokenId, claimant: claim.owner, signature }) });
+  } catch (error) {
+    sendError(response, error, 502, 'No se pudo preparar la transacción de activación.', 'Stellar build error:');
+  }
+};
+
+// Keeps a second request for the same product from submitting a duplicate transaction.
+const claimsInFlight = new Set();
+
+const submitOnChainClaim = async (response, body) => {
+  const claim = validateOnChainClaim(response, body);
+  if (!claim) return;
+  const { product, owner, tokenId } = claim;
+  if (claimsInFlight.has(product.token)) {
+    sendJson(response, 409, { error: 'La activación de este producto ya se está registrando en Stellar.', retryable: true });
+    return;
+  }
+  claimsInFlight.add(product.token);
+  try {
+    const txHash = await submitActivation({ tokenId, claimant: owner, signedXdr: body.signedXdr });
+    completeClaim(response, product, owner, txHash);
+  } catch (error) {
+    sendError(response, error, 502, 'No se pudo registrar la activación en Stellar.', 'Stellar claim error:');
+  } finally {
+    claimsInFlight.delete(product.token);
+  }
+};
+
+// Claim from the buyer's panel. With signedXdr it is the last on-chain step; otherwise it is the demo claim, where
+// the secret read from the QR identifies the product and the claim is stored only in this server.
 const claimWarranty = async (request, response) => {
   const body = await readClaimBody(request, response);
   if (!body) return;
+  if (body.signedXdr) {
+    await submitOnChainClaim(response, body);
+    return;
+  }
   // Current QR links send the opaque key; labels printed before send the code itself.
   const secret = normalizeId(body.qr ? secretFromQrKey(body.qr) : body.secret);
   const product = secret && [...products.values()].find((candidate) => candidate.secretHash === hashSecret(secret));
   if (!product) {
-    sendJson(response, 404, { error: 'Este QR no corresponde a ningún producto registrado. Revisá que sea el QR de la etiqueta interna del empaque.' });
+    sendJson(response, 404, { error: qrNotFound });
+    return;
+  }
+  // Products with a secret code are activated in the contract once it is configured, never only locally.
+  // Already claimed ones fall through, so completeClaim answers "ya fue reclamado".
+  if (chainEnabled() && product.secretCode && !product.claimed) {
+    sendJson(response, 409, { error: 'Este producto se activa en Stellar. Recargá la página y volvé a escanear el QR.' });
     return;
   }
   completeClaim(response, product, String(body.owner || '').trim());
@@ -430,7 +632,8 @@ const redirectLegacyActivation = (request, response) => {
 };
 
 const serveFile = async (response, pathname) => {
-  const requestPath = pathname === '/' ? '/index.html' : pathname;
+  // Browsers ask for /favicon.ico on their own, even with a <link rel="icon">: both point at the same drawing.
+  const requestPath = pathname === '/' ? '/index.html' : pathname === '/favicon.ico' ? '/favicon.svg' : pathname;
   try {
     const file = vendorFiles[requestPath] || (publicFiles.has(requestPath) && requestPath);
     if (!file) throw new Error('Not a public file');
@@ -443,13 +646,23 @@ const serveFile = async (response, pathname) => {
   }
 };
 
+// Markets offered by the company form. The destination text is composed here, never in the browser.
+const listCountries = (request, response) => {
+  sendJson(response, 200, {
+    countries: countries.map(({ code, name, region }) => ({ code, name, region, destination: destinationForCountry(code) }))
+  });
+};
+
 const routes = [
+  ['GET', /^\/api\/countries$/, listCountries],
   ['POST', /^\/api\/purchases$/, createBatchPayment],
   ['GET', /^\/api\/purchases\/([^/]+)$/, getPurchaseStatus],
   ['GET', /^\/api\/batches\/([^/]+)$/, getBatch],
   ['POST', /^\/api\/products$/, createProduct],
   ['GET', /^\/api\/products\/([^/]+)$/, getProduct],
   ['GET', /^\/activate\.html$/, redirectLegacyActivation],
+  ['POST', /^\/api\/warranties\/prepare$/, prepareClaim],
+  ['POST', /^\/api\/warranties\/transaction$/, buildClaimTransaction],
   ['POST', /^\/api\/warranties$/, claimWarranty],
   ['GET', /^\/api\/warranties$/, listWarranties],
   ['GET', /^\/cavos-config\.js$/, serveCavosConfig]
@@ -500,4 +713,7 @@ createServer((request, response) => {
   });
 }).listen(port, () => {
   console.log(`Verifire running at http://localhost:${port}`);
+  console.log(chainEnabled() ? `Garantías registradas en el contrato Stellar ${contractId}` : 'Sin STELLAR_CONTRACT_ID: las garantías se guardan solo en este servidor (modo demo).');
+  // Retries products whose registration failed or was interrupted by a restart.
+  anchorPendingProducts();
 });

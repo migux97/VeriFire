@@ -50,17 +50,37 @@ El servidor devuelve `blockchainBacked: true` únicamente cuando existe `STELLAR
 cargo test
 ```
 
-## Requisitos de despliegue
+## Despliegue en testnet
 
-Instala Rust, `rustup`, el target `wasm32-unknown-unknown` y Stellar CLI. Después:
+No hace falta Stellar CLI: el despliegue usa `@stellar/stellar-sdk` desde Node.
 
 ```powershell
-rustup target add wasm32-unknown-unknown
-stellar contract build
-stellar contract deploy `
-  --wasm target/wasm32-unknown-unknown/release/verifire_product.wasm `
-  --network testnet `
-  --source ADMIN_SECRET_KEY
+rustup target add wasm32v1-none
+cd contracts/verifire_product
+cargo build --target wasm32v1-none --release
+cd ../..
+node scripts/deploy-contract.mjs
 ```
 
-Guarda el contract ID en una variable de entorno del servidor. Nunca pongas la clave secreta de administración en el navegador.
+El script crea y fondea con friendbot una cuenta admin, sube el wasm, crea e inicializa el contrato y guarda `STELLAR_CONTRACT_ID`, `STELLAR_ADMIN_SECRET` y `STELLAR_NETWORK=testnet` en `.env` sin mostrar la clave. Con `--force` despliega un contrato nuevo aunque ya haya uno configurado.
+
+Para comprobar el flujo completo contra la red (registro, firma del QR, autorización del comprador y activación):
+
+```powershell
+node scripts/test-activation.mjs
+```
+
+## Dos cuentas separadas
+
+- **Cuenta de tesorería** (`COSMOS_PAY_DESTINATION`): cobra los pagos de Cosmos Pay por cada lote. No firma nada en el contrato y no aparece en ninguna respuesta que vea un comprador.
+- **Cuenta emisora o notaría** (`STELLAR_ISSUER_SECRET`, antes `STELLAR_ADMIN_SECRET`): registra productos, certifica garantías y paga las tarifas de red de esas transacciones. Solo necesita un saldo chico para tarifas, que se recarga aparte desde la tesorería.
+
+El comprador solo ve el certificado de su producto: la transacción de activación firmada por la cuenta emisora. El pago del lote se muestra únicamente en el panel de empresa. Por eso la cuenta emisora paga sus propias tarifas: si las pagara la tesorería, esa cuenta figuraría en cada certificado y el cliente podría llegar a las finanzas de la empresa.
+
+## Cómo lo usa el servidor
+
+- **Emisión:** cuando Cosmos Pay confirma el pago de un lote, `server.mjs` llama a `mint_product` por cada producto desde la cuenta admin (`stellar.mjs`).
+- **Activación:** el navegador deriva la clave de activación del QR secreto, pide `activation_message`, lo firma y envía solo la clave pública y la firma. El servidor arma la transacción `activate_product`; la wallet Cavos del comprador firma únicamente su autorización (`require_auth`). La cuenta admin la envía y paga la comisión, así que el comprador no necesita XLM.
+- **Comprobación:** el servidor guarda la garantía recién cuando `get_product` muestra al comprador como dueño, con el hash de la transacción como certificado público.
+
+La clave secreta de administración vive solo en el `.env` del servidor. Nunca la pongas en el navegador.

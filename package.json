@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "node server.mjs"
+    "start": "node server.mjs",
+    "build:buffer": "esbuild scripts/buffer-global.js --bundle --format=iife --minify --outfile=buffer.bundle.js"
   },
   "dependencies": {
     "@cavos/kit": "^0.1.12",

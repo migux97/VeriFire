@@ -4,35 +4,48 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Compra de tokens y etiquetas QR para empresas en Verifire.">
-  <title>Verifire | Compra empresarial</title>
+  <title>Verifire | Comprar tokens</title>
   <script src="common.js"></script>
+  <script>
+    // Without a session admin.js sends the user to the login page: keep the panel hidden so it never flashes.
+    if (!userSession.isActive()) document.documentElement.classList.add('is-redirecting');
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="personal.css">
 </head>
 <body class="verify-page">
   <main class="verify-shell admin-shell">
     <header class="verify-header">
-      <a class="brand" href="index.html"><span class="brand-mark">V</span><span>Verifire</span></a>
-      <span class="network-status"><span></span>Panel de empresa</span>
+      <a class="brand" href="app.html" aria-label="Verifire"><span class="brand-mark">V</span><span>Verifire</span></a>
+      <a class="network-status" href="lotes.html"><span></span>Ver mis lotes</a>
     </header>
-    <section class="verify-card" aria-labelledby="admin-title">
-      <span class="eyebrow">Compra empresarial</span>
-      <h1 id="admin-title">Comprá tus tokens con Cosmos Pay</h1>
-      <p class="verify-message">Cada token tiene un precio fijo en XLM. El total se calcula al crear el pago y se valida antes de generar el lote.</p>
+
+    <section class="verify-card" aria-labelledby="new-batch-title">
+      <span class="eyebrow">Nuevo lote</span>
+      <h1 id="new-batch-title">Comprá tokens con Cosmos Pay</h1>
+      <p class="verify-message">Cada token tiene un precio fijo en XLM. El lote se genera cuando Cosmos Pay confirma el pago, y queda guardado en Mis lotes con sus etiquetas.</p>
+
       <form id="mint-form" class="claim-form">
         <label for="product-model">Modelo del producto</label>
         <input id="product-model" name="model" placeholder="Ej. Zapatilla Runner X" maxlength="120" required>
         <label for="product-lot">Lote de fabricación</label>
         <input id="product-lot" name="lot" placeholder="Ej. 1043" maxlength="60" required>
-        <label for="product-destination">Destino comercial</label>
-        <input id="product-destination" name="destination" placeholder="Ej. AR" maxlength="10" required>
+        <label for="product-country">País de destino</label>
+        <select id="product-country" name="country" required>
+          <option value="">Cargando países...</option>
+        </select>
+        <p id="destination-preview" class="field-hint">La región se completa sola según el país que elijas.</p>
         <label for="token-quantity">Cantidad de tokens</label>
         <input id="token-quantity" name="quantity" type="number" min="1" max="500" value="3" required>
-        <button class="button button-primary" type="submit">Crear pago Cosmos Pay</button>
+        <button class="button button-primary" type="submit">Generar lote y pagar</button>
       </form>
-      <div id="mint-result" class="verify-details hidden"></div>
-      <div id="batch-result" class="verify-details hidden"></div>
+
+      <div id="payment-panel" class="verify-details is-available" hidden></div>
+      <p id="purchase-message" class="claim-message" role="status" aria-live="polite"></p>
+      <a id="go-to-batches" class="button button-secondary" href="lotes.html" hidden><i class="fa-solid fa-boxes-stacked" aria-hidden="true"></i> Ver mis lotes</a>
     </section>
   </main>
-  <script src="admin.js?v=2"></script>
+  <script src="admin.js?v=8"></script>
 </body>
 </html>

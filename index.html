@@ -14,6 +14,7 @@
     }
   </script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="personal.css">
 </head>
 <body class="auth-page">
@@ -58,7 +59,7 @@
           </div>
         </div>
 
-        <p class="auth-guide">Guía Cavos: Gmail válido, mínimo 8 caracteres, una mayúscula, una minúscula y un número.</p>
+        <p class="auth-guide">¿Entrás desde otro dispositivo? Usá tu Gmail y te enviamos un código para recuperar tu cuenta y tu wallet.</p>
 
         <button type="submit" class="button button-primary auth-submit">Entrar a Verifire</button>
 
@@ -87,6 +88,14 @@
           </div>
         </div>
 
+        <div class="auth-field">
+          <label for="registerPasswordConfirm">Repetir contraseña</label>
+          <div class="password-field">
+            <input id="registerPasswordConfirm" type="password" placeholder="Escribí la misma contraseña" minlength="8" autocomplete="new-password" required>
+            <button class="password-toggle" type="button" data-password-toggle="registerPasswordConfirm" aria-controls="registerPasswordConfirm" aria-label="Mostrar contraseña" aria-pressed="false"><i class="fa-regular fa-eye" aria-hidden="true"></i></button>
+          </div>
+        </div>
+
         <p class="auth-guide">Guía Cavos: mínimo 8 caracteres, una mayúscula, una minúscula y un número.</p>
 
         <button type="submit" class="button button-primary auth-submit">Crear cuenta</button>
@@ -108,7 +117,9 @@
     </main>
   </div>
 
+  <!-- Gives the Cavos kit the global Buffer it expects; it must load before the kit is imported. -->
+  <script src="buffer.bundle.js"></script>
   <script src="cavos-config.js"></script>
-  <script src="auth.js?v=2"></script>
+  <script src="auth.js?v=11"></script>
 </body>
 </html>

@@ -1,161 +1,136 @@
+// Company purchase: pay a batch of tokens with Cosmos Pay. Once the payment is confirmed the batch, its labels and
+// its activation counters live in lotes.html; this page only creates the purchase and follows its payment.
+const loggedIn = guardSession();
+
 const form = document.getElementById('mint-form');
-const result = document.getElementById('mint-result');
-const batchResult = document.getElementById('batch-result');
-// The last purchase is kept so a reload before the payment is confirmed does not lose its QR codes.
-const LAST_PURCHASE_KEY = 'verifireLastPurchase';
+const purchaseMessage = document.getElementById('purchase-message');
+const paymentPanel = document.getElementById('payment-panel');
+const goToBatches = document.getElementById('go-to-batches');
+const countrySelect = document.getElementById('product-country');
+const destinationPreview = document.getElementById('destination-preview');
+
+const POLL_MS = 4000;
+// Country code -> destination printed on the labels ("Argentina · LATAM"), as the server composes it.
+const destinations = new Map();
 let purchaseId = '';
 let pollTimer = null;
-let currentBatch = null;
 
-const stopPolling = () => {
-  window.clearTimeout(pollTimer);
-  pollTimer = null;
+const showMessage = (message, type) => {
+  purchaseMessage.textContent = message;
+  purchaseMessage.className = message ? `claim-message is-${type}` : 'claim-message';
 };
 
-const rememberPurchase = (purchase) => {
+// ---- Countries ----
+
+const loadCountries = async () => {
   try {
-    if (purchase) localStorage.setItem(LAST_PURCHASE_KEY, JSON.stringify(purchase));
-    else localStorage.removeItem(LAST_PURCHASE_KEY);
-  } catch {
-    // Without storage the purchase simply cannot be resumed after a reload.
+    const response = await fetch('/api/countries');
+    const data = await readResponse(response);
+    if (!response.ok) throw new Error(data.error || 'No se pudo cargar la lista de países.');
+
+    const regions = new Map();
+    data.countries.forEach((country) => {
+      destinations.set(country.code, country.destination);
+      if (!regions.has(country.region)) regions.set(country.region, []);
+      regions.get(country.region).push(country);
+    });
+    // LATAM first, the rest in alphabetical order.
+    const groups = [...regions.keys()].sort((first, second) => (first === 'LATAM' ? -1 : second === 'LATAM' ? 1 : first.localeCompare(second, 'es')));
+    countrySelect.innerHTML = `<option value="">Elegí el país de destino</option>${groups.map((region) => `
+      <optgroup label="${escapeHtml(region)}">${regions.get(region).map((country) => `<option value="${escapeHtml(country.code)}">${escapeHtml(country.name)}</option>`).join('')}</optgroup>`).join('')}`;
+  } catch (error) {
+    countrySelect.innerHTML = '<option value="">No se pudo cargar la lista de países</option>';
+    showMessage(error.message, 'error');
   }
 };
 
-const productLabel = (token) => `
-  <figure class="secret-label">
-    <div class="label-codes">
-      <div class="label-code">
-        <img src="${escapeHtml(token.publicQr)}" alt="QR público del producto ${escapeHtml(token.token)}" width="120" height="120">
-        <span>Exterior de la caja</span>
-      </div>
-      <div class="label-code">
-        <img src="${escapeHtml(token.secretQr)}" alt="QR secreto del producto ${escapeHtml(token.token)}" width="120" height="120">
-        <span>Interior · secreto</span>
-      </div>
-    </div>
-    <figcaption><strong>${escapeHtml(token.token)}</strong></figcaption>
-  </figure>`;
-
-const showBatch = (batch) => {
-  if (!batch || !Array.isArray(batch.tokens) || !batch.tokens[0]) {
-    batchResult.className = 'verify-details is-claimed';
-    batchResult.textContent = 'El pago aparece confirmado, pero todavía estamos preparando los tokens. Actualiza en unos segundos.';
-    return false;
-  }
-  stopPolling();
-  purchaseId = '';
-  currentBatch = batch;
-  batchResult.className = 'verify-details is-available';
-  batchResult.innerHTML = `
-    <strong>${escapeHtml(batch.quantity)} QR secretos generados · ${escapeHtml(batch.batchId)}</strong>
-    <span>Cada producto tiene dos QR. El público va por fuera de la caja: cualquiera lo escanea sin iniciar sesión y solo ve los datos públicos del producto. El secreto va adentro del empaque: el cliente lo escanea desde su panel de Verifire (con sesión) para activar la garantía, y sirve una sola vez. El CSV es para el control interno de tu empresa.</span>
-    <div class="batch-toolbar">
-      <button class="button button-primary" type="button" data-batch-action="print">Imprimir etiquetas</button>
-      <button class="button button-secondary" type="button" data-batch-action="csv">Descargar CSV</button>
-    </div>
-    <details class="batch-public">
-      <summary>QR público del lote</summary>
-      <img src="${escapeHtml(batch.publicQr)}" alt="QR público del lote ${escapeHtml(batch.batchId)}" width="200" height="200">
-      <span>${escapeHtml(batch.publicUrl)}</span>
-    </details>
-    <div class="label-sheet">${batch.tokens.map(productLabel).join('')}</div>`;
-  return true;
+const showDestinationPreview = () => {
+  const destination = destinations.get(countrySelect.value);
+  destinationPreview.textContent = destination
+    ? `En las etiquetas va a figurar: ${destination}`
+    : 'La región se completa sola según el país que elijas.';
 };
 
-const downloadCsv = (batch) => {
-  const rows = [
-    ['token', 'codigo_secreto', 'enlace_qr_publico', 'enlace_qr_secreto'],
-    ...batch.tokens.map((token) => [token.token, token.secretCode, token.publicUrl, token.secretUrl])
-  ];
-  const csv = rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\r\n');
-  const link = document.createElement('a');
-  // The BOM makes Excel open the accents correctly.
-  link.href = URL.createObjectURL(new Blob(['﻿', csv], { type: 'text/csv;charset=utf-8' }));
-  link.download = `${batch.batchId}-codigos-secretos.csv`;
-  link.click();
-  window.setTimeout(() => URL.revokeObjectURL(link.href), 1000);
-};
+// ---- Payment ----
 
-batchResult.addEventListener('click', (event) => {
-  const action = event.target.closest('[data-batch-action]')?.dataset.batchAction;
-  if (!currentBatch || !action) return;
-  if (action === 'print') window.print();
-  if (action === 'csv') downloadCsv(currentBatch);
-});
+const showPayment = (purchase) => {
+  paymentPanel.hidden = false;
+  paymentPanel.innerHTML = `
+    <strong>Pagá ${escapeHtml(purchase.amount)} ${escapeHtml(purchase.asset || 'XLM')} para emitir ${escapeHtml(purchase.quantity)} ${purchase.quantity === 1 ? 'token' : 'tokens'}</strong>
+    <span>Escaneá el QR con Cosmos Pay. El lote se genera solo cuando se confirma el pago.</span>
+    <span class="payment-warning"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> Pagá una sola vez: este QR es una transferencia real y se puede volver a pagar, pero un segundo pago no genera otro lote.</span>
+    ${purchase.qr ? `<img src="${escapeHtml(purchase.qr)}" alt="QR de pago Cosmos Pay" width="240" height="240">` : ''}
+    <span id="payment-status">Esperando confirmación de Cosmos Pay...</span>`;
+};
 
 const pollPurchase = async () => {
-  const polledPurchaseId = purchaseId;
-  const statusLine = result.querySelector('span:last-of-type');
+  const polled = purchaseId;
   pollTimer = null;
+  const statusLine = document.getElementById('payment-status');
   try {
-    const response = await fetch(`/api/purchases/${encodeURIComponent(polledPurchaseId)}`);
-    const status = await readResponse(response);
-    // Ignore responses for a purchase that was already completed or replaced.
-    if (polledPurchaseId !== purchaseId) return;
-    if (response.status === 404) {
-      rememberPurchase(null);
-      statusLine.textContent = status.error || 'La compra no existe.';
+    const data = await fetchPurchase(polled, { summary: true });
+    // Ignore an answer for a purchase that was already replaced by a newer one.
+    if (polled !== purchaseId) return;
+    if (data.succeeded && data.purchase.batchId) {
+      purchaseId = '';
+      paymentPanel.hidden = true;
+      goToBatches.hidden = false;
+      showMessage(`Pago confirmado. El lote ${data.purchase.batchId} ya está en Mis lotes con sus etiquetas.`, 'success');
       return;
     }
-    if (!response.ok) throw new Error(status.error || 'No se pudo consultar el pago.');
-    if (status.succeeded && showBatch(status.batch)) {
-      statusLine.textContent = 'Pago confirmado. Tus QR secretos están listos más abajo.';
-      return;
+    if (statusLine) {
+      statusLine.textContent = data.succeeded
+        ? 'Pago confirmado. Preparando los tokens...'
+        : `Estado Cosmos Pay: ${data.status || 'pendiente'}. Comprobando automáticamente...`;
     }
-    statusLine.textContent = status.succeeded
-      ? 'Pago confirmado. Preparando los tokens...'
-      : `Estado Cosmos Pay: ${status.status || 'pendiente'}. Comprobando automáticamente...`;
-    pollTimer = window.setTimeout(pollPurchase, status.succeeded ? 2000 : 4000);
   } catch (error) {
-    if (polledPurchaseId !== purchaseId) return;
-    statusLine.textContent = error.message;
-    pollTimer = window.setTimeout(pollPurchase, 6000);
+    if (polled !== purchaseId) return;
+    if (statusLine) statusLine.textContent = error.message;
   }
+  pollTimer = window.setTimeout(pollPurchase, POLL_MS);
 };
 
-const followPurchase = (purchase) => {
-  purchaseId = purchase.purchaseId;
-  result.className = 'verify-details is-available';
-  result.innerHTML = `<strong>Pago creado: ${escapeHtml(purchase.amount)} ${escapeHtml(purchase.asset)}</strong><span>Compra ${escapeHtml(purchase.purchaseId)} · ${escapeHtml(purchase.quantity)} tokens</span><span>Escanea el QR desde Cosmos Pay para pagar la emisión.</span>${purchase.qr ? `<img src="${escapeHtml(purchase.qr)}" alt="QR de pago Cosmos Pay" width="240" height="240">` : ''}<span>Esperando confirmación automática de Cosmos Pay...</span>`;
-  pollPurchase();
-};
-
-form.addEventListener('submit', async (event) => {
+const handleSubmit = async (event) => {
   event.preventDefault();
-  const button = form.querySelector('button');
+  const button = form.querySelector('button[type="submit"]');
   button.disabled = true;
-  stopPolling();
+  window.clearTimeout(pollTimer);
   purchaseId = '';
+  goToBatches.hidden = true;
+  showMessage('Creando el pago en Cosmos Pay...', 'info');
   try {
     const formData = new FormData(form);
     const response = await fetch('/api/purchases', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: formData.get('model'),
-        lot: formData.get('lot'),
-        destination: formData.get('destination'),
+        model: String(formData.get('model') || '').trim(),
+        lot: String(formData.get('lot') || '').trim(),
+        country: String(formData.get('country') || ''),
         quantity: Number(formData.get('quantity'))
       })
     });
     const purchase = await readResponse(response);
-    if (!response.ok) throw new Error(purchase.error || 'No se pudo emitir el token.');
-    const saved = { purchaseId: purchase.purchaseId, amount: purchase.amount, asset: purchase.asset, quantity: purchase.quantity, qr: purchase.qr };
-    rememberPurchase(saved);
-    currentBatch = null;
-    batchResult.className = 'verify-details hidden';
-    followPurchase(saved);
+    if (!response.ok) throw new Error(purchase.error || 'No se pudo crear el pago del lote.');
+
+    // Saved right away: the purchase is already in Mis lotes, even if this page is closed before paying.
+    savePurchase(purchase.purchaseId);
+    purchaseId = purchase.purchaseId;
+    form.reset();
+    showMessage('', 'info');
+    showPayment(purchase);
+    pollPurchase();
   } catch (error) {
-    result.className = 'verify-details is-claimed';
-    result.textContent = error.message;
+    showMessage(error.message, 'error');
   } finally {
     button.disabled = false;
   }
-});
+};
 
-try {
-  const saved = JSON.parse(localStorage.getItem(LAST_PURCHASE_KEY) || 'null');
-  if (saved?.purchaseId) followPurchase(saved);
-} catch {
-  rememberPurchase(null);
+if (loggedIn) {
+  migrateLegacyPurchase();
+  form.addEventListener('submit', handleSubmit);
+  form.addEventListener('reset', () => window.setTimeout(showDestinationPreview));
+  countrySelect.addEventListener('change', showDestinationPreview);
+  loadCountries();
 }
