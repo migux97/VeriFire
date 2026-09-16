@@ -1,0 +1,44 @@
+---
+// Shapes drawn many times on the landing, defined once: the guilloché seal and two real QR codes. The public one
+// opens the verification page; the "secret" one only opens the buyer panel, it never carries a claim key.
+import QRCode from 'qrcode';
+import { publicBaseUrl } from '@/lib/server/config';
+import { activationUrl, pageUrl } from '@/lib/server/links';
+import { GUILLOCHE_SIZE, guillocheCenter, guillocheCircles, guillocheRings } from './guilloche';
+
+const baseUrl = publicBaseUrl(Astro.url);
+
+const qrSymbol = async (text: string) => {
+  const svg = await QRCode.toString(text, { type: 'svg', margin: 0, errorCorrectionLevel: 'M' });
+  return {
+    viewBox: /viewBox="([^"]+)"/.exec(svg)?.[1] ?? '0 0 25 25',
+    body: svg.slice(svg.indexOf('>') + 1, svg.lastIndexOf('</svg>'))
+  };
+};
+
+const [publicQr, secretQr] = await Promise.all([qrSymbol(pageUrl(baseUrl, '/verify')), qrSymbol(activationUrl(baseUrl))]);
+---
+
+<svg class="lp-sprite" aria-hidden="true" focusable="false">
+  <defs>
+    {guillocheRings.map((ring, index) => <path id={`lp-ring-${index}`} d={ring.path} vector-effect="non-scaling-stroke" />)}
+  </defs>
+  <symbol id="lp-guilloche" viewBox={`0 0 ${GUILLOCHE_SIZE} ${GUILLOCHE_SIZE}`}>
+    <g fill="none" stroke="currentColor">
+      {
+        guillocheCircles.map((radius) => (
+          <circle cx={guillocheCenter} cy={guillocheCenter} r={radius} vector-effect="non-scaling-stroke" />
+        ))
+      }
+      {
+        guillocheRings.map((ring, index) =>
+          ring.turns.map((turn) => (
+            <use href={`#lp-ring-${index}`} transform={`rotate(${turn.toFixed(3)} ${guillocheCenter} ${guillocheCenter})`} />
+          ))
+        )
+      }
+    </g>
+  </symbol>
+  <symbol id="lp-qr-public" viewBox={publicQr.viewBox} shape-rendering="crispEdges" set:html={publicQr.body} />
+  <symbol id="lp-qr-secret" viewBox={secretQr.viewBox} shape-rendering="crispEdges" set:html={secretQr.body} />
+</svg>

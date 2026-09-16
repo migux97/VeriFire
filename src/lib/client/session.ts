@@ -44,7 +44,7 @@ export const userSession = {
 
 export const leaveSession = (reason: SessionEndReason) => {
   userSession.end();
-  window.location.replace(`/?sesion=${reason}`);
+  window.location.replace(`/acceso?sesion=${reason}`);
 };
 
 // For pages behind login. Without an active session it clears any stale one and sends the user to the login page.
@@ -53,7 +53,7 @@ export const guardSession = () => {
   if (!userSession.isActive()) {
     const hadSession = Boolean(userSession.read());
     if (hadSession) userSession.end();
-    window.location.replace(hadSession ? '/?sesion=expirada' : '/');
+    window.location.replace(hadSession ? '/acceso?sesion=expirada' : '/acceso');
     return;
   }
 

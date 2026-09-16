@@ -1,34 +1,187 @@
 ---
-import { AuthPanel } from '@/components/auth/AuthPanel';
+import { Font } from 'astro:assets';
 import BaseLayout from '@/layouts/BaseLayout.astro';
-import { config } from '@/lib/server/config';
+import LandingHeader from '@/components/landing/LandingHeader.astro';
+import LandingHero from '@/components/landing/LandingHero.astro';
+import LandingSprite from '@/components/landing/LandingSprite.astro';
+import PackageArt from '@/components/landing/PackageArt.astro';
+import ProductTrace from '@/components/landing/ProductTrace.astro';
+import { faqs, safeguards } from '@/components/landing/content';
+import '@/styles/landing.css';
+
+// The login moved to /acceso. Google returns to /index.html, which the middleware already sends there; this covers a
+// return or an old session notice that lands on / directly, so the login page still receives its parameters.
+if (Astro.url.searchParams.has('cavos_auth_code') || Astro.url.searchParams.has('sesion')) {
+  return Astro.redirect(`/acceso${Astro.url.search}`);
+}
 ---
 
 <BaseLayout
-  title="Verifire | Acceso"
-  description="Acceso seguro a Verifire, verificación de productos y reclamo digital."
-  bodyClass="auth-page"
-  session="guest"
+  title="Verifire | Antipiratería con QR verificado en blockchain"
+  description="Infraestructura antipiratería para marcas: un QR validado en un contrato de Stellar por producto, activación única y el historial de dueños, destinos y activaciones."
+  bodyClass="landing-page"
 >
-  <div class="auth-shell">
-    <aside class="auth-visual">
-      <div class="auth-brand">
-        <span class="brand-mark">V</span>
-        <span>Verifire</span>
+  <Font slot="head" cssVariable="--font-urbanist" preload={[{ weight: 900 }, { weight: 500 }]} />
+  <LandingSprite />
+
+  <div class="lp-canvas">
+    <svg class="lp-guilloche lp-canvas-seal lp-canvas-seal-left" aria-hidden="true" focusable="false"><use href="#lp-guilloche"></use></svg>
+    <svg class="lp-guilloche lp-canvas-seal lp-canvas-seal-right" aria-hidden="true" focusable="false"><use href="#lp-guilloche"></use></svg>
+
+    <div class="lp-sheet lp-sheet-first">
+      <LandingHeader />
+      <main>
+        <LandingHero />
+        <ProductTrace />
+      </main>
+    </div>
+
+    <section class="lp-band" id="como-funciona" aria-labelledby="lp-band-title">
+      <div class="lp-band-copy">
+        <h2 id="lp-band-title">Dos QR en cada producto</h2>
+        <p class="lp-band-lead">Uno lo ve cualquiera en la góndola. El otro solo lo encuentra quien abre la caja.</p>
+        <dl class="lp-band-list">
+          <div>
+            <dt><i class="fa-solid fa-eye" aria-hidden="true"></i> Afuera, el QR público</dt>
+            <dd>Se escanea sin cuenta y muestra modelo, lote, destino y si la garantía ya fue activada. Sirve para controlar mercadería en el depósito o en la tienda.</dd>
+          </div>
+          <div>
+            <dt><i class="fa-solid fa-key" aria-hidden="true"></i> Adentro, el QR secreto</dt>
+            <dd>Activa la garantía una única vez y deja al comprador como dueño. El código no se publica: el teléfono firma con él y solo viaja la firma.</dd>
+          </div>
+        </dl>
+        <a class="lp-button lp-button-light" href="/verify">
+          Probar la verificación pública <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+        </a>
       </div>
 
-      <h1>Tu verificación de productos, en una sola plataforma.</h1>
-      <p>Accede con tu cuenta para consultar la seguridad, el estado y el reclamo de cualquier producto registrado.</p>
+      <div class="lp-band-art" aria-hidden="true">
+        <svg class="lp-guilloche lp-band-guilloche" focusable="false"><use href="#lp-guilloche"></use></svg>
+        <PackageArt class="lp-band-package" word={['ORIGI', 'NAL']} color="#ffffff" lot="1043" />
+        <div class="lp-insert">
+          <svg viewBox="0 0 10 10" focusable="false"><use href="#lp-qr-secret" width="10" height="10"></use></svg>
+          <strong>Código de activación</strong>
+          <span>Usalo una vez para registrar tu compra</span>
+        </div>
+        <span class="lp-tag lp-tag-public">QR público</span>
+        <span class="lp-tag lp-tag-secret">QR secreto</span>
+      </div>
+    </section>
 
-      <ul class="auth-features">
-        <li>Validación instantánea</li>
-        <li>Escaneo QR protegido</li>
-        <li>Seguimiento de reclamos</li>
-      </ul>
-    </aside>
+    <div class="lp-sheet">
+      <section class="lp-section" id="marcas" aria-labelledby="lp-audiences-title">
+        <h2 id="lp-audiences-title" class="lp-section-title">Quién usa Verifire</h2>
+        <div class="lp-audiences">
+          <article class="lp-audience lp-audience-brand">
+            <div class="lp-audience-copy">
+              <h3>Marcas y fabricantes</h3>
+              <p>Comprás lotes de etiquetas, las imprimís en tu línea de empaque y seguís desde un panel qué unidades se activaron y en qué mercado.</p>
+              <ul>
+                <li>Pago de cada lote con Cosmos Pay</li>
+                <li>Etiquetas con los dos QR, listas para imprimir</li>
+                <li>Activaciones de cada lote por destino</li>
+              </ul>
+              <a class="lp-button lp-button-solid" href="/admin">Comprar un lote</a>
+            </div>
+            <PackageArt class="lp-audience-art" word={['TU', 'MARCA']} color="#e3261f" lot="0001" />
+          </article>
 
-    <main class="auth-card">
-      <AuthPanel client:load cavosAppId={config.cavosAppId} />
-    </main>
+          <article class="lp-audience lp-audience-buyer">
+            <div class="lp-audience-copy">
+              <h3>Compradores</h3>
+              <p>Escaneás el QR de adentro, confirmás con tu correo y la garantía queda a tu nombre. No necesitás criptomonedas ni pagar comisiones.</p>
+              <ul>
+                <li>Cuenta creada con tu correo</li>
+                <li>Certificado público de cada garantía</li>
+                <li>Todas tus garantías en un mismo lugar</li>
+              </ul>
+              <a class="lp-button lp-button-outline" href="/app">Activar mi garantía</a>
+            </div>
+            <svg class="lp-audience-art lp-phone" viewBox="0 0 170 260" aria-hidden="true" focusable="false">
+              <rect x="20" y="8" width="130" height="244" rx="22" fill="#000000"></rect>
+              <rect x="30" y="30" width="110" height="200" rx="6" fill="#ffffff"></rect>
+              <rect x="68" y="16" width="34" height="6" rx="3" fill="#2e2e2e"></rect>
+              <use href="#lp-qr-secret" x="47" y="58" width="76" height="76"></use>
+              <path d="M40 48h14M40 48v14M130 48h-14M130 48v14M40 144h14M40 144v-14M130 144h-14M130 144v-14" stroke="#e3261f" stroke-width="3" fill="none"></path>
+              <rect x="42" y="166" width="86" height="10" fill="#000000"></rect>
+              <rect x="42" y="184" width="62" height="8" fill="#cfcfcf"></rect>
+              <circle cx="134" cy="210" r="24" fill="#e3261f"></circle>
+              <path d="M123 210l8 8 15-16" stroke="#ffffff" stroke-width="4.5" fill="none" stroke-linecap="square"></path>
+            </svg>
+          </article>
+        </div>
+      </section>
+
+      <section class="lp-section" aria-labelledby="lp-safeguards-title">
+        <h2 id="lp-safeguards-title" class="lp-section-title">Por qué una etiqueta copiada no sirve</h2>
+        <div class="lp-arches">
+          {
+            safeguards.map((item) => (
+              <article class="lp-arch">
+                <div class="lp-arch-top">
+                  <svg class="lp-guilloche" aria-hidden="true" focusable="false">
+                    <use href="#lp-guilloche" />
+                  </svg>
+                  <span class="lp-arch-icon">
+                    <i class={item.icon} aria-hidden="true" />
+                  </span>
+                </div>
+                <h3>{item.title}</h3>
+                <p>{item.text}</p>
+              </article>
+            ))
+          }
+        </div>
+      </section>
+
+      <section class="lp-section lp-faq" id="preguntas" aria-labelledby="lp-faq-title">
+        <h2 id="lp-faq-title" class="lp-section-title">Preguntas frecuentes</h2>
+        <div class="lp-faq-list">
+          {
+            faqs.map((faq) => (
+              <details class="lp-question">
+                <summary>
+                  {faq.question}
+                  <i class="fa-solid fa-plus" aria-hidden="true" />
+                </summary>
+                <p>{faq.answer}</p>
+              </details>
+            ))
+          }
+        </div>
+      </section>
+    </div>
   </div>
+
+  <footer class="lp-footer">
+    <div class="lp-footer-inner">
+      <div class="lp-footer-brand">
+        <a class="lp-logo lp-logo-light" href="/" aria-label="Verifire, inicio"><span>VERIFIRE</span></a>
+        <p>Infraestructura antipiratería para marcas, con cada producto registrado en Stellar.</p>
+      </div>
+      <nav class="lp-footer-links" aria-label="Accesos">
+        <h2>Accesos</h2>
+        <a href="/acceso">Ingresar</a>
+        <a href="/app">Mis garantías</a>
+        <a href="/lotes">Panel de lotes</a>
+        <a href="/admin">Comprar un lote</a>
+      </nav>
+      <nav class="lp-footer-links" aria-label="Secciones del sitio">
+        <h2>Verifire</h2>
+        <a href="#historial">Historial de un producto</a>
+        <a href="#como-funciona">Cómo funciona</a>
+        <a href="#marcas">Para marcas</a>
+        <a href="#preguntas">Preguntas frecuentes</a>
+      </nav>
+      <form class="lp-footer-verify" method="get" action="/verify">
+        <label for="lp-footer-token">Verificá un producto</label>
+        <p>Ingresá el código impreso junto al QR público.</p>
+        <div>
+          <input id="lp-footer-token" name="token" type="text" placeholder="Ej. VF-001" autocomplete="off" spellcheck="false" required />
+          <button class="lp-button lp-button-solid" type="submit">Verificar</button>
+        </div>
+      </form>
+    </div>
+    <p class="lp-footer-legal">© {new Date().getFullYear()} Verifire</p>
+  </footer>
 </BaseLayout>

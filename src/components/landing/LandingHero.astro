@@ -1,0 +1,95 @@
+---
+import { HERO_TOKEN, heroSlides } from './content';
+import PackageArt from './PackageArt.astro';
+---
+
+<section class="lp-hero" aria-labelledby="lp-hero-title">
+  <div class="lp-hero-copy">
+    <h1 id="lp-hero-title">Cada producto original, verificable con un QR.</h1>
+    <p class="lp-hero-lead">
+      Infraestructura antipiratería para marcas. Cada unidad queda registrada en un contrato de Stellar, se activa una sola
+      vez y guarda su historial de dueños, destinos y activaciones.
+    </p>
+
+    <div class="lp-slider" data-slider>
+      <div class="lp-slides" aria-live="polite">
+        {
+          heroSlides.map((slide, index) => (
+            <article class="lp-slide" data-slide={index} hidden={index !== 0} aria-label={`Etapa ${index + 1} de ${heroSlides.length}`}>
+              <p class="lp-stamp" aria-hidden="true">
+                <span>{slide.stamp[0]}</span>
+                <span>{slide.stamp[1]}</span>
+              </p>
+              <div class="lp-slide-body">
+                <h2>{slide.title}</h2>
+                <p>{slide.text}</p>
+                <p class="lp-slide-detail">
+                  <strong>{HERO_TOKEN}</strong>
+                  <span>{slide.detail}</span>
+                </p>
+              </div>
+            </article>
+          ))
+        }
+      </div>
+
+      <div class="lp-slide-actions">
+        <a class="lp-button lp-button-solid" href="/admin">Comprar un lote</a>
+        <a class="lp-button lp-button-outline" href="#historial">
+          Ver un historial <i class="fa-solid fa-arrow-down" aria-hidden="true"></i>
+        </a>
+      </div>
+
+      <div class="lp-slider-controls">
+        <div class="lp-dots">
+          {
+            heroSlides.map((slide, index) => (
+              <button type="button" data-go={index} aria-label={`Etapa: ${slide.title}`} aria-current={index === 0 ? 'step' : undefined}>
+                <span></span>
+              </button>
+            ))
+          }
+        </div>
+        <div class="lp-arrows">
+          <button class="lp-arrow" type="button" data-step="-1" aria-label="Etapa anterior">
+            <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+          </button>
+          <button class="lp-arrow" type="button" data-step="1" aria-label="Etapa siguiente">
+            <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="lp-hero-art">
+    <svg class="lp-guilloche lp-hero-guilloche" aria-hidden="true" focusable="false"><use href="#lp-guilloche"></use></svg>
+    <PackageArt class="lp-hero-package" word={['VERI', 'FIRE']} color="#e3261f" lot="1043" statuses={heroSlides.map((slide) => slide.status)} />
+  </div>
+</section>
+
+<script>
+  // One product through its four stages. Nothing moves on its own: the dots and arrows change the stage.
+  const slider = document.querySelector<HTMLElement>('[data-slider]');
+  if (slider) {
+    const slides = [...slider.querySelectorAll<HTMLElement>('[data-slide]')];
+    const dots = [...slider.querySelectorAll<HTMLButtonElement>('[data-go]')];
+    const statuses = [...document.querySelectorAll<SVGTextElement>('.lp-hero-package [data-slide-status]')];
+    let current = 0;
+
+    const show = (index: number) => {
+      current = (index + slides.length) % slides.length;
+      slides.forEach((slide, position) => (slide.hidden = position !== current));
+      dots.forEach((dot, position) => {
+        if (position === current) dot.setAttribute('aria-current', 'step');
+        else dot.removeAttribute('aria-current');
+      });
+      statuses.forEach((status, position) => status.setAttribute('visibility', position === current ? 'visible' : 'hidden'));
+    };
+
+    dots.forEach((dot) => dot.addEventListener('click', () => show(Number(dot.dataset.go))));
+    slider.querySelectorAll<HTMLButtonElement>('[data-step]').forEach((arrow) => {
+      arrow.addEventListener('click', () => show(current + Number(arrow.dataset.step)));
+    });
+  }
+</script>
