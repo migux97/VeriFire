@@ -1,100 +1,8 @@
-/* Landing page (src/pages/index.astro). Flat, solid color only: no gradients and no blurred shadows. */
+/* Landing page (src/pages/index.astro). Tokens, logo and product box come from brand.css. */
 
 .landing-page {
-  --lp-red: #e3261f;
-  --lp-red-deep: #c81d17;
-  --lp-red-press: #b8170f;
-  --lp-ink: #000000;
-  --lp-text: #262626;
-  --lp-muted: #5c5c5c;
-  --lp-paper: #ffffff;
-  --lp-mist: #f2f2f2;
-  --lp-line: #e2e2e2;
-  --lp-line-strong: #cfcfcf;
-  --lp-blush: #fde6e4;
-  --lp-font: var(--font-urbanist), 'Segoe UI', system-ui, -apple-system, Arial, sans-serif;
-
-  min-width: 320px;
-  background: var(--lp-red);
-  color: var(--lp-text);
-  font-family: var(--lp-font);
-  font-size: 1.0625rem;
-  font-weight: 500;
-  line-height: 1.5;
-}
-
-.landing-page h1,
-.landing-page h2,
-.landing-page h3 {
-  color: var(--lp-ink);
-  font-family: var(--lp-font);
-  letter-spacing: -0.025em;
-}
-
-.landing-page :focus-visible {
-  outline: 3px solid var(--lp-ink);
-  outline-offset: 3px;
-}
-
-.landing-page ::selection {
-  background: var(--lp-ink);
-  color: var(--lp-paper);
-}
-
-.lp-sprite {
-  position: absolute;
-  width: 0;
-  height: 0;
-  overflow: hidden;
-}
-
-.lp-guilloche {
-  display: block;
-  stroke-width: 0.8;
-  pointer-events: none;
-}
-
-/* ---------- Red canvas and white sheets ---------- */
-
-.lp-canvas {
-  position: relative;
-  overflow: hidden;
-  padding-block: 40px 72px;
-}
-
-.lp-canvas-seal {
-  position: absolute;
-  z-index: 0;
-  color: var(--lp-red-deep);
-  stroke-width: 1.4;
-}
-
-.lp-canvas-seal-left {
-  top: -160px;
-  left: -360px;
-  width: 900px;
-  height: 900px;
-}
-
-.lp-canvas-seal-right {
-  top: 1180px;
-  right: -420px;
-  width: 1000px;
-  height: 1000px;
-}
-
-.lp-sheet {
-  position: relative;
-  z-index: 1;
-  width: min(1240px, calc(100% - 32px));
-  margin-inline: auto;
-  overflow: hidden;
-  border-radius: 28px;
-  background: var(--lp-paper);
-}
-
-.lp-sheet-first {
-  background: var(--lp-mist);
+  /* Sections run edge to edge; their content lines up in a 1200px column. The % resolves against each section. */
+  --lp-gutter: max(40px, calc((100% - 1200px) / 2));
 }
 
 /* ---------- Buttons ---------- */
@@ -178,33 +86,8 @@
   display: flex;
   align-items: center;
   gap: 28px;
-  padding: 22px 40px;
-}
-
-.lp-logo {
-  display: inline-flex;
-  flex: none;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 10px 6px;
-  background: var(--lp-ink);
-  color: var(--lp-paper);
-  font-size: 1.0625rem;
-  font-weight: 900;
-  letter-spacing: 0.02em;
-  line-height: 1;
-  transform: rotate(-4deg);
-}
-
-.lp-logo svg {
-  width: 14px;
-  height: 14px;
-  color: var(--lp-red);
-}
-
-.lp-logo-light {
-  background: var(--lp-paper);
-  color: var(--lp-ink);
+  padding: 22px var(--lp-gutter);
+  background: var(--lp-mist);
 }
 
 .lp-header-verify {
@@ -293,7 +176,8 @@
   display: grid;
   grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
   gap: 24px;
-  padding: 20px 40px 40px 64px;
+  padding: 20px var(--lp-gutter) 40px;
+  background: var(--lp-mist);
 }
 
 .lp-hero-copy {
@@ -448,37 +332,6 @@
   color: #a8a8a8;
 }
 
-.lp-package {
-  display: block;
-  overflow: visible;
-}
-
-.lp-package-shadow {
-  fill: #dddddd;
-}
-
-.lp-package-word {
-  fill: var(--lp-ink);
-  font-family: var(--lp-font);
-  font-weight: 900;
-  letter-spacing: -0.02em;
-}
-
-.lp-package-small {
-  fill: var(--lp-ink);
-  font-family: var(--lp-font);
-  font-size: 8.5px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-}
-
-.lp-package-status {
-  fill: var(--lp-paper);
-  font-family: var(--lp-font);
-  font-size: 15px;
-  font-weight: 900;
-}
-
 .lp-hero-package {
   position: relative;
   width: min(400px, 90%);
@@ -497,7 +350,7 @@
   align-items: end;
   justify-content: space-between;
   gap: 8px 40px;
-  padding: 44px 40px 28px 64px;
+  padding: 56px var(--lp-gutter) 28px;
 }
 
 .lp-catalog-head h2,
@@ -514,11 +367,11 @@
 
 .lp-rail {
   display: grid;
-  grid-auto-columns: minmax(236px, calc((100% - 64px) / 5));
+  grid-auto-columns: minmax(236px, 1fr);
   grid-auto-flow: column;
-  padding: 16px 0 16px 64px;
+  padding: 16px var(--lp-gutter);
   overflow-x: auto;
-  scroll-padding-left: 64px;
+  scroll-padding-inline: var(--lp-gutter);
   scroll-snap-type: x mandatory;
   scrollbar-width: none;
   border-top: 1px solid var(--lp-line);
@@ -651,7 +504,7 @@
   display: grid;
   grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
   gap: 40px;
-  padding: 36px 40px 36px 64px;
+  padding: 36px var(--lp-gutter);
 }
 
 .lp-trace-facts {
@@ -759,7 +612,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 20px 40px 28px 64px;
+  padding: 20px var(--lp-gutter) 28px;
   border-top: 1px solid var(--lp-line);
 }
 
@@ -772,9 +625,9 @@
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   align-items: center;
   gap: 40px;
-  width: min(1240px, calc(100% - 32px));
-  margin: 0 auto;
-  padding: 96px 64px;
+  overflow: hidden;
+  padding: 96px var(--lp-gutter);
+  background: var(--lp-red);
   color: var(--lp-paper);
 }
 
@@ -896,7 +749,7 @@
 /* ---------- Second sheet ---------- */
 
 .lp-section {
-  padding: 72px 64px;
+  padding: 72px var(--lp-gutter);
 }
 
 .lp-section + .lp-section {
@@ -1103,9 +956,7 @@
   display: grid;
   grid-template-columns: 1.2fr 0.7fr 0.9fr 1.3fr;
   gap: 40px;
-  width: min(1240px, calc(100% - 32px));
-  margin-inline: auto;
-  padding: 64px 64px 48px;
+  padding: 64px var(--lp-gutter) 48px;
 }
 
 .lp-footer-brand p {
@@ -1173,9 +1024,8 @@
 }
 
 .lp-footer-legal {
-  width: min(1240px, calc(100% - 32px));
-  margin-inline: auto;
-  padding: 20px 64px 28px;
+  margin-inline: var(--lp-gutter);
+  padding-block: 20px 28px;
   border-top: 1px solid #2e2e2e;
   font-size: 0.875rem;
 }
@@ -1240,21 +1090,12 @@
 }
 
 @media (max-width: 720px) {
-  .lp-canvas {
-    padding-block: 16px 40px;
-  }
-
-  .lp-sheet,
-  .lp-band {
-    width: calc(100% - 24px);
-  }
-
-  .lp-sheet {
-    border-radius: 18px;
+  .landing-page {
+    --lp-gutter: 20px;
   }
 
   .lp-header {
-    padding: 18px 20px;
+    padding-block: 18px;
   }
 
   .lp-header-verify,
@@ -1272,14 +1113,6 @@
     padding-inline: 20px;
     overflow-x: auto;
     scrollbar-width: none;
-  }
-
-  .lp-hero,
-  .lp-catalog-head,
-  .lp-trace-panel,
-  .lp-catalog-foot,
-  .lp-section {
-    padding-inline: 20px;
   }
 
   .lp-hero {
@@ -1302,8 +1135,6 @@
 
   .lp-rail {
     grid-auto-columns: 78%;
-    padding-left: 20px;
-    scroll-padding-left: 20px;
   }
 
   .lp-timeline {
@@ -1333,7 +1164,7 @@
   }
 
   .lp-band {
-    padding: 64px 12px;
+    padding-block: 64px;
   }
 
   .lp-band-art {
@@ -1386,10 +1217,6 @@
 
   .lp-footer-inner {
     grid-template-columns: 1fr;
-    padding: 48px 20px 32px;
-  }
-
-  .lp-footer-legal {
-    padding-inline: 20px;
+    padding-block: 48px 32px;
   }
 }

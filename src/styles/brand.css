@@ -1,0 +1,123 @@
+/* Flat, solid color only (no gradients, no blurred shadows). Shared by the landing (index.astro) and the login
+   (acceso.astro): tokens, the Verifire stamp logo, the guilloché and the product box of LandingSprite/PackageArt. */
+
+.landing-page,
+.auth-page {
+  --lp-red: #e3261f;
+  --lp-red-deep: #c81d17;
+  --lp-red-press: #b8170f;
+  --lp-ink: #000000;
+  --lp-text: #262626;
+  --lp-muted: #5c5c5c;
+  --lp-paper: #ffffff;
+  --lp-mist: #f2f2f2;
+  --lp-line: #e2e2e2;
+  --lp-line-strong: #cfcfcf;
+  --lp-blush: #fde6e4;
+  --lp-font: var(--font-urbanist), 'Segoe UI', system-ui, -apple-system, Arial, sans-serif;
+
+  min-width: 320px;
+  background: var(--lp-paper);
+  color: var(--lp-text);
+  font-family: var(--lp-font);
+  font-size: 1.0625rem;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.landing-page h1,
+.landing-page h2,
+.landing-page h3,
+.auth-page h1,
+.auth-page h2,
+.auth-page h3 {
+  color: var(--lp-ink);
+  font-family: var(--lp-font);
+  letter-spacing: -0.025em;
+}
+
+.landing-page :focus-visible,
+.auth-page :focus-visible {
+  outline: 3px solid var(--lp-ink);
+  outline-offset: 3px;
+}
+
+.landing-page ::selection,
+.auth-page ::selection {
+  background: var(--lp-ink);
+  color: var(--lp-paper);
+}
+
+.lp-sprite {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+.lp-guilloche {
+  display: block;
+  stroke-width: 0.8;
+  pointer-events: none;
+}
+
+/* ---------- Logo ---------- */
+
+.lp-logo {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px 6px;
+  background: var(--lp-ink);
+  color: var(--lp-paper);
+  font-size: 1.0625rem;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  transform: rotate(-4deg);
+}
+
+.lp-logo svg {
+  width: 14px;
+  height: 14px;
+  color: var(--lp-red);
+}
+
+.lp-logo-light {
+  background: var(--lp-paper);
+  color: var(--lp-ink);
+}
+
+/* ---------- Product box ---------- */
+
+.lp-package {
+  display: block;
+  overflow: visible;
+}
+
+.lp-package-shadow {
+  fill: #dddddd;
+}
+
+.lp-package-word {
+  fill: var(--lp-ink);
+  font-family: var(--lp-font);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.lp-package-small {
+  fill: var(--lp-ink);
+  font-family: var(--lp-font);
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.lp-package-status {
+  fill: var(--lp-paper);
+  font-family: var(--lp-font);
+  font-size: 15px;
+  font-weight: 900;
+}

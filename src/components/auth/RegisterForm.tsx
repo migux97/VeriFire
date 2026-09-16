@@ -36,7 +36,7 @@ export function RegisterForm({ hidden, submitting, savedUsername, onSubmit }: Re
       <PasswordField id="registerPassword" name="password" label="Contraseña" placeholder="Mínimo 8 caracteres" autoComplete="new-password" />
       <PasswordField id="registerPasswordConfirm" name="passwordConfirm" label="Repetir contraseña" placeholder="Escribí la misma contraseña" autoComplete="new-password" />
 
-      <p className="auth-guide">Guía Cavos: mínimo 8 caracteres, una mayúscula, una minúscula y un número.</p>
+      <p className="auth-guide">Usá mínimo 8 caracteres, con una mayúscula, una minúscula y un número.</p>
 
       <button type="submit" className="button button-primary auth-submit" disabled={submitting}>Crear cuenta</button>
     </form>

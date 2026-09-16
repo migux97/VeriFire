@@ -1,0 +1,15 @@
+---
+// The Verifire stamp: black on light backgrounds, white (`light`) on the black footer. Styles in brand.css.
+interface Props {
+  light?: boolean;
+}
+
+const { light = false } = Astro.props;
+---
+
+<a class:list={['lp-logo', { 'lp-logo-light': light }]} href="/" aria-label="Verifire, inicio">
+  <span>VERIFIRE</span>
+  <svg viewBox="0 0 14 14" aria-hidden="true" focusable="false">
+    <path d="M0 0h6v6H0zM1.5 1.5v3h3v-3zM8 0h6v6H8zM9.5 1.5v3h3v-3zM0 8h6v6H0zM1.5 9.5v3h3v-3zM8 8h2v2H8zM12 8h2v2h-2zM10 10h2v2h-2zM8 12h2v2H8zM12 12h2v2h-2z" fill="currentColor"></path>
+  </svg>
+</a>
