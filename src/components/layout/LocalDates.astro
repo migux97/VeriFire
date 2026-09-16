@@ -1,0 +1,12 @@
+---
+// Server-rendered dates are written in UTC. This rewrites every <time data-local-date> in the visitor's time zone, so
+// a warranty activated near midnight shows the day the buyer saw.
+---
+
+<script>
+  import { formatLongDate } from '@/lib/format';
+
+  document.querySelectorAll<HTMLTimeElement>('time[data-local-date]').forEach((time) => {
+    time.textContent = formatLongDate(time.dateTime);
+  });
+</script>

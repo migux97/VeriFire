@@ -1,0 +1,21 @@
+---
+interface Props {
+  href?: string | undefined;
+}
+
+const { href } = Astro.props;
+---
+
+{
+  href ? (
+    <a class="brand" href={href} aria-label="Verifire">
+      <span class="brand-mark">V</span>
+      <span>Verifire</span>
+    </a>
+  ) : (
+    <div class="brand">
+      <span class="brand-mark">V</span>
+      <span>Verifire</span>
+    </div>
+  )
+}

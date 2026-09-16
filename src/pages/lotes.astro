@@ -1,0 +1,43 @@
+---
+import { BatchList } from '@/components/batches/BatchList';
+import { BatchStats } from '@/components/batches/BatchStats';
+import AppTopbar from '@/components/layout/AppTopbar.astro';
+import SiteFooter from '@/components/layout/SiteFooter.astro';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+
+// Nothing here depends on the request: the batches are read in the browser.
+export const prerender = true;
+---
+
+<BaseLayout
+  title="Verifire | Mis lotes"
+  description="Tus lotes emitidos en Verifire: etiquetas, descargas y activaciones de tus clientes."
+  bodyClass="catalog-body"
+  session="protected"
+>
+  <AppTopbar brandHref="/app">
+    <a class="wallet-button" href="/app"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i> Mis garantías</a>
+    <a class="wallet-button buy-button" href="/admin"><i class="fa-solid fa-plus" aria-hidden="true"></i> Comprar tokens</a>
+  </AppTopbar>
+
+  <main class="container dashboard">
+    <section class="claim-card" aria-labelledby="batches-title">
+      <div>
+        <span class="eyebrow">Panel de empresa</span>
+        <h1 id="batches-title">Mis lotes</h1>
+      </div>
+      <p class="claim-hint">Cada lote que emitís con sus etiquetas listas para imprimir o descargar, y cuántos productos activaron tus clientes.</p>
+      <BatchStats client:load />
+    </section>
+
+    <BatchList client:load />
+  </main>
+
+  <SiteFooter />
+
+  <script>
+    import { guardSession } from '@/lib/client/session';
+
+    guardSession();
+  </script>
+</BaseLayout>

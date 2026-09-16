@@ -1,0 +1,36 @@
+---
+import AppTopbar from '@/components/layout/AppTopbar.astro';
+import SiteFooter from '@/components/layout/SiteFooter.astro';
+import { ProfileMenu } from '@/components/warranties/ProfileMenu';
+import { WarrantyDashboard } from '@/components/warranties/WarrantyDashboard';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { config } from '@/lib/server/config';
+---
+
+<BaseLayout
+  title="Verifire | Mis garantías"
+  description="Escaneá el QR de tus productos para activar su garantía oficial y consultá tus certificados de autenticidad."
+  bodyClass="catalog-body"
+  session="protected"
+>
+  <AppTopbar>
+    <a class="wallet-button" href="/lotes"><i class="fa-solid fa-boxes-stacked" aria-hidden="true"></i> Mis lotes</a>
+    <a class="wallet-button buy-button" href="/admin"><i class="fa-solid fa-plus" aria-hidden="true"></i> Comprar tokens</a>
+    <ProfileMenu client:load />
+  </AppTopbar>
+
+  <main class="container dashboard">
+    <WarrantyDashboard client:load cavosAppId={config.cavosAppId} />
+  </main>
+
+  <SiteFooter />
+
+  <script>
+    import { captureClaimLink } from '@/lib/client/qr';
+    import { guardSession } from '@/lib/client/session';
+
+    // A secret QR link opened without a session is kept for after the login.
+    captureClaimLink();
+    guardSession();
+  </script>
+</BaseLayout>

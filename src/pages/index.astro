@@ -1,0 +1,34 @@
+---
+import { AuthPanel } from '@/components/auth/AuthPanel';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { config } from '@/lib/server/config';
+---
+
+<BaseLayout
+  title="Verifire | Acceso"
+  description="Acceso seguro a Verifire, verificación de productos y reclamo digital."
+  bodyClass="auth-page"
+  session="guest"
+>
+  <div class="auth-shell">
+    <aside class="auth-visual">
+      <div class="auth-brand">
+        <span class="brand-mark">V</span>
+        <span>Verifire</span>
+      </div>
+
+      <h1>Tu verificación de productos, en una sola plataforma.</h1>
+      <p>Accede con tu cuenta para consultar la seguridad, el estado y el reclamo de cualquier producto registrado.</p>
+
+      <ul class="auth-features">
+        <li>Validación instantánea</li>
+        <li>Escaneo QR protegido</li>
+        <li>Seguimiento de reclamos</li>
+      </ul>
+    </aside>
+
+    <main class="auth-card">
+      <AuthPanel client:load cavosAppId={config.cavosAppId} />
+    </main>
+  </div>
+</BaseLayout>
