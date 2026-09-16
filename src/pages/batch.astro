@@ -1,0 +1,50 @@
+---
+// Public page behind the QR of a whole lot: read-only summary, no session needed.
+import StandaloneHeader from '@/components/layout/StandaloneHeader.astro';
+import { DetailRows } from '@/components/verification/DetailRows';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { publicBaseUrl } from '@/lib/server/config';
+import { findBatch, publicBatchView } from '@/lib/server/purchases';
+
+const batchId = Astro.url.searchParams.get('batch');
+const found = batchId ? findBatch(batchId) : undefined;
+const batch = found ? publicBatchView(found, publicBaseUrl(Astro.url)) : null;
+const claimed = batch?.tokens.filter((token) => token.status === 'CLAIMED_IN_WARRANTY').length ?? 0;
+
+let title = 'Lote no disponible';
+let message = 'Escaneá el QR público del lote para ver sus productos.';
+if (batch) {
+  title = 'Productos originales certificados';
+  message = `${claimed} de ${batch.quantity} productos con la garantía activada. Este QR no revela códigos secretos.`;
+} else if (batchId) {
+  message = 'El lote no existe.';
+  Astro.response.status = 404;
+}
+---
+
+<BaseLayout title="Verifire | Lote de productos" description="Verificación pública de un lote de productos Verifire." bodyClass="verify-page">
+  <main class="verify-shell">
+    <StandaloneHeader>
+      <span class="network-status"><span></span>Verificación pública</span>
+    </StandaloneHeader>
+    <section class="verify-card" aria-labelledby="batch-title">
+      <span class="eyebrow">QR público del lote</span>
+      <h1 id="batch-title">{title}</h1>
+      <p class="verify-message">{message}</p>
+      {
+        batch && (
+          <DetailRows
+            tone="available"
+            rows={[
+              ['Modelo', batch.model],
+              ['Lote', batch.lot],
+              ['Destino', batch.destination],
+              ['Productos', batch.quantity],
+              ...batch.tokens.map((token): [string, string] => [token.token, token.status === 'SEALED' ? 'Sellado' : 'Garantía activa'])
+            ]}
+          />
+        )
+      }
+    </section>
+  </main>
+</BaseLayout>

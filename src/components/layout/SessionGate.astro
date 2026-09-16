@@ -1,0 +1,30 @@
+---
+// Decides, before the page is painted, whether it has to leave: it must run inline in <head>, so it cannot wait for
+// the bundled scripts. Pages behind login also call guardSession() (src/lib/client/session.ts), which does the redirect.
+import { SESSION_KEY, SESSION_MAX_MS } from '@/lib/client/session';
+
+interface Props {
+  // protected: needs an active session. guest: the login page, which an active session skips.
+  mode: 'protected' | 'guest';
+}
+
+const { mode } = Astro.props;
+---
+
+<script is:inline define:vars={{ SESSION_KEY, SESSION_MAX_MS, mode }}>
+  let active = false;
+  try {
+    const session = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null');
+    active = Boolean(session) && Date.now() - session.startedAt < SESSION_MAX_MS;
+  } catch {
+    active = false;
+  }
+  if (mode === 'protected' && !active) {
+    // The guard sends the user to the login page: keep the page hidden so it never flashes.
+    document.documentElement.classList.add('is-redirecting');
+  } else if (mode === 'guest' && active && !new URLSearchParams(window.location.search).has('cavos_auth_code')) {
+    // Already logged in: leave for the panel before the login form is drawn (except when returning from Google).
+    document.documentElement.classList.add('is-redirecting');
+    window.location.replace('/app');
+  }
+</script>

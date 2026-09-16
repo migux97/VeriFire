@@ -37,10 +37,10 @@ const signature = activationKeypair.sign(message); // BytesN<64>
 El QR del producto debe contener una URL pública como:
 
 ```text
-https://TU-DOMINIO/verify.html?token=VF-001
+https://TU-DOMINIO/verify?token=VF-001
 ```
 
-La web leerá `token` y mostrará modelo, lote, destino y estado `SEALED`. El QR público nunca contiene el secreto interno. Nunca se debe aceptar una clave privada de la cuenta en el navegador.
+La web leerá `token` y mostrará modelo, lote, destino y estado `SEALED`. Las etiquetas impresas con `verify.html?token=...` siguen funcionando: redirigen a `/verify`. El QR público nunca contiene el secreto interno. Nunca se debe aceptar una clave privada de la cuenta en el navegador.
 
 El servidor devuelve `blockchainBacked: true` únicamente cuando existe `STELLAR_CONTRACT_ID`; hasta entonces el estado local es deliberadamente visible como demo.
 
@@ -59,7 +59,7 @@ rustup target add wasm32v1-none
 cd contracts/verifire_product
 cargo build --target wasm32v1-none --release
 cd ../..
-node scripts/deploy-contract.mjs
+npm run contract:deploy
 ```
 
 El script crea y fondea con friendbot una cuenta admin, sube el wasm, crea e inicializa el contrato y guarda `STELLAR_CONTRACT_ID`, `STELLAR_ADMIN_SECRET` y `STELLAR_NETWORK=testnet` en `.env` sin mostrar la clave. Con `--force` despliega un contrato nuevo aunque ya haya uno configurado.
@@ -67,7 +67,7 @@ El script crea y fondea con friendbot una cuenta admin, sube el wasm, crea e ini
 Para comprobar el flujo completo contra la red (registro, firma del QR, autorización del comprador y activación):
 
 ```powershell
-node scripts/test-activation.mjs
+npm run contract:test-activation
 ```
 
 ## Dos cuentas separadas
@@ -79,7 +79,7 @@ El comprador solo ve el certificado de su producto: la transacción de activaci�
 
 ## Cómo lo usa el servidor
 
-- **Emisión:** cuando Cosmos Pay confirma el pago de un lote, `server.mjs` llama a `mint_product` por cada producto desde la cuenta admin (`stellar.mjs`).
+- **Emisión:** cuando Cosmos Pay confirma el pago de un lote, el servidor (`src/lib/server/purchases.ts`) llama a `mint_product` por cada producto desde la cuenta admin (`src/lib/server/stellar.ts`).
 - **Activación:** el navegador deriva la clave de activación del QR secreto, pide `activation_message`, lo firma y envía solo la clave pública y la firma. El servidor arma la transacción `activate_product`; la wallet Cavos del comprador firma únicamente su autorización (`require_auth`). La cuenta admin la envía y paga la comisión, así que el comprador no necesita XLM.
 - **Comprobación:** el servidor guarda la garantía recién cuando `get_product` muestra al comprador como dueño, con el hash de la transacción como certificado público.
 

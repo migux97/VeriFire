@@ -1,5 +1,7 @@
 .env
 node_modules/
 data/
+dist/
+.astro/
 contracts/**/target/
 contracts/**/test_snapshots/

@@ -2,19 +2,40 @@
   "name": "verifire-cosmos-pay-test",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=22.18.0"
+  },
   "scripts": {
-    "start": "node server.mjs",
-    "build:buffer": "esbuild scripts/buffer-global.js --bundle --format=iife --minify --outfile=buffer.bundle.js"
+    "dev": "astro dev",
+    "build": "astro check && astro build",
+    "preview": "astro preview",
+    "start": "node --env-file-if-exists=.env ./dist/server/entry.mjs",
+    "check": "astro check",
+    "contract:deploy": "node --env-file-if-exists=.env scripts/deploy-contract.ts",
+    "contract:test-activation": "node --env-file-if-exists=.env scripts/test-activation.ts"
   },
   "dependencies": {
+    "@astrojs/node": "^11.1.5",
+    "@astrojs/react": "^6.0.5",
     "@cavos/kit": "^0.1.12",
     "@cosmosapp/pay_sdk": "^1.2.1",
+    "@fortawesome/fontawesome-free": "^6.7.2",
+    "@nanostores/react": "^2.0.1",
     "@stellar/stellar-sdk": "^17.0.1",
-    "dotenv": "^17.4.2",
+    "astro": "^7.3.2",
+    "buffer": "^6.0.3",
     "jsqr": "^1.4.0",
-    "qrcode": "^1.5.4"
+    "nanostores": "^1.5.3",
+    "qrcode": "^1.5.4",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
   },
   "devDependencies": {
-    "esbuild": "^0.28.2"
+    "@astrojs/check": "^0.9.10",
+    "@types/node": "^24.0.0",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "typescript": "^6.0.3"
   }
 }

@@ -1,0 +1,18 @@
+---
+import Brand from './Brand.astro';
+
+interface Props {
+  brandHref?: string;
+}
+
+const { brandHref } = Astro.props;
+---
+
+<header class="topbar">
+  <div class="container nav catalog-nav">
+    <Brand href={brandHref} />
+    <div class="user-actions">
+      <slot />
+    </div>
+  </div>
+</header>
