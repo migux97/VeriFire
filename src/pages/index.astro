@@ -11,10 +11,10 @@ import { faqs, safeguards } from '@/components/landing/content';
 import '@/styles/brand.css';
 import '@/styles/landing.css';
 
-// The login moved to /acceso. Google returns to /index.html, which the middleware already sends there; this covers a
+// The login moved to /login. Google returns to /index.html, which the middleware already sends there; this covers a
 // return or an old session notice that lands on / directly, so the login page still receives its parameters.
 if (Astro.url.searchParams.has('cavos_auth_code') || Astro.url.searchParams.has('sesion')) {
-  return Astro.redirect(`/acceso${Astro.url.search}`);
+  return Astro.redirect(`/login${Astro.url.search}`);
 }
 ---
 
@@ -32,7 +32,7 @@ if (Astro.url.searchParams.has('cavos_auth_code') || Astro.url.searchParams.has(
     <LandingHero />
     <ProductTrace />
 
-    <section class="lp-band" id="como-funciona" aria-labelledby="lp-band-title">
+    <section class="lp-band" id="how-it-works" aria-labelledby="lp-band-title">
       <div class="lp-band-copy">
         <h2 id="lp-band-title">Dos QR en cada producto</h2>
         <p class="lp-band-lead">Uno lo ve cualquiera en la góndola. El otro solo lo encuentra quien abre la caja.</p>
@@ -64,7 +64,7 @@ if (Astro.url.searchParams.has('cavos_auth_code') || Astro.url.searchParams.has(
       </div>
     </section>
 
-    <section class="lp-section" id="marcas" aria-labelledby="lp-audiences-title">
+    <section class="lp-section" id="brands" aria-labelledby="lp-audiences-title">
       <h2 id="lp-audiences-title" class="lp-section-title">Quién usa Verifire</h2>
       <div class="lp-audiences">
         <article class="lp-audience lp-audience-brand">
@@ -129,7 +129,7 @@ if (Astro.url.searchParams.has('cavos_auth_code') || Astro.url.searchParams.has(
       </div>
     </section>
 
-    <section class="lp-section lp-faq" id="preguntas" aria-labelledby="lp-faq-title">
+    <section class="lp-section lp-faq" id="faq" aria-labelledby="lp-faq-title">
       <h2 id="lp-faq-title" class="lp-section-title">Preguntas frecuentes</h2>
       <div class="lp-faq-list">
         {
@@ -155,17 +155,17 @@ if (Astro.url.searchParams.has('cavos_auth_code') || Astro.url.searchParams.has(
       </div>
       <nav class="lp-footer-links" aria-label="Accesos">
         <h2>Accesos</h2>
-        <a href="/acceso">Ingresar</a>
+        <a href="/login">Ingresar</a>
         <a href="/app">Mis garantías</a>
-        <a href="/lotes">Panel de lotes</a>
+        <a href="/batches">Panel de lotes</a>
         <a href="/admin">Comprar un lote</a>
       </nav>
       <nav class="lp-footer-links" aria-label="Secciones del sitio">
         <h2>Verifire</h2>
-        <a href="#historial">Historial de un producto</a>
-        <a href="#como-funciona">Cómo funciona</a>
-        <a href="#marcas">Para marcas</a>
-        <a href="#preguntas">Preguntas frecuentes</a>
+        <a href="#history">Historial de un producto</a>
+        <a href="#how-it-works">Cómo funciona</a>
+        <a href="#brands">Para marcas</a>
+        <a href="#faq">Preguntas frecuentes</a>
       </nav>
       <form class="lp-footer-verify" method="get" action="/verify">
         <label for="lp-footer-token">Verificá un producto</label>

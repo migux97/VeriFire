@@ -1,5 +1,5 @@
 /* Flat, solid color only (no gradients, no blurred shadows). Shared by the landing (index.astro) and the login
-   (acceso.astro): tokens, the Verifire stamp logo, the guilloché and the product box of LandingSprite/PackageArt. */
+   (login.astro): tokens, the Verifire stamp logo, the guilloché and the product box of LandingSprite/PackageArt. */
 
 .landing-page,
 .auth-page {

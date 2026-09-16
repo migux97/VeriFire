@@ -1,4 +1,4 @@
-/* Login, registration and the Gmail code (src/pages/acceso.astro). Tokens and logo come from brand.css. */
+/* Login, registration and the Gmail code (src/pages/login.astro). Tokens and logo come from brand.css. */
 
 .auth-page {
   --auth-success: #0f6b35;

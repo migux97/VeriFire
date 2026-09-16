@@ -141,7 +141,7 @@ export function PurchaseForm({ countries }: PurchaseFormProps) {
         </div>
       )}
       <StatusMessage id="purchase-message" message={message} />
-      <a className="button button-secondary" href="/lotes" hidden={!batchReady}><Icon name="fa-solid fa-boxes-stacked" /> Ver mis lotes</a>
+      <a className="button button-secondary" href="/batches" hidden={!batchReady}><Icon name="fa-solid fa-boxes-stacked" /> Ver mis lotes</a>
     </>
   );
 }

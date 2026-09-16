@@ -55,11 +55,11 @@ contracts/          Contrato Soroban en Rust
 | Ruta | Página |
 | --- | --- |
 | `/` | Landing pública de Verifire |
-| `/acceso` | Ingreso y registro |
+| `/login` | Ingreso y registro |
 | `/app` | Panel del comprador: escanear QR y ver garantías |
-| `/lotes` | Panel de empresa: lotes, etiquetas y activaciones |
+| `/batches` | Panel de empresa: lotes, etiquetas y activaciones |
 | `/admin` | Compra de un lote con Cosmos Pay |
 | `/verify?token=VF-001` | Verificación pública de un producto (renderizada en el servidor) |
 | `/batch?batch=BATCH-0001` | Verificación pública de un lote |
 
-Las direcciones anteriores (`verify.html`, `app.html#q=...`, `activate.html`, etc.) redirigen a las nuevas conservando sus parámetros, así que las etiquetas ya impresas siguen funcionando. El retorno de Google sigue siendo `/index.html`, que es la URL registrada en el panel de Cavos, y redirige a `/acceso`.
+Las direcciones anteriores (`verify.html`, `app.html#q=...`, `activate.html`, etc.) redirigen a las nuevas conservando sus parámetros, así que las etiquetas ya impresas siguen funcionando. El retorno de Google sigue siendo `/index.html`, que es la URL registrada en el panel de Cavos, y redirige a `/login`.
