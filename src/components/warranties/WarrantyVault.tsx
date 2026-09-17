@@ -24,8 +24,8 @@ export function WarrantyVault({ warranties, status }: WarrantyVaultProps) {
       </div>
       <div className="vault-empty" hidden={warranties === null || count > 0}>
         <svg viewBox="0 0 96 96" aria-hidden="true" focusable="false">
-          <path d="M48 8 16 20v24c0 22 13.6 38.6 32 44 18.4-5.4 32-22 32-44V20L48 8Z" fill="#fdecee" stroke="#d62839" strokeWidth="3" strokeLinejoin="round" />
-          <path d="m34 48 10 10 18-20" fill="none" stroke="#d62839" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M48 8 16 20v24c0 22 13.6 38.6 32 44 18.4-5.4 32-22 32-44V20L48 8Z" fill="#fde6e4" stroke="#e3261f" strokeWidth="3" strokeLinejoin="miter" />
+          <path d="m34 48 10 10 18-20" fill="none" stroke="#e3261f" strokeWidth="4" strokeLinecap="square" strokeLinejoin="miter" />
         </svg>
         <p>No tenés garantías registradas todavía. Escaneá el QR de tu producto arriba para reclamar tu certificado de autenticidad.</p>
       </div>

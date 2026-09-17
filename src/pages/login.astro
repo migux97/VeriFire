@@ -1,12 +1,10 @@
 ---
-import { Font } from 'astro:assets';
 import { AuthPanel } from '@/components/auth/AuthPanel';
-import BrandLogo from '@/components/landing/BrandLogo.astro';
+import BrandLogo from '@/components/layout/BrandLogo.astro';
 import LandingSprite from '@/components/landing/LandingSprite.astro';
 import PackageArt from '@/components/landing/PackageArt.astro';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import { config } from '@/lib/server/config';
-import '@/styles/brand.css';
 import '@/styles/auth.css';
 ---
 
@@ -16,7 +14,6 @@ import '@/styles/auth.css';
   bodyClass="auth-page"
   session="guest"
 >
-  <Font slot="head" cssVariable="--font-urbanist" preload={[{ weight: 800 }, { weight: 600 }]} />
   <LandingSprite />
 
   <div class="auth-shell">

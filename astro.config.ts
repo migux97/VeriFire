@@ -18,15 +18,6 @@ export default defineConfig({
   fonts: [
     {
       provider: fontProviders.fontsource(),
-      name: 'Inter',
-      cssVariable: '--font-inter',
-      weights: [400, 500, 600, 700, 800, 900],
-      styles: ['normal'],
-      subsets: ['latin']
-    },
-    // Only the landing page (src/pages/index.astro) loads it.
-    {
-      provider: fontProviders.fontsource(),
       name: 'Urbanist',
       cssVariable: '--font-urbanist',
       weights: [500, 600, 700, 800, 900],

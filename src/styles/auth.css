@@ -1,10 +1,4 @@
-/* Login, registration and the Gmail code (src/pages/login.astro). Tokens and logo come from brand.css. */
-
-.auth-page {
-  --auth-success: #0f6b35;
-  --auth-success-soft: #e6f4eb;
-  --auth-error: #a3150e;
-}
+/* Login, registration and the Gmail code (src/pages/login.astro). Tokens and logo come from brand.css, buttons from global.css. */
 
 .auth-shell {
   display: grid;
@@ -23,8 +17,8 @@
   gap: 56px;
   overflow: hidden;
   padding: 36px clamp(32px, 5vw, 72px);
-  background: var(--lp-red);
-  color: var(--lp-paper);
+  background: var(--vf-red);
+  color: var(--vf-paper);
 }
 
 .auth-visual-copy {
@@ -34,7 +28,7 @@
 
 .auth-visual h1 {
   max-width: 12ch;
-  color: var(--lp-paper);
+  color: var(--vf-paper);
   font-size: clamp(2.5rem, 4.2vw, 3.75rem);
   font-weight: 900;
   line-height: 0.98;
@@ -56,7 +50,7 @@
 
 .auth-features li {
   padding-block: 14px;
-  border-top: 2px solid var(--lp-paper);
+  border-top: 2px solid var(--vf-paper);
   font-weight: 700;
 }
 
@@ -74,7 +68,7 @@
   position: absolute;
   width: 170%;
   aspect-ratio: 1;
-  color: var(--lp-red-deep);
+  color: var(--vf-red-deep);
   stroke-width: 1.2;
 }
 
@@ -84,7 +78,7 @@
 }
 
 .auth-package .lp-package-shadow {
-  fill: var(--lp-red-deep);
+  fill: var(--vf-red-deep);
 }
 
 /* ---------- Form side ---------- */
@@ -93,7 +87,7 @@
   display: flex;
   flex-direction: column;
   padding: 36px clamp(24px, 5vw, 72px);
-  background: var(--lp-paper);
+  background: var(--vf-paper);
 }
 
 .auth-topbar {
@@ -109,11 +103,11 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: var(--lp-ink);
+  color: var(--vf-ink);
 }
 
 .auth-topbar a:hover {
-  color: var(--lp-red);
+  color: var(--vf-red);
 }
 
 .auth-topbar i {
@@ -133,7 +127,7 @@
 .auth-tabs {
   display: flex;
   gap: 32px;
-  border-bottom: 2px solid var(--lp-line);
+  border-bottom: 2px solid var(--vf-line);
 }
 
 .auth-tab {
@@ -142,8 +136,8 @@
   border: 0;
   border-bottom: 4px solid transparent;
   background: transparent;
-  color: var(--lp-muted);
-  font-family: var(--lp-font);
+  color: var(--vf-muted);
+  font-family: var(--vf-font);
   font-size: 1.5rem;
   font-weight: 900;
   letter-spacing: -0.025em;
@@ -152,12 +146,12 @@
 }
 
 .auth-tab:hover {
-  color: var(--lp-ink);
+  color: var(--vf-ink);
 }
 
 .auth-tab.active {
-  border-bottom-color: var(--lp-red);
-  color: var(--lp-ink);
+  border-bottom-color: var(--vf-red);
+  color: var(--vf-ink);
 }
 
 .auth-form,
@@ -171,7 +165,7 @@
 .email-verification-form label {
   display: grid;
   gap: 8px;
-  color: var(--lp-ink);
+  color: var(--vf-ink);
   font-size: 0.9375rem;
   font-weight: 700;
 }
@@ -181,11 +175,11 @@
   width: 100%;
   min-height: 52px;
   padding: 0 16px;
-  border: 1.5px solid var(--lp-line-strong);
+  border: 1.5px solid var(--vf-line-strong);
   border-radius: 4px;
-  background: var(--lp-paper);
-  color: var(--lp-ink);
-  font-family: var(--lp-font);
+  background: var(--vf-paper);
+  color: var(--vf-ink);
+  font-family: var(--vf-font);
   font-size: 1rem;
   font-weight: 600;
   transition: border-color 0.15s ease;
@@ -193,34 +187,34 @@
 
 .auth-form input::placeholder,
 .email-verification-form input::placeholder {
-  color: var(--lp-muted);
+  color: var(--vf-muted);
   font-weight: 500;
   opacity: 1;
 }
 
 .auth-form input:hover,
 .email-verification-form input:hover {
-  border-color: var(--lp-muted);
+  border-color: var(--vf-muted);
 }
 
 .auth-form input:focus,
 .email-verification-form input:focus {
-  border-color: var(--lp-ink);
+  border-color: var(--vf-ink);
   outline: none;
-  box-shadow: inset 0 0 0 1px var(--lp-ink);
+  box-shadow: inset 0 0 0 1px var(--vf-ink);
 }
 
 /* Chrome paints autofilled fields pale blue: keep them white. */
 .auth-form input:-webkit-autofill,
 .email-verification-form input:-webkit-autofill {
-  -webkit-text-fill-color: var(--lp-ink);
-  caret-color: var(--lp-ink);
-  box-shadow: 0 0 0 1000px var(--lp-paper) inset;
+  -webkit-text-fill-color: var(--vf-ink);
+  caret-color: var(--vf-ink);
+  box-shadow: 0 0 0 1000px var(--vf-paper) inset;
 }
 
 .auth-form input:-webkit-autofill:focus,
 .email-verification-form input:-webkit-autofill:focus {
-  box-shadow: 0 0 0 1000px var(--lp-paper) inset, inset 0 0 0 1px var(--lp-ink);
+  box-shadow: 0 0 0 1000px var(--vf-paper) inset, inset 0 0 0 1px var(--vf-ink);
 }
 
 .password-field {
@@ -242,58 +236,25 @@
   border: 0;
   border-radius: 4px;
   background: transparent;
-  color: var(--lp-ink);
+  color: var(--vf-ink);
   cursor: pointer;
   transform: translateY(-50%);
 }
 
 .password-toggle:hover {
-  background: var(--lp-mist);
+  background: var(--vf-mist);
 }
 
 .auth-guide {
   margin-top: -6px;
-  color: var(--lp-muted);
+  color: var(--vf-muted);
   font-size: 0.875rem;
   line-height: 1.45;
 }
 
-/* The shared .button, restyled flat for this page. */
+/* Taller than the shared .button of global.css, to match the fields. */
 .auth-page .button {
   min-height: 52px;
-  border-width: 2px;
-  border-radius: 4px;
-  box-shadow: none;
-  font-family: var(--lp-font);
-  font-size: 1rem;
-  font-weight: 800;
-}
-
-.auth-page .button:active:not(:disabled) {
-  transform: none;
-}
-
-.auth-page .button-primary {
-  border-color: var(--lp-red);
-  background: var(--lp-red);
-  color: var(--lp-paper);
-}
-
-.auth-page .button-primary:hover:not(:disabled) {
-  border-color: var(--lp-red-press);
-  background: var(--lp-red-press);
-}
-
-.auth-page .button-secondary {
-  border-color: var(--lp-ink);
-  background: var(--lp-paper);
-  color: var(--lp-ink);
-}
-
-.auth-page .button-secondary:hover:not(:disabled) {
-  border-color: var(--lp-ink);
-  background: var(--lp-ink);
-  color: var(--lp-paper);
 }
 
 .auth-submit,
@@ -305,7 +266,7 @@
   display: flex;
   align-items: center;
   gap: 16px;
-  color: var(--lp-muted);
+  color: var(--vf-muted);
   font-size: 0.875rem;
   font-weight: 600;
 }
@@ -315,7 +276,7 @@
   content: '';
   flex: 1;
   height: 1px;
-  background: var(--lp-line);
+  background: var(--vf-line);
 }
 
 .google-login i {
@@ -334,8 +295,8 @@
   width: 56px;
   height: 56px;
   border-radius: 4px;
-  background: var(--lp-red);
-  color: var(--lp-paper);
+  background: var(--vf-red);
+  color: var(--vf-paper);
   font-size: 1.375rem;
 }
 
@@ -347,12 +308,12 @@
 }
 
 .email-verification-form p {
-  color: var(--lp-muted);
+  color: var(--vf-muted);
   line-height: 1.5;
 }
 
 .email-verification-form p strong {
-  color: var(--lp-ink);
+  color: var(--vf-ink);
   font-weight: 800;
   overflow-wrap: anywhere;
 }
@@ -376,8 +337,8 @@
   gap: 10px;
   padding: 12px 14px;
   border-radius: 4px;
-  background: var(--lp-mist);
-  color: var(--lp-text);
+  background: var(--vf-mist);
+  color: var(--vf-text);
   font-size: 0.9375rem;
   font-weight: 600;
 }
@@ -387,8 +348,8 @@
   padding: 8px 12px;
   border: 0;
   background: transparent;
-  color: var(--lp-ink);
-  font-family: var(--lp-font);
+  color: var(--vf-ink);
+  font-family: var(--vf-font);
   font-size: 0.9375rem;
   font-weight: 800;
   text-decoration: underline;
@@ -397,7 +358,7 @@
 }
 
 .verification-back-button:hover {
-  color: var(--lp-red);
+  color: var(--vf-red);
 }
 
 /* ---------- Status message ---------- */
@@ -410,21 +371,21 @@
 
 .auth-message:not(:empty) {
   padding: 12px 16px;
-  border-left: 4px solid var(--lp-ink);
-  background: var(--lp-mist);
-  color: var(--lp-text);
+  border-left: 4px solid var(--vf-ink);
+  background: var(--vf-mist);
+  color: var(--vf-text);
 }
 
 .auth-message.success:not(:empty) {
-  border-left-color: var(--auth-success);
-  background: var(--auth-success-soft);
-  color: var(--auth-success);
+  border-left-color: var(--vf-success);
+  background: var(--vf-success-soft);
+  color: var(--vf-success);
 }
 
 .auth-message.error:not(:empty) {
-  border-left-color: var(--lp-red);
-  background: var(--lp-blush);
-  color: var(--auth-error);
+  border-left-color: var(--vf-red);
+  background: var(--vf-blush);
+  color: var(--vf-error);
 }
 
 /* ---------- Responsive ---------- */

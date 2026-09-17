@@ -1,5 +1,6 @@
 ---
 import '@fortawesome/fontawesome-free/css/all.min.css';
+import '@/styles/brand.css';
 import '@/styles/global.css';
 import { Font } from 'astro:assets';
 import SessionGate from '@/components/layout/SessionGate.astro';
@@ -23,7 +24,7 @@ const { title, description, bodyClass, session = 'public' } = Astro.props;
     <title>{title}</title>
     {session !== 'public' && <SessionGate mode={session} />}
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <Font cssVariable="--font-inter" preload={[{ weight: 400 }, { weight: 600 }]} />
+    <Font cssVariable="--font-urbanist" preload={[{ weight: 500 }, { weight: 800 }]} />
     <slot name="head" />
   </head>
   <body class={bodyClass}>

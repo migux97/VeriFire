@@ -16,7 +16,7 @@ export function WarrantyCard({ warranty }: WarrantyCardProps) {
         <div className="warranty-thumb" aria-hidden="true"><Icon name="fa-solid fa-box-open" /></div>
         <div className="warranty-top">
           <span className={`warranty-badge${active ? '' : ' is-expired'}`}>
-            <Icon name={`fa-solid ${active ? 'fa-shield-halved' : 'fa-clock-rotate-left'}`} /> {active ? 'VÁLIDO / PROTEGIDO' : 'COBERTURA VENCIDA'}
+            <Icon name={`fa-solid ${active ? 'fa-shield-halved' : 'fa-clock-rotate-left'}`} /> {active ? 'Garantía vigente' : 'Cobertura vencida'}
           </span>
           <h3>{warranty.model}</h3>
         </div>

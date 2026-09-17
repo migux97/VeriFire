@@ -45,7 +45,7 @@ src/
     client/         Código del navegador: sesión, wallet Cavos, activación, lectura de QR
     server/         Código del servidor: estado, Cosmos Pay, Stellar, reglas de negocio
     types.ts        Contrato de la API compartido por servidor y cliente
-  styles/           Hoja de estilos global
+  styles/           brand.css (colores y logo), global.css (base y vistas), landing.css y auth.css
 scripts/            Scripts de despliegue y prueba del contrato (TypeScript ejecutado por Node)
 contracts/          Contrato Soroban en Rust
 ```
