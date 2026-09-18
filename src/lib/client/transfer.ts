@@ -1,0 +1,85 @@
+// Transfer links from the buyer's panel: the owner passes a product on, whoever opens the link accepts it.
+// The link's secret becomes an ed25519 key here (TRANSFER_DOMAIN, same derivation as the contract). Only its public key
+// and signatures reach the server; the secret travels only inside the link, after the #.
+import type { CavosStellar } from '@cavos/kit';
+import { TRANSFER_DOMAIN } from '../activation';
+import type { PreparedTransfer, Warranty } from '../types';
+import { postJson } from './api';
+import { deriveSigningKey, ensureAccountCreated, signWith, type Progress, type SigningKey } from './activation';
+import { bytesToBase64Url } from './bytes';
+import { readStored, writeStored } from './storage';
+import { connectSigningWallet } from './wallet';
+
+type Step = { xdr: string } | { warranty: Warranty };
+
+// token -> secret of the link this browser opened, so the owner can share it again after reloading.
+const LINKS_KEY = 'verifireTransferLinks';
+
+const savedLinks = () => readStored<Record<string, string>>(localStorage, LINKS_KEY) ?? {};
+
+const saveLink = (token: string, secret: string | null) => {
+  const links = savedLinks();
+  if (secret) links[token] = secret;
+  else delete links[token];
+  writeStored(localStorage, LINKS_KEY, links);
+};
+
+export const transferLinkUrl = (secret: string) => `${window.location.origin}/app#t=${secret}`;
+
+// The open link of a product, if it was opened in this browser.
+export const savedTransferLink = (token: string) => {
+  const secret = savedLinks()[token];
+  return secret ? transferLinkUrl(secret) : null;
+};
+
+// Both requests of a call the user's wallet signs: the unsigned transaction first, then the signed one.
+const signedCall = async (url: string, body: Record<string, string>, wallet: CavosStellar, fallback: string, onProgress: Progress) => {
+  const unsigned = await postJson<Step>(url, body, fallback);
+  if (!('xdr' in unsigned)) throw new Error(fallback);
+  onProgress('Autorizando con tu wallet Cavos...');
+  const signedXdr = await wallet.signXdr(unsigned.xdr);
+  onProgress('Registrando el cambio en Stellar. Puede tardar unos segundos...');
+  const done = await postJson<Step>(url, { ...body, signedXdr }, fallback);
+  if (!('warranty' in done)) throw new Error(fallback);
+  return done.warranty;
+};
+
+const connect = (appId: string, address: string, onProgress: Progress) => {
+  onProgress('Conectando tu wallet Cavos...');
+  return connectSigningWallet(appId, address);
+};
+
+// Opens a new link for the product. It replaces the previous one, which stops working.
+export const offerTransfer = async (appId: string, token: string, owner: string, onProgress: Progress) => {
+  const secret = bytesToBase64Url(crypto.getRandomValues(new Uint8Array(16)));
+  const key = await deriveSigningKey(TRANSFER_DOMAIN, secret);
+  const wallet = await connect(appId, owner, onProgress);
+  const warranty = await signedCall('/api/transfers/offer', { token, owner, transferKey: key.publicKey }, wallet, 'No se pudo abrir el link de transferencia.', onProgress);
+  saveLink(token, secret);
+  return { warranty, link: transferLinkUrl(secret) };
+};
+
+export const cancelTransfer = async (appId: string, token: string, owner: string, onProgress: Progress) => {
+  const wallet = await connect(appId, owner, onProgress);
+  const warranty = await signedCall('/api/transfers/cancel', { token, owner }, wallet, 'No se pudo cancelar la transferencia.', onProgress);
+  saveLink(token, null);
+  return warranty;
+};
+
+export interface IncomingTransfer extends PreparedTransfer {
+  key: SigningKey;
+}
+
+// What the link offers, before the recipient accepts.
+export const readTransferLink = async (secret: string, recipient: string): Promise<IncomingTransfer> => {
+  const key = await deriveSigningKey(TRANSFER_DOMAIN, secret);
+  const prepared = await postJson<PreparedTransfer>('/api/transfers/prepare', { transferKey: key.publicKey, recipient }, 'No se pudo leer el link de transferencia.');
+  return { ...prepared, key };
+};
+
+export const acceptTransfer = async (appId: string, incoming: IncomingTransfer, recipient: string, onProgress: Progress) => {
+  const wallet = await connect(appId, recipient, onProgress);
+  await ensureAccountCreated(wallet, incoming.feeAccount, onProgress);
+  const signature = await signWith(incoming.key, incoming.message);
+  return signedCall('/api/transfers/accept', { transferKey: incoming.key.publicKey, recipient, signature }, wallet, 'No se pudo completar la transferencia.', onProgress);
+};

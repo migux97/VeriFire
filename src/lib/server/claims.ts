@@ -11,7 +11,7 @@ import { chain } from './chain';
 import { HttpError } from './errors';
 import { textField, type JsonBody } from './http';
 import { secretFromQrKey } from './links';
-import { activationKeyOf, anchorPendingProducts, warrantyView } from './products';
+import { activationKeyOf, anchorPendingProducts, isCurrentOnChain, recordRejectedClaim, transferredBy, warrantyView } from './products';
 import { singleton } from './singleton';
 import { hashSecret, saveState, store, type Product } from './store';
 
@@ -21,10 +21,13 @@ const INVALID_OWNER = 'Indica una dirección pública Stellar válida (G...).';
 // Keeps a second request for the same product from submitting a duplicate transaction.
 const claimsInFlight = singleton('claims-in-flight', () => new Set<string>());
 
-// Throws when the product cannot be claimed by this owner.
+// Throws when the product cannot be claimed by this owner. Another account holding the secret of a product that
+// already has an owner is kept in the product's history: its label may have been copied.
 const assertClaimable = (product: Product, owner: string) => {
   if (product.claimed) {
-    throw new HttpError(409, product.owner === owner ? 'Esta garantía ya está activada a tu nombre.' : 'Este producto ya fue reclamado.');
+    if (product.owner === owner) throw new HttpError(409, 'Esta garantía ya está activada a tu nombre.');
+    if (isStellarAddress(owner)) recordRejectedClaim(product, owner);
+    throw new HttpError(409, 'Este producto ya fue reclamado.');
   }
   if (!isStellarAddress(owner)) throw new HttpError(400, INVALID_OWNER);
 };
@@ -45,7 +48,7 @@ const onChainClaim = (body: JsonBody) => {
   if (!product) throw new HttpError(404, QR_NOT_FOUND);
   const owner = textField(body, 'owner').trim();
   assertClaimable(product, owner);
-  if (!product.chain) {
+  if (!isCurrentOnChain(product)) {
     anchorPendingProducts();
     throw new HttpError(409, 'Este producto todavía se está registrando en Stellar. Probá de nuevo en unos minutos.', { retryable: true });
   }
@@ -102,5 +105,5 @@ export const warrantiesOf = (owner: string, baseUrl: string) => {
     .filter((product) => product.claimed && product.owner === owner)
     .sort((first, second) => String(second.claimedAt ?? '').localeCompare(String(first.claimedAt ?? '')))
     .map((product) => warrantyView(product, baseUrl));
-  return { owner, warranties };
+  return { owner, warranties, transferred: transferredBy(owner) };
 };

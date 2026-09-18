@@ -11,6 +11,17 @@ export interface ProductFields {
   destination: string;
 }
 
+// Events stored as they happen. Registration and activation come from the product's own fields (see historyOf).
+export interface StoredEvent {
+  kind: 'shipped' | 'verified' | 'rejected' | 'transferred';
+  at: string;
+  tx?: string;
+  // Transfers: previous and new owner. Rejected claims: the account that tried.
+  from?: string;
+  to?: string;
+  by?: string;
+}
+
 export interface Product extends ProductFields {
   tokenId: number;
   token: string;
@@ -25,8 +36,14 @@ export interface Product extends ProductFields {
   claimTransaction?: string;
   // Hex public key derived from the secret code (see activationKeyOf).
   activationKey?: string;
-  // Set once the product is registered in the Stellar contract.
-  chain?: { tokenId: number; mintTx: string };
+  // Set once the product is registered in the Stellar contract. contractId is missing on records made before
+  // contracts were replaced: those belong to STELLAR_PREVIOUS_CONTRACT_ID, or to the current one if it is not set.
+  chain?: { tokenId: number; mintTx: string; contractId?: string; at?: string };
+  events?: StoredEvent[];
+  // Open transfer link: the public key of its secret, who offered it and when it expires.
+  transfer?: { key: string; from: string; offeredAt: string; expiresAt?: string };
+  // When the owner last opened a transfer link: the next one has to wait (see TRANSFER_COOLDOWN_MS).
+  lastTransferOfferAt?: string;
 }
 
 export interface Batch extends ProductFields {
@@ -34,6 +51,7 @@ export interface Batch extends ProductFields {
   tokens: Product[];
   amount: string;
   txHash: string | null;
+  shippedAt?: string;
 }
 
 export interface Purchase extends ProductFields {

@@ -5,13 +5,13 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { Icon } from '@/components/ui/Icon';
 import { StatusMessage, type Message } from '@/components/ui/StatusMessage';
-import { ApiError } from '@/lib/client/api';
+import { ApiError, postJson } from '@/lib/client/api';
 import { downloadBatchCsv, downloadDataUrl } from '@/lib/client/download';
 import { fetchPurchase, forgetPurchase, migrateLegacyPurchase, savedPurchaseIds } from '@/lib/client/purchases';
 import { userSession } from '@/lib/client/session';
 import { errorMessage } from '@/lib/errors';
 import { plural } from '@/lib/format';
-import type { CompanyBatch } from '@/lib/types';
+import type { CompanyBatch, PurchaseSummary } from '@/lib/types';
 import { $purchaseIds, $summaries, isSummary, setSummary, type SummaryEntry } from '@/stores/batches';
 import { BatchItem, type BatchAction } from './BatchItem';
 import { LabelSheet, type QrKind } from './LabelSheet';
@@ -220,6 +220,15 @@ export function BatchList() {
       case 'csv':
         await runBusy(`${purchaseId}:csv`, async () => downloadBatchCsv(await loadFullBatch(purchaseId)));
         return;
+      case 'ship': {
+        const confirmed = window.confirm('¿Marcar el lote como despachado? Queda registrado en el historial de cada producto, y no se puede deshacer.');
+        if (!confirmed) return;
+        await runBusy(`${purchaseId}:ship`, async () => {
+          const { purchase } = await postJson<{ purchase: PurchaseSummary }>(`/api/purchases/${encodeURIComponent(purchaseId)}/ship`, {}, 'No se pudo marcar el lote como despachado.');
+          setSummary(purchaseId, purchase);
+        });
+        return;
+      }
       case 'lot-qr':
         await runBusy(`${purchaseId}:lot-qr`, async () => {
           const batch = await loadFullBatch(purchaseId);

@@ -40,6 +40,8 @@ export default defineConfig({
       DATA_FILE: runtimeVar(),
       STELLAR_NETWORK: runtimeVar(),
       STELLAR_CONTRACT_ID: runtimeVar(),
+      // Written by the deploy script: the contract STELLAR_CONTRACT_ID replaced, so its products get registered again.
+      STELLAR_PREVIOUS_CONTRACT_ID: runtimeVar(),
       STELLAR_ISSUER_SECRET: runtimeVar(),
       // Old name of STELLAR_ISSUER_SECRET.
       STELLAR_ADMIN_SECRET: runtimeVar(),

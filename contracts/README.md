@@ -10,6 +10,15 @@ Contrato Soroban para registrar productos en Stellar testnet.
 - `get_product_by_code(public_code)`: busca un producto por su QR público.
 - `activation_message(token_id, claimant)`: devuelve los bytes exactos que hay que firmar para activar. Se puede obtener simulando la llamada.
 - `activate_product(token_id, claimant, signature)`: exige la firma de `claimant`, verifica que `signature` fue hecha con la clave derivada del secreto y activa la garantía una sola vez.
+- `offer_transfer(token_id, owner, transfer_key)`: el dueño abre un link de transferencia. `transfer_key` es la clave pública derivada de un secreto aleatorio que crea su navegador (`sha256("verifire-transfer-v1:" + secreto)`). Un link nuevo reemplaza al anterior. El link vence a los 15 minutos (`TRANSFER_LINK_SECONDS`), y el siguiente se puede abrir recién 5 minutos después del último (`TRANSFER_COOLDOWN_SECONDS`), aunque se haya cancelado o vencido.
+- `transfer_times(token_id)`: `(vence, último_link)` en segundos del ledger, 0 si no hay.
+- `cancel_transfer(token_id, owner)`: el dueño cierra el link abierto.
+- `transfer_message(token_id, recipient)`: bytes que el link tiene que firmar para aceptar, atados al contrato, al token y a quien recibe.
+- `accept_transfer(token_id, recipient, signature)`: exige la firma de `recipient`, verifica la firma del link y le pasa el producto. El link sirve una sola vez.
+- `import_claimed_product(...)`: solo admin. Registra un producto ya activado, con su dueño, al pasar los productos a un contrato nuevo.
+- `upgrade(new_wasm_hash)`: solo admin. Reemplaza el código del contrato sin cambiar su dirección ni sus datos. Se usa con `npm run contract:upgrade` después de compilar.
+
+La activación y la transferencia emiten los eventos `activated` y `transfer`.
 
 ## Por qué el secreto no viaja en la transacción
 
@@ -82,5 +91,7 @@ El comprador solo ve el certificado de su producto: la transacción de activaci�
 - **Emisión:** cuando Cosmos Pay confirma el pago de un lote, el servidor (`src/lib/server/purchases.ts`) llama a `mint_product` por cada producto desde la cuenta admin (`src/lib/server/stellar.ts`).
 - **Activación:** el navegador deriva la clave de activación del QR secreto, pide `activation_message`, lo firma y envía solo la clave pública y la firma. El servidor arma la transacción `activate_product`; la wallet Cavos del comprador firma únicamente su autorización (`require_auth`). La cuenta admin la envía y paga la comisión, así que el comprador no necesita XLM.
 - **Comprobación:** el servidor guarda la garantía recién cuando `get_product` muestra al comprador como dueño, con el hash de la transacción como certificado público.
+- **Cambio de dueño:** desde Mis garantías el dueño abre un link (`/app#t=<secreto>`). El secreto va después del `#`, así que nunca llega al servidor. Quien lo abre deriva la clave, firma `transfer_message` y su wallet Cavos autoriza `accept_transfer`. Igual que en la activación, la cuenta emisora paga la comisión (`src/lib/server/transfers.ts`).
+- **Contrato nuevo:** `npm run contract:deploy -- --force` guarda el contrato reemplazado en `STELLAR_PREVIOUS_CONTRACT_ID`. Al arrancar, el servidor registra en el contrato nuevo los productos sellados (`mint_product`) y los activados con su dueño (`import_claimed_product`).
 
 La clave secreta de administración vive solo en el `.env` del servidor. Nunca la pongas en el navegador.

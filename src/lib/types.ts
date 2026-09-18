@@ -2,12 +2,26 @@
 
 export type ProductStatus = 'SEALED' | 'CLAIMED_IN_WARRANTY';
 
+// Moments of a product's life, oldest first. Registration, activation and transfers are Stellar transactions.
+export type HistoryKind = 'minted' | 'shipped' | 'verified' | 'activated' | 'rejected' | 'transferred';
+
+export interface HistoryEvent {
+  kind: HistoryKind;
+  at: string;
+  // Short context: the lot, the destination, or owners as shortened Stellar addresses (G...XXXX).
+  detail: string | null;
+  // The Stellar transaction behind the event, when there is one.
+  txUrl: string | null;
+  // Transfers: the new owner, as a shortened Stellar address.
+  to: string | null;
+}
+
 export interface ApiErrorBody {
   error: string;
   retryable?: boolean;
 }
 
-// What the QR on the outside of the box shows to anyone, without a session: no owner and no links.
+// What the QR on the outside of the box shows to anyone, without a session. Owners appear only shortened, in the history.
 export interface PublicProduct {
   token: string;
   model: string;
@@ -19,6 +33,9 @@ export interface PublicProduct {
   warrantyUntil: string | null;
   network: string;
   blockchainBacked: boolean;
+  history: HistoryEvent[];
+  // The last change of owner, when the product was passed on after its activation.
+  lastTransfer: { to: string; at: string } | null;
 }
 
 export interface Warranty extends PublicProduct {
@@ -30,6 +47,13 @@ export interface Warranty extends PublicProduct {
   activationUrl: string;
   contractId: string | null;
   chainTokenId: number | null;
+  // Registered in the current contract, so the owner can pass it on.
+  transferable: boolean;
+  // When the owner opened a transfer link that nobody accepted yet and has not expired, and when it expires.
+  transferOfferedAt: string | null;
+  transferExpiresAt: string | null;
+  // When the owner may open another link, while they still have to wait.
+  nextTransferAt: string | null;
 }
 
 // Answer of POST /api/products, the only one that carries the secret code of a single product.
@@ -38,9 +62,20 @@ export interface MintedProduct extends Warranty {
   secretUrl?: string;
 }
 
+// A product this account owned and passed on: to whom it went, and the product's history since.
+export interface TransferredWarranty {
+  token: string;
+  model: string;
+  to: string;
+  at: string;
+  txUrl: string | null;
+  history: HistoryEvent[];
+}
+
 export interface WarrantiesResponse {
   owner: string;
   warranties: Warranty[];
+  transferred: TransferredWarranty[];
 }
 
 export interface BatchToken {
@@ -96,6 +131,8 @@ export interface PurchaseSummary {
   registeredOnChain: number;
   pendingOnChain: number;
   claimed: number;
+  // When the company marked the batch as shipped to its destination.
+  shippedAt: string | null;
 }
 
 export type PurchaseStatus =
@@ -123,3 +160,13 @@ export interface CountryOption {
 }
 
 export type PreparedClaim = { onChain: false } | { onChain: true; message: string; feeAccount: string };
+
+// What a transfer link offers, shown to the recipient before accepting, and the message the link's key must sign.
+export interface PreparedTransfer {
+  token: string;
+  model: string;
+  from: string;
+  message: string;
+  feeAccount: string;
+  expiresAt: string;
+}

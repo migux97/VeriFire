@@ -9,10 +9,11 @@ import { base64ToBytes, base64UrlToBytes, bytesToBase64, bytesToHex } from './by
 import type { ScannedClaim } from './qr';
 import { connectSigningWallet } from './wallet';
 
-type Progress = (message: string) => void;
+export type Progress = (message: string) => void;
 
-interface ActivationKey {
+export interface SigningKey {
   privateKey: CryptoKey;
+  // Hex of the raw 32-byte public key.
   publicKey: string;
 }
 
@@ -31,22 +32,26 @@ const secretFromClaim = (claim: ScannedClaim) => {
   }
 };
 
-const deriveActivationKey = async (secret: string): Promise<ActivationKey> => {
-  if (!window.crypto?.subtle) throw new Error('Abrí Verifire con https:// o desde localhost para activar garantías.');
-  const seed = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`${ACTIVATION_DOMAIN}:${secret}`)));
+// seed = sha256("<domain>:" + secret), the same derivation as the contract. Used for the secret QR and transfer links.
+export const deriveSigningKey = async (domain: string, secret: string): Promise<SigningKey> => {
+  if (!window.crypto?.subtle) throw new Error('Abrí Verifire con https:// o desde localhost para usar tu wallet.');
+  const seed = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`${domain}:${secret}`)));
   try {
     const privateKey = await crypto.subtle.importKey('pkcs8', new Uint8Array([...ED25519_PKCS8_HEADER, ...seed]), { name: 'Ed25519' }, true, ['sign']);
     const { x = '' } = await crypto.subtle.exportKey('jwk', privateKey);
     return { privateKey, publicKey: bytesToHex(base64UrlToBytes(x)) };
   } catch {
-    throw new Error('Este navegador no puede firmar la activación. Actualizalo o probá con una versión reciente de Chrome, Edge, Firefox o Safari.');
+    throw new Error('Este navegador no puede firmar con claves ed25519. Actualizalo o probá con una versión reciente de Chrome, Edge, Firefox o Safari.');
   }
 };
+
+export const signWith = async (key: SigningKey, messageBase64: string) =>
+  bytesToBase64(new Uint8Array(await crypto.subtle.sign({ name: 'Ed25519' }, key.privateKey, base64ToBytes(messageBase64))));
 
 // The contract can only authorize an account that exists on-chain, and a Cavos account is created on its first
 // transaction. The kit creates it (sponsored by Cavos) before the payment it is asked for; that 1-stroop payment can
 // fail because the new account holds no XLM, which does not matter once the account exists.
-const ensureAccountCreated = async (wallet: CavosStellar, feeAccount: string, onProgress: Progress) => {
+export const ensureAccountCreated = async (wallet: CavosStellar, feeAccount: string, onProgress: Progress) => {
   if (wallet.status !== 'undeployed') return;
   onProgress('Creando tu cuenta en Stellar por única vez...');
   try {
@@ -59,7 +64,7 @@ const ensureAccountCreated = async (wallet: CavosStellar, feeAccount: string, on
 
 const activateOnStellar = async (
   appId: string,
-  activation: ActivationKey,
+  activation: SigningKey,
   owner: string,
   prepared: Extract<PreparedClaim, { onChain: true }>,
   onProgress: Progress
@@ -68,8 +73,8 @@ const activateOnStellar = async (
   onProgress('Conectando tu wallet Cavos...');
   const wallet = await connectSigningWallet(appId, owner);
   await ensureAccountCreated(wallet, prepared.feeAccount, onProgress);
-  const signature = new Uint8Array(await crypto.subtle.sign({ name: 'Ed25519' }, activation.privateKey, base64ToBytes(prepared.message)));
-  const { xdr } = await postJson<{ xdr: string }>('/api/warranties/transaction', { ...request, signature: bytesToBase64(signature) }, 'No se pudo preparar la activación en Stellar.');
+  const signature = await signWith(activation, prepared.message);
+  const { xdr } = await postJson<{ xdr: string }>('/api/warranties/transaction', { ...request, signature }, 'No se pudo preparar la activación en Stellar.');
   onProgress('Autorizando la activación con tu wallet Cavos...');
   const signedXdr = await wallet.signXdr(xdr);
   onProgress('Registrando tu garantía en Stellar. Puede tardar unos segundos...');
@@ -81,7 +86,7 @@ const activateOnStellar = async (
 export const activateWarranty = async (appId: string, claim: ScannedClaim, owner: string, onProgress: Progress) => {
   const secret = secretFromClaim(claim);
   if (secret) {
-    const activation = await deriveActivationKey(secret);
+    const activation = await deriveSigningKey(ACTIVATION_DOMAIN, secret);
     let prepared: PreparedClaim | null = null;
     try {
       prepared = await postJson<PreparedClaim>('/api/warranties/prepare', { activationKey: activation.publicKey, owner }, 'No se pudo preparar la activación.');

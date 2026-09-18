@@ -1,9 +1,10 @@
 // End-to-end check on Stellar testnet: registers a throwaway product, signs its activation the way the browser and the
-// buyer's wallet do, submits it through the server's own code and reads the new owner back from the contract.
+// buyer's wallet do, submits it through the server's own code and reads the new owner back from the contract. Then the
+// buyer opens a transfer link and a second account accepts it, the way the two browsers do.
 // Usage: npm run contract:test-activation
 import { randomBytes } from 'node:crypto';
 import { Keypair, TransactionBuilder, hash } from '@stellar/stellar-sdk';
-import { ACTIVATION_DOMAIN } from '../src/lib/activation.ts';
+import { ACTIVATION_DOMAIN, TRANSFER_DOMAIN } from '../src/lib/activation.ts';
 import {
   activationKeyFor, createStellarClient, explorerTxUrl, networkPassphrase, stellarConfigFromEnv
 } from '../src/lib/server/stellar.ts';
@@ -40,6 +41,22 @@ const accountReady = async (address: string) => {
 };
 
 const deriveActivationKeypair = (secret: string) => Keypair.fromRawEd25519Seed(hash(Buffer.from(`${ACTIVATION_DOMAIN}:${secret}`, 'utf8')));
+const deriveTransferKeypair = (secret: string) => Keypair.fromRawEd25519Seed(hash(Buffer.from(`${TRANSFER_DOMAIN}:${secret}`, 'utf8')));
+
+const createFundedAccount = async (label: string) => {
+  const account = Keypair.random();
+  const funded = await fetch(`https://friendbot.stellar.org/?addr=${account.publicKey()}`);
+  if (!funded.ok) throw new Error(`Friendbot no pudo crear la cuenta ${label} (HTTP ${funded.status}).`);
+  await accountReady(account.publicKey());
+  return account;
+};
+
+// What wallet.signXdr does in the browser: sign the envelope with the account's control key.
+const signAs = (account: Keypair, unsignedXdr: string) => {
+  const tx = TransactionBuilder.fromXdr(unsignedXdr, networkPassphrase);
+  tx.sign(account);
+  return tx.toXdr();
+};
 
 const secretCode = `VF-SECRET-${randomBytes(10).toString('hex').toUpperCase()}`;
 const activationKeypair = deriveActivationKeypair(secretCode);
@@ -83,5 +100,47 @@ console.log(`   Contrato: claimed=${onChain.claimed}, dueño correcto=${onChain.
 await expectRejection('Un segundo reclamo del mismo producto', () => stellar.buildActivation({
   tokenId, claimant: buyer.publicKey(), signature: activationKeypair.sign(message)
 }), /ya fue reclamado/);
+
+const transferSecret = randomBytes(16).toString('base64url');
+const transferKeypair = deriveTransferKeypair(transferSecret);
+const transferKey = Buffer.from(transferKeypair.rawPublicKey());
+await expectRejection('Un link abierto por quien no es el dueño', () => stellar.buildTransferOffer({
+  tokenId, owner: stranger.publicKey(), transferKey
+}), /Solo el dueño/);
+const offerTx = await stellar.submitTransferOffer({
+  tokenId, owner: buyer.publicKey(), transferKey,
+  signedXdr: signAs(buyer, await stellar.buildTransferOffer({ tokenId, owner: buyer.publicKey(), transferKey }))
+});
+console.log(`6. Link de transferencia abierto por el dueño: ${explorerTxUrl(offerTx)}`);
+// The server answers this wait itself; here the contract is asked directly, as someone skipping the server would.
+await expectRejection('Un segundo link antes de la espera', () => stellar.buildTransferOffer({
+  tokenId, owner: buyer.publicKey(), transferKey: Buffer.from(deriveTransferKeypair('OTRO-LINK').rawPublicKey())
+}), /./);
+const [expiresAt, offeredAt] = await stellar.transferTimes(tokenId);
+console.log(`   El link vence ${expiresAt - offeredAt} segundos después de abrirlo.`);
+
+const recipient = await createFundedAccount('del nuevo dueño');
+console.log(`7. Cuenta del nuevo dueño creada: ${recipient.publicKey()}`);
+const transferMessage = await stellar.transferMessage(tokenId, recipient.publicKey());
+await expectRejection('Una firma hecha con otro link', () => stellar.buildTransferAccept({
+  tokenId, recipient: recipient.publicKey(), signature: deriveTransferKeypair('OTRO-LINK').sign(transferMessage)
+}), /firma/);
+await expectRejection('El QR secreto usado como link de transferencia', () => stellar.buildTransferAccept({
+  tokenId, recipient: recipient.publicKey(), signature: activationKeypair.sign(transferMessage)
+}), /firma/);
+
+const acceptXdr = await stellar.buildTransferAccept({ tokenId, recipient: recipient.publicKey(), signature: transferKeypair.sign(transferMessage) });
+const transferTx = await stellar.submitTransferAccept({ tokenId, recipient: recipient.publicKey(), signedXdr: signAs(recipient, acceptXdr) });
+const transferred = await stellar.readProduct(tokenId);
+console.log(`8. Cambio de dueño: ${explorerTxUrl(transferTx)}`);
+console.log(`   Contrato: dueño nuevo=${transferred.owner === recipient.publicKey()}, link cerrado=${transferred.transfer_key === null || transferred.transfer_key === undefined}`);
+
+const third = await createFundedAccount('de un tercero');
+await expectRejection('El mismo link usado por segunda vez', async () => stellar.buildTransferAccept({
+  tokenId, recipient: third.publicKey(), signature: transferKeypair.sign(await stellar.transferMessage(tokenId, third.publicKey()))
+}), /ya no está vigente/);
+await expectRejection('El dueño anterior abriendo un link nuevo', () => stellar.buildTransferOffer({
+  tokenId, owner: buyer.publicKey(), transferKey
+}), /Solo el dueño/);
 
 console.log('Prueba completa.');

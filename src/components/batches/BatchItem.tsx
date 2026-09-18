@@ -5,7 +5,7 @@ import { plural, shortDate } from '@/lib/format';
 import type { PurchaseSummary } from '@/lib/types';
 import type { SummaryEntry } from '@/stores/batches';
 
-export type BatchAction = 'toggle' | 'print' | 'csv' | 'lot-qr' | 'forget' | 'retry';
+export type BatchAction = 'toggle' | 'print' | 'csv' | 'lot-qr' | 'ship' | 'forget' | 'retry';
 
 interface BatchItemProps {
   purchaseId: string;
@@ -96,13 +96,17 @@ export function BatchItem({ purchaseId, summary, open, detail, itemRef, isBusy, 
           <span className={`batch-badge is-${state.tone}`}><Icon name={`fa-solid ${state.icon}`} /> {state.label}</span>
         </div>
         {summary.batchId && <ActivationProgress summary={summary} />}
+        {summary.shippedAt && (
+          <p className="batch-shipped"><Icon name="fa-solid fa-truck" /> Despachado a {summary.destination} el {shortDate.format(new Date(summary.shippedAt))}</p>
+        )}
         <div className="batch-toolbar">
           {summary.batchId
             ? [
               button('toggle', open ? 'Ocultar etiquetas' : 'Ver etiquetas', open ? 'fa-eye-slash' : 'fa-eye', 'primary'),
               button('print', 'Imprimir', 'fa-print'),
               button('csv', 'Descargar CSV', 'fa-file-csv'),
-              button('lot-qr', 'QR del lote', 'fa-qrcode')
+              button('lot-qr', 'QR del lote', 'fa-qrcode'),
+              ...(summary.shippedAt ? [] : [button('ship', 'Marcar como despachado', 'fa-truck')])
             ]
             : [
               button('toggle', open ? 'Ocultar QR de pago' : 'Ver QR de pago', 'fa-qrcode', 'primary'),

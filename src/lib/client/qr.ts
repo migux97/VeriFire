@@ -5,6 +5,14 @@ import { readStored } from './storage';
 export type ScannedClaim = { qr: string } | { secret: string };
 
 const PENDING_QR_KEY = 'verifirePendingQr';
+const PENDING_TRANSFER_KEY = 'verifirePendingTransfer';
+// Secret of a transfer link (/app#t=...): random bytes in base64url, created by the owner's browser.
+const TRANSFER_SECRET = /^[A-Za-z0-9_-]{16,64}$/;
+
+export const transferFromLink = (hash: string): string | null => {
+  const secret = new URLSearchParams(hash.replace(/^#/, '')).get('t');
+  return secret && TRANSFER_SECRET.test(secret) ? secret : null;
+};
 
 // Secret QR links carry an opaque key (/app#q=...). Labels printed before used ?codigo= or ?secret=.
 export const claimFromLink = (search: string, hash: string): ScannedClaim | null => {
@@ -15,12 +23,23 @@ export const claimFromLink = (search: string, hash: string): ScannedClaim | null
   return secret ? { secret } : null;
 };
 
-// Opening a QR link: keep it across the login redirect and remove it from the address bar.
+// Opening a secret QR or a transfer link: keep it across the login redirect and remove it from the address bar.
 export const captureClaimLink = () => {
   const claim = claimFromLink(window.location.search, window.location.hash);
-  if (!claim) return;
-  keepPendingClaim(claim);
+  const transfer = transferFromLink(window.location.hash);
+  if (!claim && !transfer) return;
+  if (claim) keepPendingClaim(claim);
+  if (transfer) keepPendingTransfer(transfer);
   window.history.replaceState({}, document.title, window.location.pathname);
+};
+
+export const keepPendingTransfer = (secret: string) => sessionStorage.setItem(PENDING_TRANSFER_KEY, secret);
+
+// The transfer link kept across the login, removed as it is read.
+export const takePendingTransfer = () => {
+  const secret = sessionStorage.getItem(PENDING_TRANSFER_KEY);
+  sessionStorage.removeItem(PENDING_TRANSFER_KEY);
+  return secret && TRANSFER_SECRET.test(secret) ? secret : null;
 };
 
 export const keepPendingClaim = (claim: ScannedClaim) => sessionStorage.setItem(PENDING_QR_KEY, JSON.stringify(claim));
@@ -39,12 +58,12 @@ export const takePendingClaim = (): ScannedClaim | 'invalid' | null => {
   return isScannedClaim(claim) ? claim : 'invalid';
 };
 
-export const parseScannedQr = (text: string): { claim: ScannedClaim | null; publicToken: string | null } => {
+export const parseScannedQr = (text: string): { claim: ScannedClaim | null; publicToken: string | null; transfer: string | null } => {
   try {
     const url = new URL(text.trim());
-    return { claim: claimFromLink(url.search, url.hash), publicToken: url.searchParams.get('token') };
+    return { claim: claimFromLink(url.search, url.hash), publicToken: url.searchParams.get('token'), transfer: transferFromLink(url.hash) };
   } catch {
-    return { claim: null, publicToken: null };
+    return { claim: null, publicToken: null, transfer: null };
   }
 };
 

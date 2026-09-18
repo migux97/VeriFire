@@ -1493,3 +1493,317 @@ a.network-status:hover {
     scroll-behavior: auto !important;
   }
 }
+
+/* ---------- Product history ---------- */
+
+.history {
+  display: grid;
+  gap: 18px;
+  list-style: none;
+}
+
+.history-event {
+  position: relative;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  column-gap: 14px;
+}
+
+/* The rail that joins the stages, as on the landing. */
+.history-event::before {
+  content: '';
+  position: absolute;
+  top: 40px;
+  bottom: -18px;
+  left: 19px;
+  width: 2px;
+  background: var(--vf-ink);
+}
+
+.history-event:last-child::before {
+  display: none;
+}
+
+.history-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 2px solid var(--vf-ink);
+  border-radius: 50%;
+  background: var(--vf-paper);
+  color: var(--vf-ink);
+  font-size: 0.875rem;
+}
+
+.history-event.is-activated .history-icon,
+.history-event.is-transferred .history-icon {
+  border-color: var(--vf-red);
+  background: var(--vf-red);
+  color: var(--vf-paper);
+}
+
+.history-event.is-rejected .history-icon {
+  background: var(--vf-ink);
+  color: var(--vf-paper);
+}
+
+.history-body {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding-top: 2px;
+}
+
+.history-body strong {
+  color: var(--vf-ink);
+  font-size: 0.9375rem;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.history-body > span {
+  font-size: 0.875rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.history-date {
+  color: var(--vf-muted);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.history-body .ledger-link {
+  justify-self: start;
+  margin-top: 2px;
+  font-size: 0.8125rem;
+}
+
+.verify-history {
+  margin: 4px 0 24px;
+}
+
+.verify-history h2 {
+  margin-bottom: 18px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--vf-ink);
+  font-size: 1.25rem;
+}
+
+/* ---------- Warranty card: history and transfer ---------- */
+
+.warranty-history {
+  border-top: 1px solid var(--vf-line);
+}
+
+.warranty-history summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 14px;
+  color: var(--vf-ink);
+  font-size: 0.9375rem;
+  font-weight: 800;
+  list-style: none;
+  cursor: pointer;
+}
+
+.warranty-history summary::-webkit-details-marker {
+  display: none;
+}
+
+.warranty-history summary i {
+  font-size: 0.75rem;
+  transition: transform 0.15s ease;
+}
+
+.warranty-history[open] summary i {
+  transform: rotate(180deg);
+}
+
+.warranty-history summary:hover {
+  color: var(--vf-red);
+}
+
+.warranty-history .history {
+  margin-top: 16px;
+}
+
+.warranty-transfer {
+  display: grid;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--vf-line);
+}
+
+.warranty-transfer > .button {
+  justify-self: start;
+}
+
+.warranty-transfer-note {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  color: var(--vf-ink);
+  font-size: 0.9375rem;
+  font-weight: 700;
+}
+
+.warranty-transfer-note i {
+  color: var(--vf-red);
+}
+
+.warranty-transfer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.transfer-link {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  padding: 14px;
+  background: var(--vf-mist);
+}
+
+.transfer-link img {
+  flex: none;
+  width: 132px;
+  height: 132px;
+  border: 1px solid var(--vf-line-strong);
+  background: var(--vf-paper);
+}
+
+.transfer-link-copy {
+  display: grid;
+  flex: 1 1 200px;
+  gap: 10px;
+  min-width: 0;
+}
+
+.transfer-link-copy label {
+  display: grid;
+  gap: 6px;
+  color: var(--vf-ink);
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.transfer-link-copy input {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1.5px solid var(--vf-line-strong);
+  border-radius: 4px;
+  background: var(--vf-paper);
+  color: var(--vf-ink);
+  font: 600 0.8125rem/1 var(--vf-mono);
+}
+
+.transfer-link-copy .button {
+  justify-self: start;
+}
+
+/* ---------- Incoming transfer ---------- */
+
+.transfer-card {
+  border-color: var(--vf-red);
+  box-shadow: inset 4px 0 0 var(--vf-red);
+}
+
+.transfer-card h2 {
+  font-size: clamp(1.4rem, 2.6vw, 1.75rem);
+}
+
+.transfer-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.transfer-summary div {
+  display: grid;
+  gap: 2px;
+}
+
+.transfer-summary dt {
+  color: var(--vf-muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.transfer-summary dd {
+  color: var(--vf-ink);
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- Batch shipped ---------- */
+
+.batch-shipped {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  color: var(--vf-ink);
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.batch-shipped i {
+  color: var(--vf-red);
+}
+
+/* ---------- Products passed on to someone else ---------- */
+
+.vault-transferred {
+  margin-top: 40px;
+}
+
+.warranty-card.is-transferred {
+  background: var(--vf-mist);
+}
+
+.warranty-card.is-transferred .warranty-thumb {
+  background: var(--vf-ink);
+}
+
+.warranty-badge.is-transferred {
+  background: var(--vf-ink);
+  color: var(--vf-paper);
+}
+
+.transferred-note {
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+.transferred-note strong {
+  color: var(--vf-ink);
+  font-weight: 800;
+}
+
+.warranty-card.is-transferred .ledger-link {
+  justify-self: start;
+}
+
+/* ---------- Transfer link countdown ---------- */
+
+.transfer-countdown {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--vf-muted);
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.transfer-countdown strong {
+  color: var(--vf-red);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
