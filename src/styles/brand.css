@@ -43,26 +43,12 @@
   display: inline-flex;
   flex: none;
   align-items: center;
-  gap: 8px;
-  padding: 7px 10px 6px;
-  background: var(--vf-ink);
-  color: var(--vf-paper);
-  font-size: 1.0625rem;
-  font-weight: 900;
-  letter-spacing: 0.02em;
-  line-height: 1;
-  transform: rotate(-4deg);
 }
 
-.lp-logo svg {
-  width: 14px;
-  height: 14px;
-  color: var(--vf-red);
-}
-
-.lp-logo-light {
-  background: var(--vf-paper);
-  color: var(--vf-ink);
+.lp-logo img {
+  display: block;
+  width: auto;
+  height: 34px;
 }
 
 /* ---------- Product box ---------- */

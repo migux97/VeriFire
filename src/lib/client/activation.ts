@@ -7,7 +7,7 @@ import type { PreparedClaim, Warranty } from '../types';
 import { ApiError, postJson } from './api';
 import { base64ToBytes, base64UrlToBytes, bytesToBase64, bytesToHex } from './bytes';
 import type { ScannedClaim } from './qr';
-import { connectSigningWallet } from './wallet';
+import { connectSigningWallet, createAccountOnChain, storedDeviceCode } from './wallet';
 
 export type Progress = (message: string) => void;
 
@@ -48,18 +48,14 @@ export const deriveSigningKey = async (domain: string, secret: string): Promise<
 export const signWith = async (key: SigningKey, messageBase64: string) =>
   bytesToBase64(new Uint8Array(await crypto.subtle.sign({ name: 'Ed25519' }, key.privateKey, base64ToBytes(messageBase64))));
 
-// The contract can only authorize an account that exists on-chain, and a Cavos account is created on its first
-// transaction. The kit creates it (sponsored by Cavos) before the payment it is asked for; that 1-stroop payment can
-// fail because the new account holds no XLM, which does not matter once the account exists.
-export const ensureAccountCreated = async (wallet: CavosStellar, feeAccount: string, onProgress: Progress) => {
+// The contract can only authorize an account that exists on-chain. Logins create it; an account whose login could not
+// is created here, with the multi-device factor of this session's password when there is one.
+export const ensureAccountCreated = async (wallet: CavosStellar, onProgress: Progress) => {
   if (wallet.status !== 'undeployed') return;
   onProgress('Creando tu cuenta en Stellar por única vez...');
-  try {
-    await wallet.execute(1n, feeAccount);
-  } catch (error) {
-    // execute() moves the status to "ready" as soon as the account exists, even when the payment itself failed.
-    if ((wallet.status as string) !== 'ready') throw new Error(`No se pudo crear tu cuenta en Stellar: ${error instanceof Error ? error.message : String(error)}`);
-  }
+  const deviceCode = storedDeviceCode();
+  if (deviceCode) await wallet.setupRecovery(deviceCode);
+  await createAccountOnChain(wallet);
 };
 
 const activateOnStellar = async (
@@ -72,7 +68,7 @@ const activateOnStellar = async (
   const request = { activationKey: activation.publicKey, owner };
   onProgress('Conectando tu wallet Cavos...');
   const wallet = await connectSigningWallet(appId, owner);
-  await ensureAccountCreated(wallet, prepared.feeAccount, onProgress);
+  await ensureAccountCreated(wallet, onProgress);
   const signature = await signWith(activation, prepared.message);
   const { xdr } = await postJson<{ xdr: string }>('/api/warranties/transaction', { ...request, signature }, 'No se pudo preparar la activación en Stellar.');
   onProgress('Autorizando la activación con tu wallet Cavos...');

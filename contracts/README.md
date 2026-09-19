@@ -10,7 +10,7 @@ Contrato Soroban para registrar productos en Stellar testnet.
 - `get_product_by_code(public_code)`: busca un producto por su QR público.
 - `activation_message(token_id, claimant)`: devuelve los bytes exactos que hay que firmar para activar. Se puede obtener simulando la llamada.
 - `activate_product(token_id, claimant, signature)`: exige la firma de `claimant`, verifica que `signature` fue hecha con la clave derivada del secreto y activa la garantía una sola vez.
-- `offer_transfer(token_id, owner, transfer_key)`: el dueño abre un link de transferencia. `transfer_key` es la clave pública derivada de un secreto aleatorio que crea su navegador (`sha256("verifire-transfer-v1:" + secreto)`). Un link nuevo reemplaza al anterior. El link vence a los 15 minutos (`TRANSFER_LINK_SECONDS`), y el siguiente se puede abrir recién 5 minutos después del último (`TRANSFER_COOLDOWN_SECONDS`), aunque se haya cancelado o vencido.
+- `offer_transfer(token_id, owner, transfer_key)`: el dueño abre un link de transferencia. `transfer_key` es la clave pública derivada de un secreto aleatorio que crea su navegador (`sha256("verifire-transfer-v1:" + secreto)`). Un link nuevo reemplaza al anterior. El link vence a los 15 minutos (`TRANSFER_LINK_SECONDS`), y el dueño puede abrir otro cuando quiera.
 - `transfer_times(token_id)`: `(vence, último_link)` en segundos del ledger, 0 si no hay.
 - `cancel_transfer(token_id, owner)`: el dueño cierra el link abierto.
 - `transfer_message(token_id, recipient)`: bytes que el link tiene que firmar para aceptar, atados al contrato, al token y a quien recibe.

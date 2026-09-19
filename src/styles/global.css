@@ -1807,3 +1807,31 @@ a.network-status:hover {
   font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
+
+/* ---------- Pagination ---------- */
+
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.pagination span {
+  color: var(--vf-muted);
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.pagination .button {
+  min-height: 38px;
+  padding: 0 14px;
+}
+
+@media print {
+  .pagination {
+    display: none;
+  }
+}

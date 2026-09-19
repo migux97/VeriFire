@@ -23,7 +23,8 @@ const { title, description, bodyClass, session = 'public' } = Astro.props;
     <meta name="description" content={description} />
     <title>{title}</title>
     {session !== 'public' && <SessionGate mode={session} />}
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon.png" type="image/png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <Font cssVariable="--font-urbanist" preload={[{ weight: 500 }, { weight: 800 }]} />
     <slot name="head" />
   </head>

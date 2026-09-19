@@ -79,7 +79,7 @@ export const readTransferLink = async (secret: string, recipient: string): Promi
 
 export const acceptTransfer = async (appId: string, incoming: IncomingTransfer, recipient: string, onProgress: Progress) => {
   const wallet = await connect(appId, recipient, onProgress);
-  await ensureAccountCreated(wallet, incoming.feeAccount, onProgress);
+  await ensureAccountCreated(wallet, onProgress);
   const signature = await signWith(incoming.key, incoming.message);
   return signedCall('/api/transfers/accept', { transferKey: incoming.key.publicKey, recipient, signature }, wallet, 'No se pudo completar la transferencia.', onProgress);
 };

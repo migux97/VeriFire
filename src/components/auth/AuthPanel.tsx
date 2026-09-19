@@ -32,6 +32,8 @@ interface PendingVerification {
   mode: AuthMode;
   newDevice: boolean;
   deviceCode?: string;
+  // Set once the Gmail code was accepted: a wrong password is typed again without asking for another code.
+  identity?: Identity;
 }
 
 const GMAIL_PATTERN = /^[^\s@]+@gmail\.com$/i;
@@ -113,6 +115,7 @@ export function AuthPanel({ cavosAppId }: AuthPanelProps) {
     }, warning ? 3200 : 700);
   };
 
+  // False when the password did not open the account's key: the user is back at the form to type it again.
   const finishAuthFlow = async (identity: Identity) => {
     const current = pending.current;
     if (!current) throw new Error('La verificación expiró. Iniciá el proceso nuevamente.');
@@ -128,6 +131,13 @@ export function AuthPanel({ cavosAppId }: AuthPanelProps) {
     } catch (error) {
       throw new Error(`${errorMessage(error)} Ese código ya fue usado: pedí uno nuevo para volver a intentar.`);
     }
+    if (connection.wrongPassword) {
+      pending.current = { ...current, identity };
+      setVerification(null);
+      setMode(current.mode);
+      showNotice(connection.deviceError, 'error');
+      return false;
+    }
     pending.current = null;
     // Starts the 7 days during which logging in only needs the password. The Cavos user id lets the panel reconnect
     // the same wallet to sign on Stellar after a password-only login (see connectSigningWallet).
@@ -138,6 +148,7 @@ export function AuthPanel({ cavosAppId }: AuthPanelProps) {
       emailVerifiedAt: Date.now(),
       deviceFactorAt: connection.deviceFactor ? Date.now() : 0
     }, loginMode, connection.deviceError);
+    return true;
   };
 
   const handleAuthSubmit = async (formMode: AuthMode, form: HTMLFormElement) => {
@@ -226,6 +237,14 @@ export function AuthPanel({ cavosAppId }: AuthPanelProps) {
       }
 
       const deviceCode = await deviceCodeFor(user.email, password);
+      // The Gmail was already confirmed and only the password was wrong: this one is tried with the same code.
+      const confirmed = pending.current?.email === user.email ? pending.current.identity : undefined;
+      if (confirmed && pending.current) {
+        pending.current = { ...pending.current, user, mode: formMode, newDevice, deviceCode };
+        showNotice('Comprobando la contraseña...');
+        redirecting = await finishAuthFlow(confirmed);
+        return;
+      }
       // A code already sent to this address stays valid: reuse it instead of asking Cavos for another one, which it
       // refuses within a minute of the previous request.
       if (pending.current?.email === user.email) {
@@ -260,7 +279,10 @@ export function AuthPanel({ cavosAppId }: AuthPanelProps) {
     try {
       const identity = await verifyEmailCode(current.auth, current.nonce, current.email, code);
       // On success the button stays disabled until the redirect.
-      await finishAuthFlow(identity);
+      if (!(await finishAuthFlow(identity))) {
+        codeInFlight.current = false;
+        setVerifyingCode(false);
+      }
     } catch (error) {
       showNotice(describeAuthError(error, 'No se pudo verificar el código.'), 'error');
       field.select();

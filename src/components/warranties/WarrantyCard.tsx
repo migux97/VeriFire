@@ -60,12 +60,10 @@ function TransferLink({ link }: { link: string }) {
 
 export function WarrantyCard({ warranty, transferLink, busy, status, onOfferTransfer, onCancelTransfer }: WarrantyCardProps) {
   const active = warranty.warrantyUntil !== null && new Date(warranty.warrantyUntil).getTime() > Date.now();
-  const now = useNow(warranty.transferExpiresAt !== null || warranty.nextTransferAt !== null);
-  // The link expires and the wait ends on their own: both are checked against the ticking clock.
+  const now = useNow(warranty.transferExpiresAt !== null);
+  // The link expires on its own: it is checked against the ticking clock.
   const offered = warranty.transferExpiresAt !== null && new Date(warranty.transferExpiresAt).getTime() > now;
   const expired = warranty.transferExpiresAt !== null && !offered;
-  const waiting = warranty.nextTransferAt !== null && new Date(warranty.nextTransferAt).getTime() > now;
-  const offerLabel = (label: string) => (waiting && warranty.nextTransferAt ? `Podés generar otro link en ${formatCountdown(warranty.nextTransferAt, now)}` : label);
 
   return (
     <article className="warranty-card">
@@ -122,8 +120,8 @@ export function WarrantyCard({ warranty, transferLink, busy, status, onOfferTran
                 : <p className="field-hint">Abriste este link desde otro navegador. Si no lo tenés, generá uno nuevo: el anterior deja de funcionar.</p>}
               <div className="warranty-transfer-actions">
                 {!transferLink && (
-                  <button className="button button-secondary" type="button" disabled={busy || waiting} onClick={onOfferTransfer}>
-                    <Icon name="fa-solid fa-link" /> {offerLabel('Generar un link nuevo')}
+                  <button className="button button-secondary" type="button" disabled={busy} onClick={onOfferTransfer}>
+                    <Icon name="fa-solid fa-link" /> Generar un link nuevo
                   </button>
                 )}
                 <button className="button button-secondary" type="button" disabled={busy} onClick={onCancelTransfer}>
@@ -134,8 +132,8 @@ export function WarrantyCard({ warranty, transferLink, busy, status, onOfferTran
           ) : (
             <>
               {expired && <p className="field-hint">El link de transferencia venció sin que nadie lo aceptara. El producto sigue a tu nombre.</p>}
-              <button className="button button-secondary" type="button" disabled={busy || waiting} onClick={onOfferTransfer}>
-                <Icon name={`fa-solid ${waiting ? 'fa-hourglass-half' : 'fa-right-left'}`} /> {offerLabel('Transferir a otra persona')}
+              <button className="button button-secondary" type="button" disabled={busy} onClick={onOfferTransfer}>
+                <Icon name="fa-solid fa-right-left" /> Transferir a otra persona
               </button>
             </>
           )}

@@ -16,7 +16,7 @@ import { leaveSession, userSession } from '@/lib/client/session';
 import {
   acceptTransfer, cancelTransfer, offerTransfer, readTransferLink, savedTransferLink, type IncomingTransfer
 } from '@/lib/client/transfer';
-import { connectSigningWallet, EmailCodeRequiredError, hasDeviceFactor, resolveWalletAddress, storedDeviceCode } from '@/lib/client/wallet';
+import { DeviceNotReadyError, EmailCodeRequiredError, enableSigning, hasDeviceFactor, resolveWalletAddress, storedDeviceCode } from '@/lib/client/wallet';
 import { errorMessage } from '@/lib/errors';
 import { formatCountdown } from '@/lib/format';
 import type { TransferredWarranty, Warranty, WarrantiesResponse } from '@/lib/types';
@@ -48,6 +48,9 @@ export function WarrantyDashboard({ cavosAppId }: WarrantyDashboardProps) {
   const [busyToken, setBusyToken] = useState<string | null>(null);
   const [transferStatuses, setTransferStatuses] = useState<Record<string, Message>>({});
   const deviceFormOpen = useStore($deviceFormOpen);
+  // What failed because this browser could not sign yet: "Reintentar" enables it and runs it again.
+  const [repair, setRepair] = useState<{ run: () => Promise<void> } | null>(null);
+  const [repairing, setRepairing] = useState(false);
   const now = useNow(incoming !== null);
   const incomingExpired = incoming !== null && new Date(incoming.transfer.expiresAt).getTime() <= now;
   const walletAddress = useRef('');
@@ -93,14 +96,39 @@ export function WarrantyDashboard({ cavosAppId }: WarrantyDashboardProps) {
     return () => window.clearInterval(timer);
   }, [openOffers]);
 
-  // Accounts created before multi-device access existed need it saved once, from a browser that can already sign.
+  // Enables this browser to sign and saves the account's key in Stellar, so every other device can sign too.
   const enrollDeviceFactor = async (deviceCode: string) => {
     const address = walletAddress.current || storedUser()?.walletAddress || '';
     if (!isStellarAddress(address)) throw new Error('Todavía no encontramos tu wallet. Recargá la página e intentá de nuevo.');
-    const wallet = await connectSigningWallet(cavosAppId, address);
-    await wallet.setupRecovery(deviceCode);
-    updateStoredUser({ deviceFactorAt: Date.now() });
+    await enableSigning(cavosAppId, address, deviceCode);
     $deviceEnrollmentOffered.set(false);
+  };
+
+  // The key is derived from the password this account uses in this browser.
+  const deviceCodeFromPassword = async (password: string) => {
+    const account = storedUser();
+    if (!account || !(await verifyPassword(account, password))) throw new Error('Esa no es la contraseña de tu cuenta.');
+    return deviceCodeFor(account.email, password);
+  };
+
+  // Offers "Reintentar" when the error is one this browser can fix with the password.
+  const offerRepair = (error: unknown, run: () => Promise<void>) => {
+    if (error instanceof DeviceNotReadyError && error.canRetry) setRepair({ run });
+  };
+
+  const repairAndRetry = async (password?: string) => {
+    if (!repair) return;
+    setRepairing(true);
+    showMessage('Habilitando este navegador para firmar...', 'info');
+    try {
+      await enrollDeviceFactor(password ? await deviceCodeFromPassword(password) : storedDeviceCode());
+      setRepair(null);
+      await repair.run();
+    } catch (error) {
+      showMessage(errorMessage(error), 'error');
+    } finally {
+      setRepairing(false);
+    }
   };
 
   // It happens by itself when the login left the derived key in this tab; otherwise the profile menu offers it.
@@ -122,11 +150,9 @@ export function WarrantyDashboard({ cavosAppId }: WarrantyDashboardProps) {
   };
 
   const enrollWithPassword = async (password: string) => {
-    const account = storedUser();
     showMessage('Habilitando tu cuenta para otros dispositivos...', 'info');
     try {
-      if (!account || !(await verifyPassword(account, password))) throw new Error('Esa no es la contraseña de tu cuenta en este navegador.');
-      await enrollDeviceFactor(await deviceCodeFor(account.email, password));
+      await enrollDeviceFactor(await deviceCodeFromPassword(password));
       $deviceFormOpen.set(false);
       showMessage('Listo: ya podés entrar desde el celular con tu correo y tu contraseña.', 'success');
     } catch (error) {
@@ -156,6 +182,7 @@ export function WarrantyDashboard({ cavosAppId }: WarrantyDashboardProps) {
 
   const handleAcceptTransfer = async () => {
     if (!incoming) return;
+    setRepair(null);
     setAccepting(true);
     try {
       const warranty = await acceptTransfer(cavosAppId, incoming.transfer, await ownerAddress(), (progress) => showMessage(progress, 'info'));
@@ -168,6 +195,7 @@ export function WarrantyDashboard({ cavosAppId }: WarrantyDashboardProps) {
         leaveForEmailCode();
         return;
       }
+      offerRepair(error, handleAcceptTransfer);
       showMessage(errorMessage(error), 'error');
     } finally {
       setAccepting(false);
@@ -177,6 +205,7 @@ export function WarrantyDashboard({ cavosAppId }: WarrantyDashboardProps) {
   // Opening and cancelling a link: the owner's wallet signs, and the card shows how it went.
   const runTransfer = async (token: string, task: (owner: string, onProgress: (text: string) => void) => Promise<Warranty>, done: string) => {
     const setStatus = (text: string, tone: MessageTone) => setTransferStatuses((current) => ({ ...current, [token]: { text, tone } }));
+    setRepair(null);
     setBusyToken(token);
     try {
       const warranty = await task(await ownerAddress(), (progress) => setStatus(progress, 'info'));
@@ -188,6 +217,11 @@ export function WarrantyDashboard({ cavosAppId }: WarrantyDashboardProps) {
         return;
       }
       setStatus(errorMessage(error), 'error');
+      if (error instanceof DeviceNotReadyError && error.canRetry) {
+        // The button lives next to the panel's message, at the top.
+        offerRepair(error, () => runTransfer(token, task, done));
+        showMessage(errorMessage(error), 'error');
+      }
     } finally {
       setBusyToken(null);
     }
@@ -229,13 +263,17 @@ export function WarrantyDashboard({ cavosAppId }: WarrantyDashboardProps) {
       : 'No reconocimos ese QR como un QR de Verifire.', 'error');
   };
 
-  const handleClaim = async (event: SubmitEvent<HTMLFormElement>) => {
+  const handleClaim = (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!scannedClaim) {
       showMessage('Primero escaneá el QR de la etiqueta interna del producto.', 'error');
       return;
     }
+    void claim(scannedClaim);
+  };
 
+  const claim = async (scannedClaim: ScannedClaim) => {
+    setRepair(null);
     setClaiming(true);
     showMessage('Verificando el QR y preparando tu garantía...', 'info');
     try {
@@ -255,6 +293,7 @@ export function WarrantyDashboard({ cavosAppId }: WarrantyDashboardProps) {
       }
       // A QR that does not exist or was already used will not work on a retry.
       if (error instanceof ApiError && error.status < 500 && !error.retryable) setScannedClaim(null);
+      offerRepair(error, () => claim(scannedClaim));
       showMessage(errorMessage(error), 'error');
     } finally {
       setClaiming(false);
@@ -326,11 +365,30 @@ export function WarrantyDashboard({ cavosAppId }: WarrantyDashboardProps) {
           onScanStart={() => setScannedClaim(null)}
         />
         <StatusMessage id="claim-message" message={message} />
-        <form id="claim-form" noValidate hidden={!scannedClaim} onSubmit={(event) => void handleClaim(event)}>
+        {repair && (storedDeviceCode()
+          ? (
+            <button className="button button-primary" type="button" disabled={repairing} onClick={() => void repairAndRetry()}>
+              <Icon name="fa-solid fa-rotate-right" /> Reintentar
+            </button>
+          )
+          : (
+            <DeviceEnrollForm
+              submitLabel="Reintentar"
+              hint="Con tu contraseña habilitamos este navegador para firmar y repetimos lo que estabas haciendo. No se guarda en ningún lado."
+              onEnroll={repairAndRetry}
+              onCancel={() => setRepair(null)}
+            />
+          ))}
+        <form id="claim-form" noValidate hidden={!scannedClaim} onSubmit={handleClaim}>
           <button ref={claimButtonRef} className="button button-primary" type="submit" disabled={claiming}>Activar Garantía Oficial</button>
         </form>
         {deviceFormOpen && (
-          <DeviceEnrollForm onEnroll={enrollWithPassword} onCancel={() => $deviceFormOpen.set(false)} />
+          <DeviceEnrollForm
+            submitLabel="Habilitar"
+            hint="Con tu contraseña habilitamos tu cuenta para usarla en el celular. Es una sola vez y no se guarda en ningún lado."
+            onEnroll={enrollWithPassword}
+            onCancel={() => $deviceFormOpen.set(false)}
+          />
         )}
       </section>
 

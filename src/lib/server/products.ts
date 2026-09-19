@@ -15,10 +15,8 @@ const HOUR_MS = 60 * 60 * 1000;
 // Public checks of one product counted in its history: one per half day, the latest ones only.
 const VERIFIED_EVERY_MS = 12 * HOUR_MS;
 const MAX_VERIFIED_EVENTS = 30;
-// A transfer link can be accepted for TRANSFER_LINK_MS, and the owner opens the next one TRANSFER_COOLDOWN_MS after the
-// last. The contract enforces the same times (TRANSFER_LINK_SECONDS and TRANSFER_COOLDOWN_SECONDS in its lib.rs).
+// A transfer link can be accepted for TRANSFER_LINK_MS. The contract enforces the same time (TRANSFER_LINK_SECONDS in its lib.rs).
 export const TRANSFER_LINK_MS = 15 * 60 * 1000;
-export const TRANSFER_COOLDOWN_MS = 5 * 60 * 1000;
 
 // The product's transfer link while it can still be accepted.
 export const openTransferOf = (product: Product) => {
@@ -26,13 +24,6 @@ export const openTransferOf = (product: Product) => {
   if (!transfer) return null;
   const expiresAt = transfer.expiresAt ?? new Date(new Date(transfer.offeredAt).getTime() + TRANSFER_LINK_MS).toISOString();
   return Date.now() <= new Date(expiresAt).getTime() ? { ...transfer, expiresAt } : null;
-};
-
-// When the owner may open another link, or null if they can now.
-export const nextTransferAt = (product: Product) => {
-  if (!product.lastTransferOfferAt) return null;
-  const next = new Date(product.lastTransferOfferAt).getTime() + TRANSFER_COOLDOWN_MS;
-  return next > Date.now() ? new Date(next).toISOString() : null;
 };
 
 const warrantyUntil = (claimedAt: string | undefined) => {
@@ -156,8 +147,7 @@ export const warrantyView = (product: Product, baseUrl: string): Warranty => ({
   chainTokenId: isCurrentOnChain(product) ? product.chain?.tokenId ?? null : null,
   transferable: product.claimed && isCurrentOnChain(product),
   transferOfferedAt: openTransferOf(product)?.offeredAt ?? null,
-  transferExpiresAt: openTransferOf(product)?.expiresAt ?? null,
-  nextTransferAt: nextTransferAt(product)
+  transferExpiresAt: openTransferOf(product)?.expiresAt ?? null
 });
 
 export const mintedProductView = (product: Product, baseUrl: string): MintedProduct => ({

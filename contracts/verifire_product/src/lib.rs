@@ -17,11 +17,9 @@ const ACTIVATION_DOMAIN: &[u8] = b"verifire-activation-v1";
 /// `sha256(TRANSFER_DOMAIN || ":" || secret)` is the seed of the key registered by `offer_transfer`.
 const TRANSFER_DOMAIN: &[u8] = b"verifire-transfer-v1";
 
-/// A transfer link can be accepted for this long after the owner opens it.
+/// A transfer link can be accepted for this long after the owner opens it. Must match TRANSFER_LINK_MS in
+/// src/lib/server/products.ts.
 pub const TRANSFER_LINK_SECONDS: u64 = 15 * 60;
-/// After opening a link, the owner waits this long before opening another, even if the first one was cancelled or
-/// expired. Must match TRANSFER_LINK_MS and TRANSFER_COOLDOWN_MS in src/lib/server/products.ts.
-pub const TRANSFER_COOLDOWN_SECONDS: u64 = 5 * 60;
 
 #[derive(Clone)]
 #[contracttype]
@@ -226,18 +224,10 @@ impl VerifireProduct {
 
     /// Opens a transfer link: whoever holds its secret can take the product with `accept_transfer`.
     /// A new offer replaces the previous one, so an old link stops working.
-    /// The link expires TRANSFER_LINK_SECONDS later, and the next one can be opened TRANSFER_COOLDOWN_SECONDS later.
+    /// The link expires TRANSFER_LINK_SECONDS later.
     pub fn offer_transfer(env: Env, token_id: u64, owner: Address, transfer_key: BytesN<32>) {
         let mut product = owned_product(&env, token_id, &owner);
         let now = env.ledger().timestamp();
-        let last_offer: Option<u64> = env
-            .storage()
-            .persistent()
-            .get(&DataKey::LastTransferOffer(token_id));
-        if last_offer.is_some_and(|last| now < last + TRANSFER_COOLDOWN_SECONDS) {
-            panic!("wait before opening another transfer link");
-        }
-
         product.transfer_key = Some(transfer_key);
         save_product(&env, &product);
         save_persistent(&env, &DataKey::TransferExpiry(token_id), &(now + TRANSFER_LINK_SECONDS));
@@ -518,7 +508,6 @@ mod test {
 
         let token_id = owned(&env, &client, "VF-014", &seller);
         offer(&env, &client, token_id, &seller, b"LINK-1");
-        advance(&env, TRANSFER_COOLDOWN_SECONDS);
         offer(&env, &client, token_id, &seller, b"LINK-2");
         let old = sign_transfer(&env, &client, b"LINK-1", token_id, &buyer);
         assert!(client.try_accept_transfer(&token_id, &buyer, &old).is_err());
@@ -612,7 +601,7 @@ mod test {
     }
 
     #[test]
-    fn owner_waits_before_opening_another_link() {
+    fn owner_opens_another_link_right_away() {
         let env = Env::default();
         let client = setup(&env);
         let seller = Address::generate(&env);
@@ -622,10 +611,6 @@ mod test {
         client.cancel_transfer(&token_id, &seller);
         let key = transfer_key(&env, b"LINK-2").verifying_key().to_bytes();
         let key = BytesN::from_array(&env, &key);
-        // Cancelling does not reset the wait.
-        advance(&env, TRANSFER_COOLDOWN_SECONDS - 1);
-        assert!(client.try_offer_transfer(&token_id, &seller, &key).is_err());
-        advance(&env, 1);
         client.offer_transfer(&token_id, &seller, &key);
         assert!(client.get_product(&token_id).transfer_key.is_some());
     }

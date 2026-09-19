@@ -52,8 +52,6 @@ export interface Warranty extends PublicProduct {
   // When the owner opened a transfer link that nobody accepted yet and has not expired, and when it expires.
   transferOfferedAt: string | null;
   transferExpiresAt: string | null;
-  // When the owner may open another link, while they still have to wait.
-  nextTransferAt: string | null;
 }
 
 // Answer of POST /api/products, the only one that carries the secret code of a single product.

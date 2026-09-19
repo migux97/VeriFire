@@ -1,9 +1,14 @@
+import { Pagination, usePagination } from '@/components/ui/Pagination';
 import type { CompanyBatch, ProductLabel } from '@/lib/types';
+
+const PAGE_SIZE = 12;
 
 export type QrKind = 'public' | 'secret';
 
 interface LabelSheetProps {
   batch: CompanyBatch;
+  // While printing, every label of the batch is in the page, not only the current page.
+  showAll: boolean;
   isDownloading: (token: string, kind: QrKind) => boolean;
   onDownloadQr: (token: string, kind: QrKind) => void;
 }
@@ -20,7 +25,8 @@ function LabelCode({ label, kind, busy, onDownload }: { label: ProductLabel; kin
 }
 
 // Printed on its own: while a sheet is open, printing the page prints only its labels (see @media print).
-export function LabelSheet({ batch, isDownloading, onDownloadQr }: LabelSheetProps) {
+export function LabelSheet({ batch, showAll, isDownloading, onDownloadQr }: LabelSheetProps) {
+  const labels = usePagination(batch.tokens, PAGE_SIZE);
   return (
     <>
       <p>Cada producto tiene dos QR:</p>
@@ -30,7 +36,7 @@ export function LabelSheet({ batch, isDownloading, onDownloadQr }: LabelSheetPro
       </ul>
       <p className="batch-item-note">El CSV incluye los códigos secretos: guardalo solo para el control interno de tu empresa.</p>
       <div className="label-sheet">
-        {batch.tokens.map((label) => (
+        {(showAll ? batch.tokens : labels.items).map((label) => (
           <figure key={label.token} className="secret-label">
             <div className="label-codes">
               {(['public', 'secret'] as const).map((kind) => (
@@ -47,6 +53,7 @@ export function LabelSheet({ batch, isDownloading, onDownloadQr }: LabelSheetPro
           </figure>
         ))}
       </div>
+      <Pagination page={labels.page} pages={labels.pages} onPage={labels.setPage} label="Páginas de etiquetas" />
     </>
   );
 }

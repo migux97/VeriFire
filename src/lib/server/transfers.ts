@@ -10,7 +10,7 @@ import { chain } from './chain';
 import { HttpError } from './errors';
 import { textField, type JsonBody } from './http';
 import {
-  anchorPendingProducts, findProduct, isCurrentOnChain, nextTransferAt, openTransferOf, recordEvent, shortAddress,
+  anchorPendingProducts, findProduct, isCurrentOnChain, openTransferOf, recordEvent, shortAddress,
   TRANSFER_LINK_MS, warrantyView
 } from './products';
 import { singleton } from './singleton';
@@ -21,14 +21,6 @@ type Step = { xdr: string } | { warranty: Warranty };
 const LINK_EXPIRED = 'Este link de transferencia ya no está vigente: el dueño lo canceló, generó otro o el producto ya cambió de dueño.';
 const NOT_OWNER = 'Solo el dueño actual puede transferir este producto.';
 const LINK_TIMED_OUT = 'Este link de transferencia venció. Pedile al dueño que genere uno nuevo.';
-
-// "4 minutos", "1 minuto", "30 segundos": what is left to wait.
-const waitText = (until: string) => {
-  const seconds = Math.max(1, Math.ceil((new Date(until).getTime() - Date.now()) / 1000));
-  if (seconds < 60) return `${seconds} segundos`;
-  const minutes = Math.ceil(seconds / 60);
-  return minutes === 1 ? '1 minuto' : `${minutes} minutos`;
-};
 
 // Keeps two requests for the same product from submitting at the same time.
 const inFlight = singleton('transfers-in-flight', () => new Set<string>());
@@ -84,8 +76,6 @@ const offeredProduct = (body: JsonBody) => {
 
 export const offerTransfer = async (body: JsonBody, baseUrl: string): Promise<Step> => {
   const { product, owner, tokenId } = ownedProduct(body);
-  const waitUntil = nextTransferAt(product);
-  if (waitUntil) throw new HttpError(429, `Ya generaste un link hace poco. Esperá ${waitText(waitUntil)} para pedir otro.`);
   const key = transferKeyOf(body);
   const transferKey = Buffer.from(key, 'hex');
   const signedXdr = textField(body, 'signedXdr');
@@ -94,7 +84,6 @@ export const offerTransfer = async (body: JsonBody, baseUrl: string): Promise<St
   await exclusive(product, () => chain.submitTransferOffer({ tokenId, owner, transferKey, signedXdr }));
   const offeredAt = new Date();
   product.transfer = { key, from: owner, offeredAt: offeredAt.toISOString(), expiresAt: new Date(offeredAt.getTime() + TRANSFER_LINK_MS).toISOString() };
-  product.lastTransferOfferAt = product.transfer.offeredAt;
   saveState();
   return { warranty: warrantyView(product, baseUrl) };
 };

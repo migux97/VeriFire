@@ -1,10 +1,13 @@
 import { Icon } from '@/components/ui/Icon';
 import { LedgerLink } from '@/components/ui/LedgerLink';
+import { Pagination, usePagination } from '@/components/ui/Pagination';
 import type { Message } from '@/components/ui/StatusMessage';
 import { ProductHistory } from '@/components/verification/ProductHistory';
 import type { TransferredWarranty, Warranty } from '@/lib/types';
 import { formatDay, plural } from '@/lib/format';
 import { WarrantyCard } from './WarrantyCard';
+
+const PAGE_SIZE = 6;
 
 export interface TransferControls {
   links: Record<string, string>;
@@ -49,6 +52,8 @@ function TransferredCard({ product }: { product: TransferredWarranty }) {
 
 export function WarrantyVault({ warranties, status, transfers, transferred }: WarrantyVaultProps) {
   const count = warranties?.length ?? 0;
+  const active = usePagination(warranties ?? [], PAGE_SIZE);
+  const passedOn = usePagination(transferred, PAGE_SIZE);
 
   return (
     <section className="vault" aria-labelledby="vault-title">
@@ -58,7 +63,7 @@ export function WarrantyVault({ warranties, status, transfers, transferred }: Wa
       </div>
       <p className="vault-status" role="status" aria-live="polite" hidden={status === null}>{status}</p>
       <div className="vault-grid">
-        {warranties?.map((warranty) => (
+        {active.items.map((warranty) => (
           <WarrantyCard
             key={warranty.token}
             warranty={warranty}
@@ -70,6 +75,7 @@ export function WarrantyVault({ warranties, status, transfers, transferred }: Wa
           />
         ))}
       </div>
+      <Pagination page={active.page} pages={active.pages} onPage={active.setPage} label="Páginas de garantías activas" />
       <div className="vault-empty" hidden={warranties === null || count > 0}>
         <svg viewBox="0 0 96 96" aria-hidden="true" focusable="false">
           <path d="M48 8 16 20v24c0 22 13.6 38.6 32 44 18.4-5.4 32-22 32-44V20L48 8Z" fill="#fde6e4" stroke="#e3261f" strokeWidth="3" strokeLinejoin="miter" />
@@ -85,8 +91,9 @@ export function WarrantyVault({ warranties, status, transfers, transferred }: Wa
             <span className="vault-count">{transferred.length} {plural(transferred.length, 'producto', 'productos')}</span>
           </div>
           <div className="vault-grid">
-            {transferred.map((product) => <TransferredCard key={`${product.token}-${product.at}`} product={product} />)}
+            {passedOn.items.map((product) => <TransferredCard key={`${product.token}-${product.at}`} product={product} />)}
           </div>
+          <Pagination page={passedOn.page} pages={passedOn.pages} onPage={passedOn.setPage} label="Páginas de productos transferidos" />
         </div>
       )}
     </section>

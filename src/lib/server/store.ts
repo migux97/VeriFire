@@ -42,8 +42,6 @@ export interface Product extends ProductFields {
   events?: StoredEvent[];
   // Open transfer link: the public key of its secret, who offered it and when it expires.
   transfer?: { key: string; from: string; offeredAt: string; expiresAt?: string };
-  // When the owner last opened a transfer link: the next one has to wait (see TRANSFER_COOLDOWN_MS).
-  lastTransferOfferAt?: string;
 }
 
 export interface Batch extends ProductFields {
