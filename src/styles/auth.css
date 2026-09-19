@@ -18,7 +18,7 @@
   overflow: hidden;
   padding: 36px clamp(32px, 5vw, 72px);
   background: var(--vf-red);
-  color: var(--vf-paper);
+  color: var(--vf-on-red);
 }
 
 .auth-visual-copy {
@@ -296,7 +296,7 @@
   height: 56px;
   border-radius: 4px;
   background: var(--vf-red);
-  color: var(--vf-paper);
+  color: var(--vf-on-red);
   font-size: 1.375rem;
 }
 

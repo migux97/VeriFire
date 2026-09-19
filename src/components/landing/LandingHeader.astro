@@ -1,6 +1,8 @@
 ---
-// Header of the landing page. The search box is the public verification form: it opens /verify with the code.
+// Header of the landing page. Visitors get the login and registration links; a session opened in another tab gets its
+// profile and the way back to its panel (see the landing mode of SessionGate).
 import BrandLogo from '@/components/layout/BrandLogo.astro';
+import { ProfileMenu } from '@/components/warranties/ProfileMenu';
 ---
 
 <header class="lp-header">
@@ -17,14 +19,18 @@ import BrandLogo from '@/components/layout/BrandLogo.astro';
     <a href="#faq">Preguntas</a>
   </nav>
 
-  <form class="lp-search" method="get" action="/verify" role="search">
-    <label class="visually-hidden" for="lp-search-token">Código del producto</label>
-    <input id="lp-search-token" name="token" type="text" placeholder="Código del producto" autocomplete="off" spellcheck="false" required />
-    <button type="submit" aria-label="Verificar el código"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i></button>
-  </form>
+  <div class="lp-guest-actions">
+    <a class="lp-login" href="/login">
+      <i class="fa-regular fa-user" aria-hidden="true"></i>
+      <span>Ingresar</span>
+    </a>
+    <a class="lp-button lp-button-solid lp-header-cta" href="/login?modo=registro">Crear cuenta</a>
+  </div>
 
-  <a class="lp-login" href="/login">
-    <i class="fa-regular fa-user" aria-hidden="true"></i>
-    <span>Ingresar</span>
-  </a>
+  <div class="lp-session-actions">
+    <a class="lp-button lp-button-solid lp-header-cta" href="/app">
+      <i class="fa-solid fa-table-columns" aria-hidden="true"></i> Ir a mi panel
+    </a>
+    <ProfileMenu client:load />
+  </div>
 </header>

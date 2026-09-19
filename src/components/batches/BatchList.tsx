@@ -5,7 +5,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { Icon } from '@/components/ui/Icon';
 import { Pagination, usePagination } from '@/components/ui/Pagination';
-import { StatusMessage, type Message } from '@/components/ui/StatusMessage';
+import type { Message } from '@/components/ui/StatusMessage';
+import { Toast } from '@/components/ui/Toast';
 import { ApiError, postJson } from '@/lib/client/api';
 import { downloadBatchCsv, downloadDataUrl } from '@/lib/client/download';
 import { fetchPurchase, forgetPurchase, migrateLegacyPurchase, savedPurchaseIds } from '@/lib/client/purchases';
@@ -303,7 +304,7 @@ export function BatchList() {
         </select>
       </div>
 
-      <StatusMessage id="batches-status" message={status} />
+      <Toast message={status} onClose={() => setStatus(null)} />
       <div className="batch-list">
         {batchPage.items.map((purchaseId) => (
           <BatchItem

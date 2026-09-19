@@ -4,12 +4,13 @@ import '@/styles/brand.css';
 import '@/styles/global.css';
 import { Font } from 'astro:assets';
 import SessionGate from '@/components/layout/SessionGate.astro';
+import { THEME_KEY } from '@/lib/client/theme';
 
 interface Props {
   title: string;
   description: string;
   bodyClass: string;
-  session?: 'public' | 'protected' | 'guest';
+  session?: 'public' | 'protected' | 'guest' | 'landing';
 }
 
 const { title, description, bodyClass, session = 'public' } = Astro.props;
@@ -22,6 +23,13 @@ const { title, description, bodyClass, session = 'public' } = Astro.props;
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
     <title>{title}</title>
+    <script is:inline define:vars={{ THEME_KEY }}>
+      try {
+        if (localStorage.getItem(THEME_KEY) === 'dark') document.documentElement.dataset.theme = 'dark';
+      } catch {
+        // Without storage the page stays light.
+      }
+    </script>
     {session !== 'public' && <SessionGate mode={session} />}
     <link rel="icon" href="/favicon.png" type="image/png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />

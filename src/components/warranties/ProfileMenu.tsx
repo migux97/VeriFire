@@ -1,20 +1,25 @@
-import { useStore } from '@nanostores/react';
 import { useEffect, useRef, useState } from 'react';
 import { Icon } from '@/components/ui/Icon';
 import { storedUser, type StoredUser } from '@/lib/client/account';
 import { leaveSession } from '@/lib/client/session';
-import { $deviceEnrollmentOffered, $deviceFormOpen } from '@/stores/devices';
+import { currentTheme, setTheme } from '@/lib/client/theme';
 
 export function ProfileMenu() {
   const [open, setOpen] = useState(false);
   const [user, setUser] = useState<StoredUser | null>(null);
-  const enrollmentOffered = useStore($deviceEnrollmentOffered);
+  const [dark, setDark] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     setUser(storedUser());
+    setDark(currentTheme() === 'dark');
   }, []);
+
+  const toggleTheme = () => {
+    setTheme(dark ? 'light' : 'dark');
+    setDark(!dark);
+  };
 
   useEffect(() => {
     if (!open) return undefined;
@@ -33,11 +38,6 @@ export function ProfileMenu() {
       document.removeEventListener('keydown', closeOnEscape);
     };
   }, [open]);
-
-  const openDeviceForm = () => {
-    setOpen(false);
-    $deviceFormOpen.set(true);
-  };
 
   return (
     <div ref={menuRef} className="profile-menu">
@@ -61,11 +61,10 @@ export function ProfileMenu() {
             <span>{user?.email || 'Correo no disponible'}</span>
           </div>
         </div>
-        {enrollmentOffered && (
-          <button className="profile-action" type="button" onClick={openDeviceForm}>
-            <Icon name="fa-solid fa-mobile-screen" /> Habilitar en mis otros dispositivos
-          </button>
-        )}
+        <button className="profile-action" type="button" role="switch" aria-checked={dark} onClick={toggleTheme}>
+          <Icon name={`fa-solid ${dark ? 'fa-moon' : 'fa-sun'}`} /> Modo oscuro
+          <span className="theme-switch" aria-hidden="true"><span /></span>
+        </button>
         <button className="profile-action" type="button" onClick={() => leaveSession('cerrada')}>
           <Icon name="fa-solid fa-arrow-right-from-bracket" /> Cerrar sesión
         </button>

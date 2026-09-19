@@ -5,6 +5,8 @@
   --vf-red: #e3261f;
   --vf-red-deep: #c81d17;
   --vf-red-press: #b8170f;
+  /* Text and icons on red: white in both modes. */
+  --vf-on-red: #ffffff;
   --vf-ink: #000000;
   --vf-text: #262626;
   --vf-muted: #5c5c5c;
@@ -22,6 +24,46 @@
   --vf-info-soft: #e8eefb;
   --vf-font: var(--font-urbanist), 'Segoe UI', system-ui, -apple-system, Arial, sans-serif;
   --vf-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+/* Dark mode, chosen in the profile menu. Ink and paper swap: what was black text on white is light text on a dark
+   surface, and the black accents (hover fills, badges) turn light. */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --vf-red: #ef3b33;
+  --vf-red-deep: #e3261f;
+  --vf-red-press: #c81d17;
+  --vf-ink: #f4f4f4;
+  --vf-text: #e4e4e4;
+  --vf-muted: #a6a6a6;
+  --vf-paper: #1b1b1b;
+  --vf-mist: #111111;
+  --vf-line: #2d2d2d;
+  --vf-line-strong: #454545;
+  --vf-blush: #3b1715;
+  --vf-blush-line: #6e2620;
+  --vf-error: #ff9d95;
+  --vf-success: #6fd79b;
+  --vf-success-soft: #11291b;
+  --vf-success-line: #245a3a;
+  --vf-info: #9bb8ff;
+  --vf-info-soft: #172240;
+}
+
+/* Parts that are black in both modes keep the light-mode tokens inside them. */
+:root[data-theme='dark'] .lp-footer,
+:root[data-theme='dark'] .scan-viewer {
+  --vf-ink: #000000;
+  --vf-text: #262626;
+  --vf-paper: #ffffff;
+  --vf-mist: #f2f2f2;
+}
+
+/* A QR only scans as dark modules on a light background. */
+:root[data-theme='dark'] img[src^='data:image'],
+:root[data-theme='dark'] .lp-qr {
+  border-radius: 4px;
+  background: #ffffff;
 }
 
 .lp-sprite {
@@ -51,6 +93,18 @@
   height: 34px;
 }
 
+/* Black letters on light backgrounds; white ones on the black footer (`light`) and in dark mode. */
+.lp-logo .lp-logo-on-dark,
+.lp-logo-light .lp-logo-on-light,
+:root[data-theme='dark'] .lp-logo .lp-logo-on-light {
+  display: none;
+}
+
+.lp-logo-light .lp-logo-on-dark,
+:root[data-theme='dark'] .lp-logo .lp-logo-on-dark {
+  display: block;
+}
+
 /* ---------- Product box ---------- */
 
 .lp-package {
@@ -78,7 +132,7 @@
 }
 
 .lp-package-status {
-  fill: var(--vf-paper);
+  fill: var(--vf-on-red);
   font-family: var(--vf-font);
   font-size: 15px;
   font-weight: 900;

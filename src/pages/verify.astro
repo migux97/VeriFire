@@ -5,6 +5,7 @@ import LocalDates from '@/components/layout/LocalDates.astro';
 import StandaloneHeader from '@/components/layout/StandaloneHeader.astro';
 import { ProductDetails } from '@/components/verification/ProductDetails';
 import { ProductHistory } from '@/components/verification/ProductHistory';
+import { VerifyScanner } from '@/components/verification/VerifyScanner';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import { findProduct, publicProductView, recordVerification } from '@/lib/server/products';
 
@@ -57,8 +58,10 @@ if (product) {
         )
       }
 
+      <VerifyScanner client:load />
+
       <form class="verification-form" method="get" action="/verify">
-        <label for="verification-code">Código público del producto</label>
+        <label for="verification-code">O ingresá el código público del producto</label>
         <div class="verification-input-row">
           <input id="verification-code" name="token" type="text" placeholder="Ej. VF-001" autocomplete="off" spellcheck="false" value={requestedToken} required />
           <button class="button button-primary" type="submit"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i> Verificar</button>

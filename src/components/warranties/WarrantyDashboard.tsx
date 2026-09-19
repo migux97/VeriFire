@@ -1,9 +1,9 @@
 // The buyer's panel: scan the secret QR inside a product, activate its warranty, list the warranties already owned and
 // pass them on to a new owner through a transfer link, or accept one.
-import { useStore } from '@nanostores/react';
 import { useEffect, useRef, useState, type SubmitEvent } from 'react';
 import { Icon } from '@/components/ui/Icon';
-import { StatusMessage, type Message, type MessageTone } from '@/components/ui/StatusMessage';
+import type { Message, MessageTone } from '@/components/ui/StatusMessage';
+import { Toast } from '@/components/ui/Toast';
 import { useNow } from '@/components/ui/useNow';
 import { storedUser, updateStoredUser } from '@/lib/client/account';
 import { activateWarranty } from '@/lib/client/activation';
@@ -21,7 +21,6 @@ import { errorMessage } from '@/lib/errors';
 import { formatCountdown } from '@/lib/format';
 import type { TransferredWarranty, Warranty, WarrantiesResponse } from '@/lib/types';
 import { isStellarAddress } from '@/lib/validation';
-import { $deviceEnrollmentOffered, $deviceFormOpen } from '@/stores/devices';
 import { DeviceEnrollForm } from './DeviceEnrollForm';
 import { QrScanPanel } from './QrScanPanel';
 import { WarrantyVault, type TransferControls } from './WarrantyVault';
@@ -47,7 +46,6 @@ export function WarrantyDashboard({ cavosAppId }: WarrantyDashboardProps) {
   const [transferLinks, setTransferLinks] = useState<Record<string, string>>({});
   const [busyToken, setBusyToken] = useState<string | null>(null);
   const [transferStatuses, setTransferStatuses] = useState<Record<string, Message>>({});
-  const deviceFormOpen = useStore($deviceFormOpen);
   // What failed because this browser could not sign yet: "Reintentar" enables it and runs it again.
   const [repair, setRepair] = useState<{ run: () => Promise<void> } | null>(null);
   const [repairing, setRepairing] = useState(false);
@@ -101,7 +99,6 @@ export function WarrantyDashboard({ cavosAppId }: WarrantyDashboardProps) {
     const address = walletAddress.current || storedUser()?.walletAddress || '';
     if (!isStellarAddress(address)) throw new Error('Todavía no encontramos tu wallet. Recargá la página e intentá de nuevo.');
     await enableSigning(cavosAppId, address, deviceCode);
-    $deviceEnrollmentOffered.set(false);
   };
 
   // The key is derived from the password this account uses in this browser.
@@ -131,32 +128,16 @@ export function WarrantyDashboard({ cavosAppId }: WarrantyDashboardProps) {
     }
   };
 
-  // It happens by itself when the login left the derived key in this tab; otherwise the profile menu offers it.
+  // An account that never saved its key in Stellar saves it by itself when the login left the password's key in this
+  // tab; otherwise "Reintentar" does it the first time a signature fails.
   const enableOtherDevices = async () => {
     const address = walletAddress.current || storedUser()?.walletAddress || '';
-    if (!isStellarAddress(address) || await hasDeviceFactor(address) !== false) return;
     const deviceCode = storedDeviceCode();
-    if (!deviceCode) {
-      $deviceEnrollmentOffered.set(true);
-      return;
-    }
+    if (!deviceCode || !isStellarAddress(address) || await hasDeviceFactor(address) !== false) return;
     try {
       await enrollDeviceFactor(deviceCode);
-      showMessage('Tu cuenta quedó habilitada para usarse en el celular: entrá ahí con tu correo y contraseña.', 'success');
     } catch (error) {
-      $deviceEnrollmentOffered.set(true);
-      console.warn('No se pudo habilitar el uso en varios dispositivos:', errorMessage(error));
-    }
-  };
-
-  const enrollWithPassword = async (password: string) => {
-    showMessage('Habilitando tu cuenta para otros dispositivos...', 'info');
-    try {
-      await enrollDeviceFactor(await deviceCodeFromPassword(password));
-      $deviceFormOpen.set(false);
-      showMessage('Listo: ya podés entrar desde el celular con tu correo y tu contraseña.', 'success');
-    } catch (error) {
-      showMessage(errorMessage(error), 'error');
+      console.warn('No se pudo guardar la llave de la cuenta en Stellar:', errorMessage(error));
     }
   };
 
@@ -364,12 +345,15 @@ export function WarrantyDashboard({ cavosAppId }: WarrantyDashboardProps) {
           onMessage={setMessage}
           onScanStart={() => setScannedClaim(null)}
         />
-        <StatusMessage id="claim-message" message={message} />
+        <Toast message={message} onClose={() => setMessage(null)} />
         {repair && (storedDeviceCode()
           ? (
-            <button className="button button-primary" type="button" disabled={repairing} onClick={() => void repairAndRetry()}>
-              <Icon name="fa-solid fa-rotate-right" /> Reintentar
-            </button>
+            <div className="repair-prompt">
+              <p>Este navegador todavía no está habilitado para firmar con tu cuenta.</p>
+              <button className="button button-primary" type="button" disabled={repairing} onClick={() => void repairAndRetry()}>
+                <Icon name="fa-solid fa-rotate-right" /> Reintentar
+              </button>
+            </div>
           )
           : (
             <DeviceEnrollForm
@@ -382,14 +366,6 @@ export function WarrantyDashboard({ cavosAppId }: WarrantyDashboardProps) {
         <form id="claim-form" noValidate hidden={!scannedClaim} onSubmit={handleClaim}>
           <button ref={claimButtonRef} className="button button-primary" type="submit" disabled={claiming}>Activar Garantía Oficial</button>
         </form>
-        {deviceFormOpen && (
-          <DeviceEnrollForm
-            submitLabel="Habilitar"
-            hint="Con tu contraseña habilitamos tu cuenta para usarla en el celular. Es una sola vez y no se guarda en ningún lado."
-            onEnroll={enrollWithPassword}
-            onCancel={() => $deviceFormOpen.set(false)}
-          />
-        )}
       </section>
 
       <WarrantyVault warranties={warranties} status={vaultStatus} transfers={transfers} transferred={transferred} />

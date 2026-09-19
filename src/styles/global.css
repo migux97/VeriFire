@@ -144,7 +144,7 @@ kbd {
 .button-primary {
   border-color: var(--vf-red);
   background: var(--vf-red);
-  color: var(--vf-paper);
+  color: var(--vf-on-red);
 }
 
 .button-primary:hover:not(:disabled) {
@@ -322,7 +322,7 @@ kbd {
 .wallet-button.buy-button {
   border-color: var(--vf-red);
   background: var(--vf-red);
-  color: var(--vf-paper);
+  color: var(--vf-on-red);
 }
 
 .wallet-button.buy-button:hover {
@@ -393,7 +393,7 @@ kbd {
   height: 40px;
   border-radius: 4px;
   background: var(--vf-red);
-  color: var(--vf-paper);
+  color: var(--vf-on-red);
   font-size: 1rem;
   font-weight: 900;
 }
@@ -442,6 +442,37 @@ kbd {
 
 .profile-action:hover {
   background: var(--vf-mist);
+}
+
+/* The switch of the dark mode option: the knob moves right while it is on. */
+.theme-switch {
+  position: relative;
+  flex: none;
+  width: 36px;
+  height: 20px;
+  margin-left: auto;
+  border-radius: 999px;
+  background: var(--vf-line-strong);
+  transition: background-color 0.15s ease;
+}
+
+.theme-switch span {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #ffffff;
+  transition: transform 0.15s ease;
+}
+
+[aria-checked='true'] > .theme-switch {
+  background: var(--vf-red);
+}
+
+[aria-checked='true'] > .theme-switch span {
+  transform: translateX(16px);
 }
 
 @keyframes pop-in {
@@ -624,7 +655,7 @@ kbd {
   height: 48px;
   border-radius: 4px;
   background: var(--vf-red);
-  color: var(--vf-paper);
+  color: var(--vf-on-red);
   font-size: 1.25rem;
 }
 
@@ -823,7 +854,7 @@ a.network-status:hover {
   height: 56px;
   border-radius: 4px;
   background: var(--vf-red);
-  color: var(--vf-paper);
+  color: var(--vf-on-red);
   font-size: 1.375rem;
 }
 
@@ -921,6 +952,20 @@ a.network-status:hover {
 }
 
 /* Public verification form */
+
+.verify-scan {
+  display: grid;
+  gap: 14px;
+  padding-top: 24px;
+  border-top: 1px solid var(--vf-line);
+}
+
+.verify-scan-hint {
+  margin: 0;
+  color: var(--vf-text);
+  font-size: 0.9375rem;
+  line-height: 1.55;
+}
 
 .verification-form {
   display: grid;
@@ -1540,7 +1585,7 @@ a.network-status:hover {
 .history-event.is-transferred .history-icon {
   border-color: var(--vf-red);
   background: var(--vf-red);
-  color: var(--vf-paper);
+  color: var(--vf-on-red);
 }
 
 .history-event.is-rejected .history-icon {
@@ -1834,4 +1879,117 @@ a.network-status:hover {
   .pagination {
     display: none;
   }
+}
+
+/* ---------- Toasts ---------- */
+
+.toast-region {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 50;
+  width: min(420px, calc(100vw - 32px));
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 14px 14px 16px;
+  border-left: 4px solid var(--vf-ink);
+  border-radius: 4px;
+  background: var(--vf-paper);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 18%);
+  color: var(--vf-text);
+  pointer-events: auto;
+  animation: toast-in 180ms ease-out;
+}
+
+.toast > i {
+  margin-top: 3px;
+}
+
+.toast p {
+  flex: 1;
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.toast.is-success {
+  border-left-color: var(--vf-success);
+}
+
+.toast.is-success > i {
+  color: var(--vf-success);
+}
+
+.toast.is-error {
+  border-left-color: var(--vf-red);
+}
+
+.toast.is-error > i {
+  color: var(--vf-red);
+}
+
+.toast.is-info > i {
+  color: var(--vf-info);
+}
+
+.toast-close {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  margin: -4px -4px 0 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--vf-muted);
+  cursor: pointer;
+}
+
+.toast-close:hover {
+  background: var(--vf-mist);
+  color: var(--vf-ink);
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@media (max-width: 720px) {
+  .toast-region {
+    right: 16px;
+    bottom: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+  }
+}
+
+@media print {
+  .toast-region {
+    display: none;
+  }
+}
+
+.repair-prompt {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+}
+
+.repair-prompt p {
+  margin: 0;
+  color: var(--vf-text);
+  font-weight: 600;
 }

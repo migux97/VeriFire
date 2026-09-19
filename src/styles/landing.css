@@ -33,12 +33,12 @@
 
 .lp-button-outline:hover {
   background: var(--vf-red);
-  color: var(--vf-paper);
+  color: var(--vf-on-red);
 }
 
 .lp-button-solid {
   background: var(--vf-red);
-  color: var(--vf-paper);
+  color: var(--vf-on-red);
 }
 
 .lp-button-solid:hover {
@@ -77,7 +77,7 @@
 
 .lp-arrow:hover {
   background: var(--vf-red);
-  color: var(--vf-paper);
+  color: var(--vf-on-red);
 }
 
 /* ---------- Header ---------- */
@@ -112,50 +112,6 @@
   color: var(--vf-red);
 }
 
-.lp-search {
-  display: flex;
-  align-items: center;
-  width: 240px;
-  height: 40px;
-  border: 1px solid var(--vf-line-strong);
-  border-radius: 4px;
-  background: var(--vf-paper);
-}
-
-.lp-search input {
-  flex: 1;
-  min-width: 0;
-  height: 100%;
-  padding-left: 12px;
-  border: 0;
-  background: transparent;
-  font-family: var(--vf-font);
-  font-size: 0.875rem;
-  font-weight: 600;
-}
-
-.lp-search input::placeholder {
-  color: var(--vf-muted);
-  font-weight: 500;
-}
-
-.lp-search input:focus {
-  outline: none;
-}
-
-.lp-search:focus-within {
-  border-color: var(--vf-ink);
-}
-
-.lp-search button {
-  width: 40px;
-  height: 100%;
-  border: 0;
-  background: transparent;
-  color: var(--vf-ink);
-  cursor: pointer;
-}
-
 .lp-login {
   display: inline-flex;
   align-items: center;
@@ -168,6 +124,29 @@
 
 .lp-login:hover {
   color: var(--vf-red);
+}
+
+/* Visitors see the login links; a session opened in another tab sees its profile and the way to its panel. */
+.lp-guest-actions,
+.lp-session-actions {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.lp-session-actions,
+.has-session .lp-guest-actions {
+  display: none;
+}
+
+.has-session .lp-session-actions {
+  display: flex;
+}
+
+.lp-header-cta {
+  min-height: 40px;
+  padding-inline: 16px;
+  white-space: nowrap;
 }
 
 /* ---------- Hero ---------- */
@@ -493,7 +472,7 @@
 .lp-card[aria-pressed='true'] .lp-card-action {
   border-color: var(--vf-red);
   background: var(--vf-red);
-  color: var(--vf-paper);
+  color: var(--vf-on-red);
 }
 
 .lp-card[aria-pressed='true'] .lp-card-token {
@@ -581,7 +560,7 @@
 .lp-event-transferred .lp-event-icon {
   border-color: var(--vf-red);
   background: var(--vf-red);
-  color: var(--vf-paper);
+  color: var(--vf-on-red);
 }
 
 .lp-event-rejected .lp-event-icon {
@@ -628,7 +607,7 @@
   overflow: hidden;
   padding: 96px var(--vf-gutter);
   background: var(--vf-red);
-  color: var(--vf-paper);
+  color: var(--vf-on-red);
 }
 
 .lp-band h2 {
@@ -932,7 +911,7 @@
 
 .lp-question[open] summary i {
   background: var(--vf-red);
-  color: var(--vf-paper);
+  color: var(--vf-on-red);
   transform: rotate(45deg);
 }
 
@@ -1047,7 +1026,8 @@
     margin-right: 0;
   }
 
-  .lp-search {
+  .lp-guest-actions,
+  .lp-session-actions {
     margin-left: auto;
   }
 }
@@ -1101,13 +1081,13 @@
     padding-block: 18px;
   }
 
-  .lp-header-verify,
-  .lp-search {
+  .lp-header-verify {
     display: none;
   }
 
-  .lp-login {
-    margin-left: auto;
+  .lp-guest-actions,
+  .lp-session-actions {
+    gap: 12px;
   }
 
   .lp-nav {

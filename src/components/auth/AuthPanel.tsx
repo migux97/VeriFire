@@ -339,6 +339,8 @@ export function AuthPanel({ cavosAppId }: AuthPanelProps) {
     setSavedUsername(storedUser()?.name ?? '');
 
     const params = new URLSearchParams(window.location.search);
+    // "Crear cuenta" on the landing page opens the registration form.
+    if (params.get('modo') === 'registro') setMode('register');
     const reason = params.get('sesion');
     if (reason && reason in SESSION_NOTICES) {
       setNotice(SESSION_NOTICES[reason as SessionEndReason]);

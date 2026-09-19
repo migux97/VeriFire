@@ -9,6 +9,9 @@ export const WALLET_KEY = 'verifireWallet';
 // The key derived from the password that opens the signing key on any device. It lives in sessionStorage so the
 // panel can finish enabling an account whose login could not, and it dies with the tab.
 export const DEVICE_CODE_KEY = 'verifireDeviceCode';
+// Set in this tab once it opens a page behind login: from then on the landing page sends it back to the panel. A new
+// tab starts without it, so it shows the landing page with the profile and a link to the panel.
+export const IN_APP_KEY = 'verifireInApp';
 
 // Shown by the login page after leaving a session (see sessionNotices in the auth panel).
 export type SessionEndReason = 'expirada' | 'cerrada' | 'verificar';
@@ -32,6 +35,7 @@ export const userSession = {
     localStorage.removeItem(SESSION_KEY);
     localStorage.removeItem(WALLET_KEY);
     sessionStorage.removeItem(DEVICE_CODE_KEY);
+    sessionStorage.removeItem(IN_APP_KEY);
     sessionStorage.removeItem('verifireSession');
     sessionStorage.removeItem(WALLET_KEY);
     for (const storage of [localStorage, sessionStorage]) {
@@ -55,6 +59,11 @@ export const guardSession = () => {
     if (hadSession) userSession.end();
     window.location.replace(hadSession ? '/login?sesion=expirada' : '/login');
     return;
+  }
+  try {
+    sessionStorage.setItem(IN_APP_KEY, '1');
+  } catch {
+    // Without storage the landing page stays reachable from the panel.
   }
 
   // Activity does not extend the session: it always ends 8 hours after login.
