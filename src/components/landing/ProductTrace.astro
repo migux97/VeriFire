@@ -1,0 +1,114 @@
+---
+import { sampleProducts, traceIcons } from './content';
+import PackageArt from './PackageArt.astro';
+---
+
+<section class="lp-catalog" id="history" aria-labelledby="lp-catalog-title">
+  <div class="lp-catalog-head">
+    <h2 id="lp-catalog-title">Elegí un producto y mirá su recorrido</h2>
+    <p>Ejemplos de cómo queda registrada una unidad en distintas industrias, desde la planta hasta su dueño actual.</p>
+  </div>
+
+  <div class="lp-rail" data-rail>
+    {
+      sampleProducts.map((product, index) => (
+        <button class="lp-card" type="button" data-product={product.id} aria-pressed={index === 0 ? 'true' : 'false'} aria-controls="lp-trace">
+          <span class="lp-card-art">
+            <PackageArt word={[product.labelWord]} color={product.labelColor} lot={product.lot} />
+          </span>
+          <span class="lp-card-head">
+            <strong>{product.category}</strong>
+            <span>Lote {product.lot}</span>
+          </span>
+          <span class="lp-card-text">{product.summary}</span>
+          <span class="lp-card-foot">
+            <span class="lp-card-token">{product.token}</span>
+            <span class="lp-card-action" aria-hidden="true">
+              <i class="fa-solid fa-clock-rotate-left"></i>
+            </span>
+          </span>
+        </button>
+      ))
+    }
+  </div>
+
+  <div class="lp-trace" id="lp-trace" aria-live="polite">
+    {
+      sampleProducts.map((product, index) => (
+        <article class="lp-trace-panel" data-trace={product.id} hidden={index !== 0} aria-label={`Historial de ${product.token}`}>
+          <dl class="lp-trace-facts">
+            <div>
+              <dt>Token</dt>
+              <dd>{product.token}</dd>
+            </div>
+            <div>
+              <dt>Modelo</dt>
+              <dd>{product.model}</dd>
+            </div>
+            <div>
+              <dt>Destino</dt>
+              <dd>{product.destination}</dd>
+            </div>
+            <div>
+              <dt>Dueño actual</dt>
+              <dd>{product.owner}</dd>
+            </div>
+            <div>
+              <dt>Activaciones</dt>
+              <dd>{product.activations}</dd>
+            </div>
+          </dl>
+          <ol class="lp-timeline">
+            {product.events.map((event) => (
+              <li class:list={['lp-event', `lp-event-${event.kind}`]}>
+                <span class="lp-event-icon">
+                  <i class={traceIcons[event.kind]} aria-hidden="true" />
+                </span>
+                <strong>{event.title}</strong>
+                <span>{event.place}</span>
+                <span class="lp-event-date">{event.date}</span>
+              </li>
+            ))}
+          </ol>
+        </article>
+      ))
+    }
+  </div>
+
+  <div class="lp-catalog-foot">
+    <a class="lp-button lp-button-outline" href="/verify">
+      Verificar un código real <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+    </a>
+    <div class="lp-arrows">
+      <button class="lp-arrow" type="button" data-rail-step="-1" aria-label="Productos anteriores">
+        <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+      </button>
+      <button class="lp-arrow" type="button" data-rail-step="1" aria-label="Productos siguientes">
+        <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+      </button>
+    </div>
+  </div>
+</section>
+
+<script>
+  const rail = document.querySelector<HTMLElement>('[data-rail]');
+  if (rail) {
+    const cards = [...rail.querySelectorAll<HTMLButtonElement>('[data-product]')];
+    const panels = [...document.querySelectorAll<HTMLElement>('[data-trace]')];
+
+    cards.forEach((card) =>
+      card.addEventListener('click', () => {
+        cards.forEach((other) => other.setAttribute('aria-pressed', String(other === card)));
+        panels.forEach((panel) => (panel.hidden = panel.dataset.trace !== card.dataset.product));
+      })
+    );
+
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    document.querySelectorAll<HTMLButtonElement>('[data-rail-step]').forEach((arrow) => {
+      arrow.addEventListener('click', () => {
+        const step = cards[0]?.offsetWidth ?? rail.clientWidth;
+        rail.scrollBy({ left: Number(arrow.dataset.railStep) * step, behavior: reducedMotion.matches ? 'auto' : 'smooth' });
+      });
+    });
+  }
+</script>

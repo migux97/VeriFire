@@ -1,0 +1,15 @@
+---
+// The Verifire logo: black letters on light backgrounds, white ones on the black footer (`light`) and in dark mode.
+// Both images are in the page and brand.css shows the one that fits.
+interface Props {
+  href?: string | undefined;
+  light?: boolean;
+}
+
+const { href = '/', light = false } = Astro.props;
+---
+
+<a class:list={['lp-logo', { 'lp-logo-light': light }]} href={href} aria-label="Verifire, inicio">
+  <img class="lp-logo-on-light" src="/brand/verifire.png" alt="" width="516" height="160" />
+  <img class="lp-logo-on-dark" src="/brand/verifire-light.png" alt="" width="516" height="160" />
+</a>

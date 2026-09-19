@@ -1,0 +1,50 @@
+---
+import { AuthPanel } from '@/components/auth/AuthPanel';
+import BrandLogo from '@/components/layout/BrandLogo.astro';
+import LandingSprite from '@/components/landing/LandingSprite.astro';
+import PackageArt from '@/components/landing/PackageArt.astro';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { config } from '@/lib/server/config';
+import '@/styles/auth.css';
+---
+
+<BaseLayout
+  title="Verifire | Acceso"
+  description="Ingresá o creá tu cuenta Verifire para activar garantías y seguir los lotes de tu marca."
+  bodyClass="auth-page"
+  session="guest"
+>
+  <LandingSprite />
+
+  <div class="auth-shell">
+    <aside class="auth-visual">
+      <BrandLogo />
+
+      <div class="auth-visual-copy">
+        <h1>Tus productos originales, a tu nombre.</h1>
+        <p>Entrá para activar la garantía de lo que compraste o para seguir los lotes de tu marca.</p>
+        <ul class="auth-features">
+          <li>Activás la garantía con el QR de adentro de la caja</li>
+          <li>Seguís cada lote y dónde se activó cada unidad</li>
+          <li>Tu wallet de Stellar se crea con tu Gmail, sin comisiones</li>
+        </ul>
+      </div>
+
+      <div class="auth-visual-art" aria-hidden="true">
+        <svg class="lp-guilloche auth-guilloche" focusable="false"><use href="#lp-guilloche"></use></svg>
+        <PackageArt class="auth-package" word={['ORIGI', 'NAL']} color="#ffffff" lot="1043" />
+      </div>
+    </aside>
+
+    <main class="auth-main">
+      <nav class="auth-topbar" aria-label="Salir del acceso">
+        <a href="/"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Volver al inicio</a>
+        <a href="/verify"><i class="fa-solid fa-qrcode" aria-hidden="true"></i> Verificar un producto</a>
+      </nav>
+
+      <div class="auth-card">
+        <AuthPanel client:load cavosAppId={config.cavosAppId} />
+      </div>
+    </main>
+  </div>
+</BaseLayout>

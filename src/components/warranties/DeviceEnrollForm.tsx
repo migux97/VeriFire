@@ -4,10 +4,12 @@ interface DeviceEnrollFormProps {
   // Resolves once the attempt ends; the panel shows how it went.
   onEnroll: (password: string) => Promise<void>;
   onCancel: () => void;
+  submitLabel: string;
+  hint: string;
 }
 
-// One-time form to enable an older account on other devices.
-export function DeviceEnrollForm({ onEnroll, onCancel }: DeviceEnrollFormProps) {
+// Asks for the account's password once, to enable this browser to sign or the account on other devices.
+export function DeviceEnrollForm({ onEnroll, onCancel, submitLabel, hint }: DeviceEnrollFormProps) {
   const [busy, setBusy] = useState(false);
   const passwordRef = useRef<HTMLInputElement>(null);
 
@@ -31,9 +33,9 @@ export function DeviceEnrollForm({ onEnroll, onCancel }: DeviceEnrollFormProps) 
     <form className="device-form" noValidate onSubmit={(event) => void handleSubmit(event)}>
       <label htmlFor="enable-devices-password">Tu contraseña de Verifire</label>
       <input ref={passwordRef} id="enable-devices-password" type="password" autoComplete="current-password" placeholder="La misma con la que entrás" required />
-      <p className="field-hint">Con tu contraseña habilitamos tu cuenta para usarla en el celular. Es una sola vez y no se guarda en ningún lado. Hacelo desde la dirección donde creaste la cuenta: es la que tiene tu llave de firma.</p>
+      <p className="field-hint">{hint}</p>
       <div className="device-form-actions">
-        <button className="button button-primary" type="submit" disabled={busy}>Habilitar</button>
+        <button className="button button-primary" type="submit" disabled={busy}>{submitLabel}</button>
         <button className="button button-secondary" type="button" onClick={onCancel}>Cancelar</button>
       </div>
     </form>

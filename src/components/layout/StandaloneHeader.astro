@@ -1,6 +1,6 @@
 ---
 // Header of the single-card pages: public verification and the company purchase.
-import Brand from './Brand.astro';
+import BrandLogo from './BrandLogo.astro';
 
 interface Props {
   brandHref?: string;
@@ -10,6 +10,6 @@ const { brandHref } = Astro.props;
 ---
 
 <header class="verify-header">
-  <Brand href={brandHref} />
+  <BrandLogo href={brandHref} />
   <slot />
 </header>

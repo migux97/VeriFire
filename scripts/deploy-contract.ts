@@ -1,4 +1,6 @@
-// Deploys contracts/verifire_product to Stellar testnet and saves the contract id and admin key in .env.
+// Deploys contracts/verifire_product to Stellar testnet and saves the contract id and admin key in .env. With --force
+// it replaces the configured contract: the old id is kept as STELLAR_PREVIOUS_CONTRACT_ID, and the server registers the
+// products of that contract again in the new one (activated ones keep their owner).
 // Build first: cargo build --target wasm32v1-none --release (inside contracts/verifire_product).
 // Usage: npm run contract:deploy [-- --force]
 import { randomBytes } from 'node:crypto';
@@ -73,5 +75,7 @@ if (typeof contractId !== 'string') throw new Error('Stellar no devolvió el id 
 console.log(`Contrato creado: ${contractId}`);
 
 const { txHash } = await submitOperation(admin, new Contract(contractId).call('initialize', Address.fromString(admin.publicKey()).toScVal()));
-setEnv({ STELLAR_NETWORK: 'testnet', STELLAR_CONTRACT_ID: contractId });
+const previousContractId = process.env['STELLAR_CONTRACT_ID'];
+setEnv({ STELLAR_NETWORK: 'testnet', STELLAR_CONTRACT_ID: contractId, ...(previousContractId ? { STELLAR_PREVIOUS_CONTRACT_ID: previousContractId } : {}) });
+if (previousContractId) console.log(`Contrato anterior guardado como STELLAR_PREVIOUS_CONTRACT_ID: ${previousContractId}`);
 console.log(`Contrato inicializado (tx ${txHash}). STELLAR_CONTRACT_ID y STELLAR_ADMIN_SECRET quedaron guardados en .env.`);

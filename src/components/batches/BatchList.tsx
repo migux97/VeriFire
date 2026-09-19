@@ -4,14 +4,16 @@ import { useStore } from '@nanostores/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { Icon } from '@/components/ui/Icon';
-import { StatusMessage, type Message } from '@/components/ui/StatusMessage';
-import { ApiError } from '@/lib/client/api';
+import { Pagination, usePagination } from '@/components/ui/Pagination';
+import type { Message } from '@/components/ui/StatusMessage';
+import { Toast } from '@/components/ui/Toast';
+import { ApiError, postJson } from '@/lib/client/api';
 import { downloadBatchCsv, downloadDataUrl } from '@/lib/client/download';
 import { fetchPurchase, forgetPurchase, migrateLegacyPurchase, savedPurchaseIds } from '@/lib/client/purchases';
 import { userSession } from '@/lib/client/session';
 import { errorMessage } from '@/lib/errors';
 import { plural } from '@/lib/format';
-import type { CompanyBatch } from '@/lib/types';
+import type { CompanyBatch, PurchaseSummary } from '@/lib/types';
 import { $purchaseIds, $summaries, isSummary, setSummary, type SummaryEntry } from '@/stores/batches';
 import { BatchItem, type BatchAction } from './BatchItem';
 import { LabelSheet, type QrKind } from './LabelSheet';
@@ -20,6 +22,7 @@ import { PaymentDetail } from './PaymentDetail';
 const POLL_MS = 5000;
 // Every 12 checks (about a minute) every batch is refreshed, not only the ones waiting for something.
 const REFRESH_EVERY_TICKS = 12;
+const PAGE_SIZE = 10;
 
 type SortKey = keyof typeof sorters;
 
@@ -70,6 +73,7 @@ export function BatchList() {
   const [status, setStatus] = useState<Message | null>(null);
   const [open, setOpen] = useState<OpenDetail | null>(null);
   const [busy, setBusy] = useState<ReadonlySet<string>>(new Set());
+  const [printing, setPrinting] = useState(false);
   // purchaseId -> batch with secret codes and QR images, loaded when first needed.
   const fullBatches = useRef(new Map<string, CompanyBatch>());
   const openId = useRef('');
@@ -83,6 +87,10 @@ export function BatchList() {
       .filter((purchaseId) => matchesSearch(summaries[purchaseId], normalizedQuery))
       .sort((first, second) => sorters[sort](summaries[first], summaries[second]));
   }, [purchaseIds, summaries, query, sort]);
+  const batchPage = usePagination(visibleIds, PAGE_SIZE);
+  const { setPage } = batchPage;
+  // A new search or order starts from its first page.
+  useEffect(() => setPage(1), [query, sort, setPage]);
 
   const loadFullBatch = async (purchaseId: string) => {
     const cached = fullBatches.current.get(purchaseId);
@@ -170,11 +178,18 @@ export function BatchList() {
   const printBatch = async (purchaseId: string) => {
     const batch = await openDetail(purchaseId);
     if (!batch) return;
-    // The labels must be in the page before the print dialog takes its snapshot.
-    flushSync(() => setOpen({ purchaseId, state: 'ready', batch }));
-    const images = Array.from(items.current.get(purchaseId)?.querySelectorAll<HTMLImageElement>('.label-sheet img') ?? []);
-    await Promise.all(images.map((image) => image.decode().catch(() => {})));
-    window.print();
+    // Every label, not only the page on screen, must be in the page before the print dialog takes its snapshot.
+    flushSync(() => {
+      setPrinting(true);
+      setOpen({ purchaseId, state: 'ready', batch });
+    });
+    try {
+      const images = Array.from(items.current.get(purchaseId)?.querySelectorAll<HTMLImageElement>('.label-sheet img') ?? []);
+      await Promise.all(images.map((image) => image.decode().catch(() => {})));
+      window.print();
+    } finally {
+      setPrinting(false);
+    }
   };
 
   const runBusy = async (key: string, task: () => Promise<void>) => {
@@ -220,6 +235,15 @@ export function BatchList() {
       case 'csv':
         await runBusy(`${purchaseId}:csv`, async () => downloadBatchCsv(await loadFullBatch(purchaseId)));
         return;
+      case 'ship': {
+        const confirmed = window.confirm('¿Marcar el lote como despachado? Queda registrado en el historial de cada producto, y no se puede deshacer.');
+        if (!confirmed) return;
+        await runBusy(`${purchaseId}:ship`, async () => {
+          const { purchase } = await postJson<{ purchase: PurchaseSummary }>(`/api/purchases/${encodeURIComponent(purchaseId)}/ship`, {}, 'No se pudo marcar el lote como despachado.');
+          setSummary(purchaseId, purchase);
+        });
+        return;
+      }
       case 'lot-qr':
         await runBusy(`${purchaseId}:lot-qr`, async () => {
           const batch = await loadFullBatch(purchaseId);
@@ -242,6 +266,7 @@ export function BatchList() {
       return (
         <LabelSheet
           batch={open.batch}
+          showAll={printing}
           isDownloading={(token, kind) => busy.has(`${purchaseId}:${token}:${kind}`)}
           onDownloadQr={(token, kind) => void downloadQr(purchaseId, token, kind)}
         />
@@ -279,9 +304,9 @@ export function BatchList() {
         </select>
       </div>
 
-      <StatusMessage id="batches-status" message={status} />
+      <Toast message={status} onClose={() => setStatus(null)} />
       <div className="batch-list">
-        {visibleIds.map((purchaseId) => (
+        {batchPage.items.map((purchaseId) => (
           <BatchItem
             key={purchaseId}
             purchaseId={purchaseId}
@@ -297,6 +322,7 @@ export function BatchList() {
           />
         ))}
       </div>
+      <Pagination page={batchPage.page} pages={batchPage.pages} onPage={batchPage.setPage} label="Páginas de lotes" />
       <div className="vault-empty" hidden={!loaded || visibleIds.length > 0}>
         <p>
           {total

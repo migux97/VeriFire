@@ -7,11 +7,13 @@
   },
   "scripts": {
     "dev": "astro dev",
+    "tunnel": "ngrok http 5501",
     "build": "astro check && astro build",
     "preview": "astro preview",
     "start": "node --env-file-if-exists=.env ./dist/server/entry.mjs",
     "check": "astro check",
     "contract:deploy": "node --env-file-if-exists=.env scripts/deploy-contract.ts",
+    "contract:upgrade": "node --env-file-if-exists=.env scripts/upgrade-contract.ts",
     "contract:test-activation": "node --env-file-if-exists=.env scripts/test-activation.ts"
   },
   "dependencies": {

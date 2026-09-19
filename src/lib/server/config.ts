@@ -1,7 +1,8 @@
 import { join } from 'node:path';
 import {
   ADMIN_API_TOKEN, CAVOS_APP_ID, CORS_ORIGIN, COSMOS_PAY_AMOUNT, COSMOS_PAY_API_KEY, COSMOS_PAY_DESTINATION, DATA_FILE,
-  PUBLIC_APP_URL, STELLAR_ADMIN_SECRET, STELLAR_CONTRACT_ID, STELLAR_ISSUER_SECRET, STELLAR_NETWORK, STELLAR_RPC_URL
+  PUBLIC_APP_URL, STELLAR_ADMIN_SECRET, STELLAR_CONTRACT_ID, STELLAR_ISSUER_SECRET, STELLAR_NETWORK, STELLAR_PREVIOUS_CONTRACT_ID,
+  STELLAR_RPC_URL
 } from 'astro:env/server';
 import { stellarConfigFromEnv } from './stellar';
 
@@ -22,6 +23,8 @@ export const config = {
   dataFile: DATA_FILE || join(process.cwd(), 'data', 'verifire-state.json'),
   network: STELLAR_NETWORK || 'local-demo',
   contractId: STELLAR_CONTRACT_ID || null,
+  // Contract replaced by the last deploy. Products registered before contract ids were saved belong to it.
+  previousContractId: STELLAR_PREVIOUS_CONTRACT_ID || null,
   stellar: stellarConfigFromEnv({ STELLAR_CONTRACT_ID, STELLAR_ISSUER_SECRET, STELLAR_ADMIN_SECRET, STELLAR_RPC_URL })
 };
 

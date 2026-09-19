@@ -14,13 +14,17 @@ export default defineConfig({
   // Accounts and sessions live in each browser; the server keeps no per-user state.
   session: false,
   // Cavos keeps each wallet's signing key per site address, and existing accounts were created on this port.
-  server: { port: 5501 },
+  server: {
+    port: 5501,
+    // The dev server also answers through an ngrok tunnel (npm run tunnel), to scan the QR labels from a phone.
+    allowedHosts: ['.ngrok-free.app', '.ngrok-free.dev', '.ngrok.app', '.ngrok.dev']
+  },
   fonts: [
     {
       provider: fontProviders.fontsource(),
-      name: 'Inter',
-      cssVariable: '--font-inter',
-      weights: [400, 500, 600, 700, 800, 900],
+      name: 'Urbanist',
+      cssVariable: '--font-urbanist',
+      weights: [500, 600, 700, 800, 900],
       styles: ['normal'],
       subsets: ['latin']
     }
@@ -40,6 +44,8 @@ export default defineConfig({
       DATA_FILE: runtimeVar(),
       STELLAR_NETWORK: runtimeVar(),
       STELLAR_CONTRACT_ID: runtimeVar(),
+      // Written by the deploy script: the contract STELLAR_CONTRACT_ID replaced, so its products get registered again.
+      STELLAR_PREVIOUS_CONTRACT_ID: runtimeVar(),
       STELLAR_ISSUER_SECRET: runtimeVar(),
       // Old name of STELLAR_ISSUER_SECRET.
       STELLAR_ADMIN_SECRET: runtimeVar(),

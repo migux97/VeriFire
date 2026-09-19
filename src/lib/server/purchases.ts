@@ -8,7 +8,7 @@ import { config } from './config';
 import { HttpError } from './errors';
 import type { JsonBody } from './http';
 import { batchUrl, qrImage, secretUrl, verificationUrl } from './links';
-import { anchorPendingProducts, isPendingOnChain, mintProduct, readProductFields } from './products';
+import { anchorPendingProducts, isCurrentOnChain, isPendingOnChain, mintProduct, readProductFields } from './products';
 import { explorerTxUrl, isTxHash } from './stellar';
 import { saveState, store, type Batch, type Purchase } from './store';
 
@@ -128,10 +128,23 @@ const purchaseSummary = (purchase: Purchase): PurchaseSummary => {
     batchId: purchase.batchId ?? null,
     payment: purchase.batchId ? null : { qr: purchase.paymentQr ?? null, uri: purchase.paymentUri ?? null },
     issuanceTxUrl: isTxHash(purchase.txHash) ? explorerTxUrl(purchase.txHash) : null,
-    registeredOnChain: tokens.filter((product) => product.chain).length,
+    registeredOnChain: tokens.filter(isCurrentOnChain).length,
     pendingOnChain: chain.enabled ? tokens.filter(isPendingOnChain).length : 0,
-    claimed: tokens.filter((product) => product.claimed).length
+    claimed: tokens.filter((product) => product.claimed).length,
+    shippedAt: (purchase.batchId && store.batches.get(purchase.batchId)?.shippedAt) || null
   };
+};
+
+// Once per batch: every product records the shipment to the batch's destination in its history.
+export const shipBatch = (purchase: Purchase) => {
+  const batch = purchase.batchId ? store.batches.get(purchase.batchId) : undefined;
+  if (!batch) throw new HttpError(409, 'Este lote todavía no existe: falta confirmar el pago.');
+  if (!batch.shippedAt) {
+    batch.shippedAt = new Date().toISOString();
+    for (const product of batch.tokens) (product.events ??= []).push({ kind: 'shipped', at: batch.shippedAt });
+    saveState();
+  }
+  return { purchase: purchaseSummary(purchase) };
 };
 
 // Checks the payment and returns the batch with its secret codes and QR images. With summaryOnly it returns only

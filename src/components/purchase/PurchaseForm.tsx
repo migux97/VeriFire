@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useRef, useState, type SubmitEvent } from 'react';
 import { Icon } from '@/components/ui/Icon';
 import { PaymentWarning } from '@/components/ui/PaymentWarning';
-import { StatusMessage, type Message } from '@/components/ui/StatusMessage';
+import type { Message } from '@/components/ui/StatusMessage';
+import { Toast } from '@/components/ui/Toast';
 import { postJson } from '@/lib/client/api';
 import { fetchPurchase, migrateLegacyPurchase, savePurchase } from '@/lib/client/purchases';
 import { userSession } from '@/lib/client/session';
@@ -140,8 +141,8 @@ export function PurchaseForm({ countries }: PurchaseFormProps) {
           <span role="status">{paymentStatus}</span>
         </div>
       )}
-      <StatusMessage id="purchase-message" message={message} />
-      <a className="button button-secondary" href="/lotes" hidden={!batchReady}><Icon name="fa-solid fa-boxes-stacked" /> Ver mis lotes</a>
+      <Toast message={message} onClose={() => setMessage(null)} />
+      <a className="button button-secondary" href="/batches" hidden={!batchReady}><Icon name="fa-solid fa-boxes-stacked" /> Ver mis lotes</a>
     </>
   );
 }

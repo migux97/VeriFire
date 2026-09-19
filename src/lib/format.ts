@@ -22,4 +22,10 @@ export const formatLongDate = (iso: string, timeZone?: string) =>
 // "16 sept 2026"
 export const shortDate = new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short', year: 'numeric' });
 
+// "4:05": minutes and seconds left until a moment, never below zero.
+export const formatCountdown = (until: string, now: number) => {
+  const seconds = Math.max(0, Math.ceil((new Date(until).getTime() - now) / 1000));
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+};
+
 export const plural = (count: number, singular: string, pluralForm: string) => (count === 1 ? singular : pluralForm);

@@ -1,0 +1,36 @@
+---
+// Header of the landing page. Visitors get the login and registration links; a session opened in another tab gets its
+// profile and the way back to its panel (see the landing mode of SessionGate).
+import BrandLogo from '@/components/layout/BrandLogo.astro';
+import { ProfileMenu } from '@/components/warranties/ProfileMenu';
+---
+
+<header class="lp-header">
+  <BrandLogo />
+
+  <a class="lp-button lp-button-outline lp-header-verify" href="/verify">
+    <i class="fa-solid fa-qrcode" aria-hidden="true"></i> Verificar producto
+  </a>
+
+  <nav class="lp-nav" aria-label="Secciones">
+    <a href="#history">Historial</a>
+    <a href="#how-it-works">Cómo funciona</a>
+    <a href="#brands">Para marcas</a>
+    <a href="#faq">Preguntas</a>
+  </nav>
+
+  <div class="lp-guest-actions">
+    <a class="lp-login" href="/login">
+      <i class="fa-regular fa-user" aria-hidden="true"></i>
+      <span>Ingresar</span>
+    </a>
+    <a class="lp-button lp-button-solid lp-header-cta" href="/login?modo=registro">Crear cuenta</a>
+  </div>
+
+  <div class="lp-session-actions">
+    <a class="lp-button lp-button-solid lp-header-cta" href="/app">
+      <i class="fa-solid fa-table-columns" aria-hidden="true"></i> Ir a mi panel
+    </a>
+    <ProfileMenu client:load />
+  </div>
+</header>

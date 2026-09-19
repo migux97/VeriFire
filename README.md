@@ -45,7 +45,7 @@ src/
     client/         Código del navegador: sesión, wallet Cavos, activación, lectura de QR
     server/         Código del servidor: estado, Cosmos Pay, Stellar, reglas de negocio
     types.ts        Contrato de la API compartido por servidor y cliente
-  styles/           Hoja de estilos global
+  styles/           brand.css (colores y logo), global.css (base y vistas), landing.css y auth.css
 scripts/            Scripts de despliegue y prueba del contrato (TypeScript ejecutado por Node)
 contracts/          Contrato Soroban en Rust
 ```
@@ -54,11 +54,12 @@ contracts/          Contrato Soroban en Rust
 
 | Ruta | Página |
 | --- | --- |
-| `/` | Ingreso y registro |
+| `/` | Landing pública de Verifire |
+| `/login` | Ingreso y registro |
 | `/app` | Panel del comprador: escanear QR y ver garantías |
-| `/lotes` | Panel de empresa: lotes, etiquetas y activaciones |
+| `/batches` | Panel de empresa: lotes, etiquetas y activaciones |
 | `/admin` | Compra de un lote con Cosmos Pay |
 | `/verify?token=VF-001` | Verificación pública de un producto (renderizada en el servidor) |
 | `/batch?batch=BATCH-0001` | Verificación pública de un lote |
 
-Las direcciones anteriores (`verify.html`, `app.html#q=...`, `activate.html`, etc.) redirigen a las nuevas conservando sus parámetros, así que las etiquetas ya impresas siguen funcionando. El retorno de Google sigue siendo `/index.html`, que es la URL registrada en el panel de Cavos.
+Las direcciones anteriores (`verify.html`, `app.html#q=...`, `activate.html`, etc.) redirigen a las nuevas conservando sus parámetros, así que las etiquetas ya impresas siguen funcionando. El retorno de Google sigue siendo `/index.html`, que es la URL registrada en el panel de Cavos, y redirige a `/login`.
