@@ -3,16 +3,20 @@ import { Icon } from '@/components/ui/Icon';
 import { storedUser, type StoredUser } from '@/lib/client/account';
 import { leaveSession } from '@/lib/client/session';
 import { currentTheme, setTheme } from '@/lib/client/theme';
+import { companyMemberships } from '@/lib/client/workspace';
 
 export function ProfileMenu() {
   const [open, setOpen] = useState(false);
   const [user, setUser] = useState<StoredUser | null>(null);
+  const [companyAccess, setCompanyAccess] = useState(false);
   const [dark, setDark] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    setUser(storedUser());
+    const currentUser = storedUser();
+    setUser(currentUser);
+    setCompanyAccess(Boolean(currentUser && (currentUser.accountType === 'business' || companyMemberships(currentUser.email).length)));
     setDark(currentTheme() === 'dark');
   }, []);
 
@@ -65,6 +69,9 @@ export function ProfileMenu() {
           <Icon name={`fa-solid ${dark ? 'fa-moon' : 'fa-sun'}`} /> Modo oscuro
           <span className="theme-switch" aria-hidden="true"><span /></span>
         </button>
+        {companyAccess && <button className="profile-action" type="button" onClick={() => { window.location.href = '/company'; }}>
+          <Icon name="fa-solid fa-building" /> Modo empresa
+        </button>}
         <button className="profile-action" type="button" onClick={() => leaveSession('cerrada')}>
           <Icon name="fa-solid fa-arrow-right-from-bracket" /> Cerrar sesión
         </button>

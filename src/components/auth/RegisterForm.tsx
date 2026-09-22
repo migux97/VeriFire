@@ -1,4 +1,4 @@
-import { useEffect, useRef, type SubmitEvent } from 'react';
+import { useEffect, useRef, useState, type SubmitEvent } from 'react';
 import { PasswordField } from './PasswordField';
 
 interface RegisterFormProps {
@@ -11,6 +11,7 @@ interface RegisterFormProps {
 
 export function RegisterForm({ hidden, submitting, savedUsername, onSubmit }: RegisterFormProps) {
   const usernameRef = useRef<HTMLInputElement>(null);
+  const [accountType, setAccountType] = useState('personal');
 
   useEffect(() => {
     if (savedUsername && usernameRef.current) usernameRef.current.value = savedUsername;
@@ -30,8 +31,21 @@ export function RegisterForm({ hidden, submitting, savedUsername, onSubmit }: Re
 
       <label>
         <span>Correo electrónico</span>
-        <input name="email" type="email" placeholder="tu@gmail.com" pattern="^[^\s@]+@gmail\.com$" title="Usá una dirección terminada en @gmail.com" autoComplete="email" required />
+        <input name="email" type="email" placeholder="tu@correo.com" autoComplete="email" required />
       </label>
+
+      <label>
+        <span>Tipo de cuenta</span>
+        <select name="accountType" value={accountType} onChange={(event) => setAccountType(event.target.value)}>
+          <option value="personal">Cuenta personal</option>
+          <option value="business">Cuenta empresarial</option>
+        </select>
+      </label>
+
+      {accountType === 'business' && <label>
+        <span>Nombre de la empresa</span>
+        <input name="companyName" type="text" placeholder="Ej. Andes Manufacturing" maxLength={100} required />
+      </label>}
 
       <PasswordField id="registerPassword" name="password" label="Contraseña" placeholder="Mínimo 8 caracteres" autoComplete="new-password" />
       <PasswordField id="registerPasswordConfirm" name="passwordConfirm" label="Repetir contraseña" placeholder="Escribí la misma contraseña" autoComplete="new-password" />

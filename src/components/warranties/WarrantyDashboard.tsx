@@ -141,7 +141,7 @@ export function WarrantyDashboard({ cavosAppId }: WarrantyDashboardProps) {
     }
   };
 
-  // The wallet cannot be reconnected without confirming the Gmail again: ask for a code at login and come back.
+  // The wallet cannot be reconnected without confirming the email again: ask for a code at login and come back.
   const leaveForEmailCode = () => {
     updateStoredUser({ emailVerifiedAt: 0 });
     leaveSession('verificar');
@@ -266,7 +266,7 @@ export function WarrantyDashboard({ cavosAppId }: WarrantyDashboardProps) {
         : `¡Listo! La garantía de ${product.model} quedó activada a tu nombre.`, 'success');
       await loadWarranties();
     } catch (error) {
-      // The wallet cannot be reconnected without confirming the Gmail again: keep the QR and ask for a code at login.
+      // The wallet cannot be reconnected without confirming the email again: keep the QR and ask for a code at login.
       if (error instanceof EmailCodeRequiredError) {
         keepPendingClaim(scannedClaim);
         leaveForEmailCode();

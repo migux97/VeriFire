@@ -10,7 +10,7 @@ const APP_SALT = 'verifire-demo';
 // The multi-device factor is an encrypted wrap stored in the account itself (a cv:wr entry).
 const HORIZON_URL = 'https://horizon-testnet.stellar.org';
 
-// Thrown when signing needs the Gmail confirmed again with a code: the panel sends the user to log in.
+// Thrown when signing needs the email confirmed again with a code: the panel sends the user to log in.
 export class EmailCodeRequiredError extends Error {
   constructor() {
     super('Para firmar en Stellar necesitamos confirmar tu correo con un código.');
@@ -147,7 +147,7 @@ export const connectCavosWallet = async (appId: string, auth: CavosAuth, identit
 };
 
 // The account's wallet, whatever this browser can do with it. A password-only login has no Cavos session, but the Cavos
-// user id saved when the Gmail was verified reconnects the same wallet, whose keys stay in this browser's IndexedDB.
+// user id saved when the email was verified reconnects the same wallet, whose keys stay in this browser's IndexedDB.
 const openOwnWallet = async (appId: string, expectedAddress: string) => {
   const account = storedUser();
   const auth = await createCavosAuth(appId);
@@ -211,7 +211,7 @@ export const enableSigning = async (appId: string, expectedAddress: string, devi
 export const resolveWalletAddress = async (appId: string) => {
   const cached = readStored<{ address?: unknown }>(localStorage, WALLET_KEY);
   if (isStellarAddress(cached?.address)) return cached.address;
-  // The account keeps the wallet linked when its Gmail was verified, so a new session does not reconnect to Cavos.
+  // The account keeps the wallet linked when its email was verified, so a new session does not reconnect to Cavos.
   const account = storedUser();
   if (isStellarAddress(account?.walletAddress) && account.email === userSession.email()) {
     rememberWallet(account.walletAddress);

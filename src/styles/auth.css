@@ -1,4 +1,4 @@
-/* Login, registration and the Gmail code (src/pages/login.astro). Tokens and logo come from brand.css, buttons from global.css. */
+/* Login, registration and the email code (src/pages/login.astro). Tokens and logo come from brand.css, buttons from global.css. */
 
 .auth-shell {
   display: grid;
@@ -283,7 +283,7 @@
   color: #ea4335;
 }
 
-/* ---------- Gmail code ---------- */
+/* ---------- Email code ---------- */
 
 .email-verification-form {
   gap: 14px;

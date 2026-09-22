@@ -1,6 +1,6 @@
 ---
 import { sampleProducts, traceIcons } from './content';
-import PackageArt from './PackageArt.astro';
+import ProductGalleryArt from './ProductGalleryArt.astro';
 ---
 
 <section class="lp-catalog" id="history" aria-labelledby="lp-catalog-title">
@@ -9,23 +9,25 @@ import PackageArt from './PackageArt.astro';
     <p>Ejemplos de cómo queda registrada una unidad en distintas industrias, desde la planta hasta su dueño actual.</p>
   </div>
 
-  <div class="lp-rail" data-rail>
+  <div class="products-grid" data-rail>
     {
       sampleProducts.map((product, index) => (
-        <button class="lp-card" type="button" data-product={product.id} aria-pressed={index === 0 ? 'true' : 'false'} aria-controls="lp-trace">
-          <span class="lp-card-art">
-            <PackageArt word={[product.labelWord]} color={product.labelColor} lot={product.lot} />
-          </span>
-          <span class="lp-card-head">
-            <strong>{product.category}</strong>
-            <span>Lote {product.lot}</span>
-          </span>
-          <span class="lp-card-text">{product.summary}</span>
-          <span class="lp-card-foot">
-            <span class="lp-card-token">{product.token}</span>
-            <span class="lp-card-action" aria-hidden="true">
-              <i class="fa-solid fa-clock-rotate-left"></i>
+        <button class:list={['product-card', index === 0 && 'active']} type="button" data-product={product.id} aria-pressed={index === 0 ? 'true' : 'false'} aria-controls="lp-trace">
+          <span class="product-preview">
+            <span class="qr-badge" aria-hidden="true">
+              <svg viewBox="0 0 25 25"><use href="#lp-qr-public" /></svg>
             </span>
+            <ProductGalleryArt kind={product.id} color={product.labelColor} />
+            <span class="floor-shadow"></span>
+          </span>
+          <span class="product-header">
+            <strong>{product.category}</strong>
+            <span class="lot">Lote {product.lot}</span>
+          </span>
+          <span class="product-desc">{product.summary}</span>
+          <span class="product-footer">
+            <span class="product-code">{product.token}</span>
+            <span class="btn-action" aria-hidden="true">↻</span>
           </span>
         </button>
       ))
@@ -98,7 +100,11 @@ import PackageArt from './PackageArt.astro';
 
     cards.forEach((card) =>
       card.addEventListener('click', () => {
-        cards.forEach((other) => other.setAttribute('aria-pressed', String(other === card)));
+        cards.forEach((other) => {
+          const selected = other === card;
+          other.classList.toggle('active', selected);
+          other.setAttribute('aria-pressed', String(selected));
+        });
         panels.forEach((panel) => (panel.hidden = panel.dataset.trace !== card.dataset.product));
       })
     );

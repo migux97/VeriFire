@@ -1,4 +1,4 @@
-// Gmail verification through Cavos.
+// Email verification through Cavos.
 // Email is verified with a Cavos OTP code, not a magic link: the magic-link flow returns a raw Firebase token that the
 // Cavos wallet registry rejects ("Invalid user token"), while the OTP flow returns the Cavos-signed JWT it accepts.
 import type { CavosAuth } from '@cavos/kit';
