@@ -37,7 +37,8 @@ export function LabelSheet({ batch, showAll, isDownloading, onDownloadQr }: Labe
       <p className="batch-item-note">El CSV incluye los códigos secretos: guardalo solo para el control interno de tu empresa.</p>
       <div className="label-sheet">
         {(showAll ? batch.tokens : labels.items).map((label) => (
-          <figure key={label.token} className="secret-label">
+          <figure key={label.token} className={`secret-label ${batch.configuration?.labelStyle === 'compact' ? 'label-compact' : ''}`}>
+            {batch.configuration && <div className="label-branding"><strong>{batch.configuration.brand}</strong><span>{batch.model}</span><small>Lote {batch.lot}</small></div>}
             <div className="label-codes">
               {(['public', 'secret'] as const).map((kind) => (
                 <LabelCode
@@ -49,7 +50,7 @@ export function LabelSheet({ batch, showAll, isDownloading, onDownloadQr }: Labe
                 />
               ))}
             </div>
-            <figcaption><strong>{label.token}</strong></figcaption>
+            <figcaption><strong>{label.token}</strong>{batch.configuration?.labelText && <p>{batch.configuration.labelText}</p>}</figcaption>
           </figure>
         ))}
       </div>

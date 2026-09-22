@@ -1,4 +1,9 @@
 ---
+import { CompanyIssuance } from '@/components/company/CompanyIssuance';
+import { config } from '@/lib/server/config';
+import { countryOptions } from '@/lib/server/countries';
+import { CompanyCatalogSummary } from '@/components/company/CompanyCatalogSummary';
+import { BatchList } from '@/components/batches/BatchList';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import '@/styles/company.css';
 import { CompanyData } from '@/components/company/CompanyData';
@@ -25,11 +30,21 @@ import { CompanyTeamManager } from '@/components/company/CompanyTeamManager';
 
       <nav class="company-nav">
         <a class="is-active" href="#dashboard" data-company-tab="dashboard"><i class="fa-solid fa-chart-line"></i><span>Resumen</span></a>
-        <a href="#operations"><i class="fa-solid fa-calendar-check"></i><span>Operaciones</span><b>2</b></a>
-        <a href="#products"><i class="fa-solid fa-boxes-stacked"></i><span>Productos</span></a>
-        <a href="/batches"><i class="fa-solid fa-layer-group"></i><span>Lotes</span></a>
-        <a href="#activity"><i class="fa-solid fa-qrcode"></i><span>Verificaciones</span></a>
-        <a href="#team"><i class="fa-solid fa-users"></i><span>Equipo</span></a>
+
+        <div class="company-catalog-menu">
+          <div class="company-catalog-parent" data-company-tab="catalog">
+            <a href="#catalog" data-catalog-home><i class="fa-solid fa-boxes-stacked" aria-hidden="true"></i><span>Productos y lotes</span></a>
+            <button type="button" data-catalog-toggle aria-expanded="false" aria-controls="company-catalog-submenu" aria-label="Desplegar opciones de Productos y lotes"><i class="fa-solid fa-chevron-down" aria-hidden="true"></i></button>
+          </div>          <div class="company-sidebar-subnav" id="company-catalog-submenu" hidden>
+            <a href="#batches" data-catalog-tab="batches">Mis lotes</a>
+            <a href="#products" data-catalog-tab="products">Mis productos</a>
+            <a href="#generate" data-catalog-tab="generate">Generar tokens</a>
+
+          </div>
+        </div>
+
+        <a href="#activity" data-company-tab="activity"><i class="fa-solid fa-qrcode"></i><span>Verificaciones</span></a>
+        <a href="#team" data-company-tab="team"><i class="fa-solid fa-users"></i><span>Equipo</span></a>
       </nav>
 
       <div class="company-sidebar-bottom">
@@ -43,7 +58,7 @@ import { CompanyTeamManager } from '@/components/company/CompanyTeamManager';
       <header class="company-topbar">
         <div>
           <span class="company-eyebrow">Panel empresa</span>
-          <h1>Resumen operativo</h1>
+          <h1 tabindex="-1">Resumen operativo</h1>
         </div>
         <div class="company-top-actions">
           <button class="company-icon-button" type="button" aria-label="Notificaciones"><i class="fa-regular fa-bell"></i><span></span></button>
@@ -51,25 +66,41 @@ import { CompanyTeamManager } from '@/components/company/CompanyTeamManager';
         </div>
       </header>
 
-      <div class="company-toolbar">
-        <span><i class="fa-regular fa-clock"></i> Última actualización: hoy, 10:42</span>
-        <button class="company-action" type="button"><i class="fa-solid fa-download"></i> Exportar reporte</button>
+      <p class="company-view-description">Indicadores de las compras y lotes disponibles en tu cuenta.</p>
+      <CompanyData client:load view="dashboard" />
       </div>
 
-      <CompanyData client:load />
-      <CompanyOperations client:load />
-
-      <section class="company-grid-bottom">
-        <article class="company-panel company-team" id="team">
-          <div class="company-panel-heading"><div><span class="company-eyebrow">Accesos</span><h2>Equipo</h2></div><button class="panel-icon-action" data-team-invite-trigger type="button" aria-label="Agregar integrante"><i class="fa-solid fa-plus"></i></button></div>
+      <div data-company-view="catalog" hidden>
+        <header class="company-topbar"><div><span class="company-eyebrow">Inventario y producción</span><h1 tabindex="-1">Productos y lotes</h1></div></header>
+        <p class="company-view-description">Administrá tus productos, emití tokens y consultá los pagos y etiquetas de cada lote.</p>
+        <section data-catalog-view="catalog">
+          <CompanyCatalogSummary client:load />
+          <CompanyOperations client:load />
+        </section>        <section data-catalog-view="batches" hidden>
+          <div class="company-catalog-heading"><h2>Mis lotes</h2><a class="company-create-link" href="#generate"><i class="fa-solid fa-plus" aria-hidden="true"></i> Generar tokens</a></div>
+          <BatchList client:load />
+        </section>
+        <section data-catalog-view="products" hidden>
+          <CompanyData client:load view="products" />
+        </section>
+        <section data-catalog-view="generate" hidden>
+          <CompanyIssuance client:load countries={countryOptions} pricePerToken={config.cosmosPay.amountPerToken} />
+        </section>
+      </div>      <div data-company-view="activity" hidden>
+        <header class="company-topbar"><div><span class="company-eyebrow">Trazabilidad</span><h1 tabindex="-1">Verificaciones</h1></div></header>
+        <p class="company-view-description">Consultá el estado de activación de los productos y abrí su verificación pública. No hay estadísticas de escaneos disponibles.</p>
+        <CompanyData client:load view="activity" />
+      </div>
+      <div data-company-view="team" hidden>
+        <header class="company-topbar"><div><span class="company-eyebrow">Accesos</span><h1 tabindex="-1">Equipo</h1></div></header>
+        <p class="company-view-description">Administrá los integrantes y sus permisos.</p>
+        <article class="company-panel company-section-panel">
           <CompanyTeamManager client:load />
         </article>
-      </section>
       </div>
-
       <div data-company-view="settings" hidden>
         <header class="company-topbar company-settings-topbar">
-          <div><span class="company-eyebrow">Administración</span><h1>Configuración</h1></div>
+          <div><span class="company-eyebrow">Administración</span><h1 tabindex="-1">Configuración</h1></div>
           <a class="company-action" href="#dashboard" data-company-tab="dashboard"><i class="fa-solid fa-arrow-left"></i> Volver al resumen</a>
         </header>
         <CompanyRoleSettings client:load />
@@ -83,18 +114,52 @@ import { CompanyTeamManager } from '@/components/company/CompanyTeamManager';
 
     guardSession();
 
-  document.querySelector<HTMLButtonElement>('[data-team-invite-trigger]')?.addEventListener('click', () => {
-    document.querySelector<HTMLButtonElement>('.team-manager .team-invite')?.click();
-  });
+
 
     const views = [...document.querySelectorAll<HTMLElement>('[data-company-view]')];
     const tabs = [...document.querySelectorAll<HTMLElement>('[data-company-tab]')];
-    const updateCompanyView = () => {
-      const view = window.location.hash === '#settings' ? 'settings' : 'dashboard';
-      views.forEach((item) => { item.hidden = item.dataset.companyView !== view; });
-      tabs.forEach((tab) => tab.classList.toggle('is-active', tab.dataset.companyTab === view));
+    const catalogToggle = document.querySelector<HTMLButtonElement>('[data-catalog-toggle]');
+    const catalogSubmenu = document.querySelector<HTMLElement>('#company-catalog-submenu');
+    const setCatalogExpanded = (expanded: boolean) => {
+      if (catalogSubmenu) catalogSubmenu.hidden = !expanded;
+      catalogToggle?.setAttribute('aria-expanded', String(expanded));
+      catalogToggle?.setAttribute('aria-label', `${expanded ? 'Cerrar' : 'Desplegar'} opciones de Productos y lotes`);
     };
-    window.addEventListener('hashchange', updateCompanyView);
+    catalogToggle?.addEventListener('click', () => setCatalogExpanded(catalogToggle.getAttribute('aria-expanded') !== 'true'));
+    document.querySelector('[data-catalog-home]')?.addEventListener('click', () => setCatalogExpanded(true));
+    const updateCompanyView = () => {
+      const hash = window.location.hash.slice(1);
+      const requested = hash === 'operations' ? 'catalog' : hash;
+      const catalogViews = [...document.querySelectorAll<HTMLElement>('[data-catalog-view]')];
+      const catalogTabs = [...document.querySelectorAll<HTMLElement>('[data-catalog-tab]')];
+      const catalog = ['catalog', 'batches', 'products', 'generate'].includes(requested);
+      const subview = requested;
+      setCatalogExpanded(catalog);
+      const catalogHome = document.querySelector('[data-catalog-home]');
+      if (requested === 'catalog') catalogHome?.setAttribute('aria-current', 'page');
+      else catalogHome?.removeAttribute('aria-current');
+      const view = catalog ? 'catalog' : views.some((item) => item.dataset.companyView === requested) ? requested : 'dashboard';
+      catalogViews.forEach((item) => { item.hidden = item.dataset.catalogView !== subview; });
+      catalogTabs.forEach((tab) => {
+        const selected = tab.dataset.catalogTab === subview;
+        tab.classList.toggle('is-active', selected);
+        if (selected) tab.setAttribute('aria-current', 'page');
+        else tab.removeAttribute('aria-current');
+      });
+      views.forEach((item) => { item.hidden = item.dataset.companyView !== view; });
+      tabs.forEach((tab) => {
+        const selected = tab.dataset.companyTab === view;
+        tab.classList.toggle('is-active', selected);
+        if (selected && tab.tagName === 'A') tab.setAttribute('aria-current', 'page');
+        else tab.removeAttribute('aria-current');
+      });
+      document.title = `Verifire | ${views.find((item) => !item.hidden)?.querySelector('h1')?.textContent ?? 'Panel empresa'}`;
+    };
+    window.addEventListener('hashchange', () => {
+      updateCompanyView();
+      views.find((item) => !item.hidden)?.querySelector<HTMLElement>('h1')?.focus({ preventScroll: true });
+      window.scrollTo({ top: 0 });
+    });
     updateCompanyView();
 </script>
 

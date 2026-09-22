@@ -1,3 +1,4 @@
+import type { IssuanceOptions } from './issuance';
 // Shapes of the JSON the API answers with. Shared by the server that builds them and the pages that read them.
 
 export type ProductStatus = 'SEALED' | 'CLAIMED_IN_WARRANTY';
@@ -107,6 +108,7 @@ export interface PublicBatch extends BatchBase {
 
 // What the batch cost is company data: it travels only with the secret codes, never on the public lot page.
 export interface CompanyBatch extends BatchBase {
+  configuration?: IssuanceOptions;
   publicQr: string;
   tokens: ProductLabel[];
   payment: { amount: string; asset: 'XLM'; pricePerToken: string };

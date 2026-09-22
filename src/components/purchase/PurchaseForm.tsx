@@ -1,3 +1,4 @@
+import { IssuanceConfigurator } from './IssuanceConfigurator';
 // Company purchase: pay a batch of tokens with Cosmos Pay. Once the payment is confirmed the batch, its labels and its
 // activation counters live in Mis lotes; this form only creates the purchase and follows its payment.
 import { useEffect, useMemo, useRef, useState, type SubmitEvent } from 'react';
@@ -17,6 +18,9 @@ const WAITING_FOR_PAYMENT = 'Esperando confirmación de Cosmos Pay...';
 
 interface PurchaseFormProps {
   countries: CountryOption[];
+  batchesHref?: string;
+  embedded?: boolean;
+  pricePerToken?: string;
 }
 
 // LATAM first, the rest in alphabetical order.
@@ -26,7 +30,7 @@ const groupByRegion = (countries: CountryOption[]) => {
   return [...regions.entries()].sort(([first], [second]) => (first === 'LATAM' ? -1 : second === 'LATAM' ? 1 : first.localeCompare(second, 'es')));
 };
 
-export function PurchaseForm({ countries }: PurchaseFormProps) {
+export function PurchaseForm({ countries, batchesHref = '/batches', embedded = false, pricePerToken }: PurchaseFormProps) {
   const [message, setMessage] = useState<Message | null>(null);
   const [payment, setPayment] = useState<CreatedPurchase | null>(null);
   const [paymentStatus, setPaymentStatus] = useState(WAITING_FOR_PAYMENT);
@@ -82,7 +86,8 @@ export function PurchaseForm({ countries }: PurchaseFormProps) {
         model: String(formData.get('model') ?? '').trim(),
         lot: String(formData.get('lot') ?? '').trim(),
         country: String(formData.get('country') ?? ''),
-        quantity: Number(formData.get('quantity'))
+        quantity: Number(formData.get('quantity')),
+        ...(formData.get('configuration') ? { configuration: JSON.parse(String(formData.get('configuration'))) } : {})
       }, 'No se pudo crear el pago del lote.');
 
       // Saved right away: the purchase is already in Mis lotes, even if this page is closed before paying.
@@ -103,7 +108,7 @@ export function PurchaseForm({ countries }: PurchaseFormProps) {
 
   return (
     <>
-      <form className="claim-form" onSubmit={(event) => void handleSubmit(event)}>
+      {embedded ? (!(payment || batchReady) && <IssuanceConfigurator pricePerToken={pricePerToken} countries={countries} submitting={submitting} onSubmit={(event) => void handleSubmit(event)} />) : <form className="claim-form" hidden={embedded && (Boolean(payment) || batchReady)} onSubmit={(event) => void handleSubmit(event)}>
         <label htmlFor="product-model">Modelo del producto</label>
         <input id="product-model" name="model" placeholder="Ej. Zapatilla Runner X" maxLength={120} required />
         <label htmlFor="product-lot">Lote de fabricación</label>
@@ -129,8 +134,8 @@ export function PurchaseForm({ countries }: PurchaseFormProps) {
         </p>
         <label htmlFor="token-quantity">Cantidad de tokens</label>
         <input id="token-quantity" name="quantity" type="number" min={1} max={500} defaultValue={3} required />
-        <button className="button button-primary" type="submit" disabled={submitting}>Generar lote y pagar</button>
-      </form>
+        <button className="button button-primary" type="submit" disabled={submitting}>{submitting ? 'Preparando pago…' : embedded ? 'Continuar al pago' : 'Generar lote y pagar'}</button>
+      </form>}
 
       {payment && (
         <div className="verify-details is-available">
@@ -141,8 +146,19 @@ export function PurchaseForm({ countries }: PurchaseFormProps) {
           <span role="status">{paymentStatus}</span>
         </div>
       )}
+      {embedded && (payment || batchReady) && <div className="company-payment-actions">
+        {batchReady ? <p role="status">Pago confirmado. Tu lote ya está listo en Mis lotes.</p> : <p>Podés cambiar de pestaña: el pago pendiente queda guardado en Mis lotes.</p>}
+        <button className="button button-secondary" type="button" onClick={() => {
+          window.clearTimeout(pollTimer.current);
+          purchaseId.current = '';
+          setPayment(null);
+          setBatchReady(false);
+          setMessage(null);
+        }}>Crear otro lote</button>
+        {payment && <a className="button button-secondary" href={batchesHref}>Ver pagos y lotes</a>}
+      </div>}
       <Toast message={message} onClose={() => setMessage(null)} />
-      <a className="button button-secondary" href="/batches" hidden={!batchReady}><Icon name="fa-solid fa-boxes-stacked" /> Ver mis lotes</a>
+      <a className="button button-secondary" href={batchesHref} hidden={!batchReady}><Icon name="fa-solid fa-boxes-stacked" /> Ver mis lotes</a>
     </>
   );
 }

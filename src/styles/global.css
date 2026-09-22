@@ -1993,3 +1993,8 @@ a.network-status:hover {
   color: var(--vf-text);
   font-weight: 600;
 }
+
+.label-branding { display: grid; gap: 4px; padding: 8px; text-align: center; }
+.label-branding span, .label-branding small { overflow-wrap: anywhere; }
+.label-compact .label-code img { width: 96px; height: 96px; }
+.label-compact { padding: 8px; }

@@ -1,3 +1,4 @@
+import type { IssuanceOptions } from '../issuance';
 // Products, batches and purchases, kept in memory and saved to a JSON file after every change.
 import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -6,6 +7,7 @@ import { config } from './config';
 import { singleton } from './singleton';
 
 export interface ProductFields {
+  configuration?: IssuanceOptions;
   model: string;
   lot: string;
   destination: string;

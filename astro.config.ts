@@ -11,6 +11,10 @@ export default defineConfig({
   output: 'server',
   adapter: node({ mode: 'standalone' }),
   integrations: [react()],
+  vite: {
+    // Prepare the lazy wallet dependency before the first authentication request.
+    optimizeDeps: { include: ['@cavos/kit', 'buffer'] }
+  },
   // Accounts and sessions live in each browser; the server keeps no per-user state.
   session: false,
   // Cavos keeps each wallet's signing key per site address, and existing accounts were created on this port.
