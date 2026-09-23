@@ -9,6 +9,7 @@ import { CompanyNotifications } from '@/components/company/CompanyNotifications'
 import { CompanyOperations } from '@/components/company/CompanyOperations';
 import { CompanySettings } from '@/components/company/CompanySettings';
 import { CompanyTeamManager } from '@/components/company/CompanyTeamManager';
+import { WorkspaceSync } from '@/components/company/WorkspaceSync';
 import BrandLogo from '@/components/layout/BrandLogo.astro';
 import { companyMessages } from '@/i18n/company';
 import BaseLayout from '@/layouts/BaseLayout.astro';
@@ -110,6 +111,7 @@ const views = t.views;
       </header>
 
       <CompanyDemoBanner client:load locale={locale} />
+      <WorkspaceSync client:load cavosAppId={publicConfig.cavosAppId} />
 
       <main class="company-content">
         <section class="company-view" data-company-view="dashboard" aria-labelledby="view-dashboard">

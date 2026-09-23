@@ -66,6 +66,15 @@ export interface Purchase extends ProductFields {
   txHash?: string | null;
 }
 
+// What a company account keeps beside its wallet, so another browser finds the same panel (see workspaces.ts).
+export interface Workspace {
+  owner: string;
+  purchaseIds: string[];
+  accountType?: 'personal' | 'business';
+  companyName?: string;
+  updatedAt: string;
+}
+
 // Same format the file has always had: batches list their products by token.
 interface SavedState {
   nextTokenId?: number;
@@ -73,6 +82,7 @@ interface SavedState {
   products?: Product[];
   batches?: (Omit<Batch, 'tokens'> & { tokens: string[] })[];
   purchases?: Purchase[];
+  workspaces?: Workspace[];
 }
 
 export const hashSecret = (secret: string) => createHash('sha256').update(secret).digest('hex');
@@ -94,7 +104,8 @@ const createState = () => {
       }]
     ]),
     batches: new Map<string, Batch>(),
-    purchases: new Map<string, Purchase>()
+    purchases: new Map<string, Purchase>(),
+    workspaces: new Map<string, Workspace>()
   };
 
   const readSaved = (file: string) => JSON.parse(readFileSync(file, 'utf8')) as SavedState;
@@ -117,6 +128,7 @@ const createState = () => {
     state.batches.set(batch.batchId, { ...batch, tokens });
   }
   for (const purchase of saved.purchases ?? []) state.purchases.set(purchase.purchaseId, purchase);
+  for (const workspace of saved.workspaces ?? []) state.workspaces.set(workspace.owner, workspace);
   state.nextTokenId = Math.max(state.nextTokenId, Number(saved.nextTokenId) || 0);
   state.nextBatchId = Math.max(state.nextBatchId, Number(saved.nextBatchId) || 0);
   return state;
@@ -130,7 +142,8 @@ export const saveState = () => {
     nextBatchId: store.nextBatchId,
     products: [...store.products.values()],
     batches: [...store.batches.values()].map((batch) => ({ ...batch, tokens: batch.tokens.map((product) => product.token) })),
-    purchases: [...store.purchases.values()]
+    purchases: [...store.purchases.values()],
+    workspaces: [...store.workspaces.values()]
   };
   // Written beside the file and renamed over it: a rename is atomic, so a crash leaves either the previous state or
   // the new one, never half of either. The previous file is kept as .bak for the case where the disk itself lied.

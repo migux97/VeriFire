@@ -1,5 +1,6 @@
-// A purchase id is the key to the secret codes of its batch and there are no server-side company accounts, so the
-// list of purchases is kept in this browser, per account. Shared by the buy page and the list of batches.
+// A purchase id is the key to the secret codes of its batch, so the list lives in this browser, per account. It is
+// also kept beside the account's wallet, which is what lets another browser find the same batches after signing in
+// (see workspace-sync.ts). Shared by the buy page and the list of batches.
 import type { IssuanceOptions } from '../issuance';
 import type { CreatedPurchase, PurchaseStatus, PurchaseSummary } from '../types';
 import { getJson, postJson } from './api';
@@ -80,6 +81,16 @@ export const PURCHASES_CHANGED_EVENT = 'verifire:purchases-changed';
 export const savePurchase = (purchaseId: string) => {
   writeStored(localStorage, statesKey(), { ...readStates(), [purchaseId]: { paid: false, batch: false } });
   if (!inDemo(purchaseId)) writePurchaseIds([purchaseId, ...savedPurchaseIds().filter((id) => id !== purchaseId)]);
+  window.dispatchEvent(new Event(PURCHASES_CHANGED_EVENT));
+};
+
+// Purchases the account already had, brought from the server: what this browser knows is kept, nothing is replaced.
+export const addPurchaseIds = (purchaseIds: string[]) => {
+  if (inDemo()) return;
+  const known = savedPurchaseIds();
+  const missing = purchaseIds.filter((purchaseId) => !known.includes(purchaseId));
+  if (!missing.length) return;
+  writePurchaseIds([...known, ...missing]);
   window.dispatchEvent(new Event(PURCHASES_CHANGED_EVENT));
 };
 

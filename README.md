@@ -86,6 +86,11 @@ directamente con Node.
 
 ## Notas del servidor
 
+- Las garantías siguen a la wallet porque el contrato guarda a su dueño. Lo de la empresa (sus compras y si la cuenta
+  es empresarial) se guarda junto a esa wallet con `POST /api/workspace`, y entrar desde otro navegador recupera los
+  mismos lotes. Leerlo o escribirlo exige firmar un nonce con la wallet (`src/lib/server/wallet-auth.ts`), porque el id
+  de una compra abre los códigos secretos de su lote.
+
 - El estado se guarda escribiendo un archivo temporal y renombrándolo sobre el actual, y el anterior queda como
   `<DATA_FILE>.bak`. Si el archivo principal aparece dañado al arrancar, se carga esa copia.
 - Antes de activar o transferir, el servidor lee el contrato: una transacción confirmada después de que dejó de
