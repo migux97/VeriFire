@@ -1,17 +1,22 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Message } from '@/components/ui/StatusMessage';
+import { getConsumerMessages, type ConsumerLocale, type ConsumerMessages } from '@/i18n/consumer';
 import { createQrDecoder } from '@/lib/client/qr';
 import { errorMessage } from '@/lib/errors';
 
 const FRAME_INTERVAL_MS = 250;
-const CAMERA_FALLBACK = 'No pudimos abrir la cámara. Subí o pegá (Ctrl+V) una imagen del QR.';
-const CAMERA_ERRORS: Record<string, string> = {
-  NotAllowedError: 'La cámara está bloqueada. Tocá el candado junto a la dirección, permití la cámara y volvé a intentar (en Windows revisá también Configuración > Privacidad > Cámara).',
-  NotFoundError: 'No encontramos ninguna cámara en este dispositivo. Subí o pegá (Ctrl+V) una imagen del QR.',
-  NotReadableError: 'La cámara está en uso por otra aplicación (Zoom, Teams, Meet...). Cerrala y volvé a intentar.'
+// Why the camera could not open, in the words of the DOMException the browser throws.
+const CAMERA_ERRORS: Record<string, keyof ScanMessages> = {
+  NotAllowedError: 'cameraBlocked',
+  NotFoundError: 'cameraMissing',
+  NotReadableError: 'cameraBusy'
 };
 
+type ScanMessages = ConsumerMessages['scan'];
+
 interface QrScannerOptions {
+  // The language of the panel using the scanner.
+  locale?: ConsumerLocale;
   // Text of the first QR found.
   onDetected: (text: string) => void;
   onMessage: (message: Message) => void;
@@ -41,6 +46,7 @@ export function useQrScanner(options: QrScannerOptions) {
 
   const decode = () => (decoder.current ??= createQrDecoder());
   const message = (text: string, tone: Message['tone']) => callbacks.current.onMessage({ text, tone });
+  const labels = (): ScanMessages => getConsumerMessages(callbacks.current.locale).scan;
 
   const setStartingState = (value: boolean) => {
     startingNow.current = value;
@@ -81,24 +87,25 @@ export function useQrScanner(options: QrScannerOptions) {
     const video = videoRef.current;
     if (stream.current || startingNow.current || !video) return;
     if (!window.isSecureContext) {
-      message('La cámara solo funciona si Verifire se abre con https:// o desde localhost. Mientras tanto, subí o pegá (Ctrl+V) una imagen del QR.', 'error');
+      message(labels().cameraInsecure, 'error');
       return;
     }
     if (!navigator.mediaDevices?.getUserMedia) {
-      message('Este navegador no permite usar la cámara. Subí o pegá (Ctrl+V) una imagen del QR.', 'error');
+      message(labels().cameraUnsupported, 'error');
       return;
     }
     const request = ++cameraRequest.current;
     setStartingState(true);
     callbacks.current.onScanStart();
-    message('Pidiendo permiso para usar la cámara...', 'info');
+    message(labels().asking, 'info');
     let media: MediaStream;
     try {
       media = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
     } catch (error) {
       if (request !== cameraRequest.current) return;
       setStartingState(false);
-      message((error instanceof DOMException && CAMERA_ERRORS[error.name]) || CAMERA_FALLBACK, 'error');
+      const reason = error instanceof DOMException ? CAMERA_ERRORS[error.name] : undefined;
+      message(reason ? labels()[reason] : labels().cameraFailed, 'error');
       return;
     }
     if (request !== cameraRequest.current) {
@@ -111,19 +118,19 @@ export function useQrScanner(options: QrScannerOptions) {
       await video.play();
     } catch {
       stop();
-      message(CAMERA_FALLBACK, 'error');
+      message(labels().cameraFailed, 'error');
       return;
     }
     setStartingState(false);
     setCameraOpen(true);
-    message('Apuntá la cámara al QR de la etiqueta.', 'info');
+    message(labels().aim, 'info');
     void scanFrame();
   }, [scanFrame, stop]);
 
   const readImage = useCallback(async (image: Blob) => {
     stop();
     callbacks.current.onScanStart();
-    message('Leyendo la imagen...', 'info');
+    message(labels().reading, 'info');
     // Pasting a second image (or picking a file while one is being read) replaces the first: only the last one answers.
     imageRequest.current += 1;
     const request = imageRequest.current;
@@ -132,9 +139,9 @@ export function useQrScanner(options: QrScannerOptions) {
       const text = await decode()(bitmap, bitmap.width, bitmap.height);
       if (request !== imageRequest.current) return;
       if (text) callbacks.current.onDetected(text);
-      else message('No encontramos un QR en la imagen. Probá con una imagen más nítida y cercana.', 'error');
+      else message(labels().noQrInImage, 'error');
     } catch {
-      if (request === imageRequest.current) message('No pudimos leer esa imagen. Probá con otra imagen del QR.', 'error');
+      if (request === imageRequest.current) message(labels().unreadableImage, 'error');
     }
   }, [stop]);
 

@@ -6,7 +6,9 @@ import { ProductHistory } from '@/components/verification/ProductHistory';
 import { useNow } from '@/components/ui/useNow';
 import { formatCountdown, formatDay, formatMonth } from '@/lib/format';
 import type { Warranty } from '@/lib/types';
-import { getConsumerMessages, type ConsumerLocale } from '@/i18n/consumer';
+import { getConsumerMessages, type ConsumerLocale, type ConsumerMessages } from '@/i18n/consumer';
+
+type CardLabels = ConsumerMessages['card'];
 import { warrantyCoverage } from '@/lib/warranty-coverage';
 import { WarrantyCoverage } from './WarrantyCoverage';
 import { WarrantySupport } from './WarrantySupport';
@@ -23,7 +25,7 @@ interface WarrantyCardProps {
 }
 
 // The open link as text and as a QR, for the new owner to open or scan from their own panel.
-function TransferLink({ link }: { link: string }) {
+function TransferLink({ link, labels }: { link: string; labels: CardLabels }) {
   const [qr, setQr] = useState('');
   const [copied, setCopied] = useState(false);
 
@@ -49,14 +51,14 @@ function TransferLink({ link }: { link: string }) {
 
   return (
     <div className="transfer-link">
-      {qr && <img src={qr} alt="QR del link de transferencia" width={160} height={160} />}
+      {qr && <img src={qr} alt={labels.qrAlt} width={160} height={160} />}
       <div className="transfer-link-copy">
         <label>
-          Link para el nuevo dueño
+          {labels.linkLabel}
           <input type="text" readOnly value={link} onFocus={(event) => event.currentTarget.select()} />
         </label>
         <button className="button button-secondary" type="button" onClick={() => void copy()}>
-          <Icon name={`fa-solid ${copied ? 'fa-check' : 'fa-copy'}`} /> {copied ? 'Copiado' : 'Copiar link'}
+          <Icon name={`fa-solid ${copied ? 'fa-check' : 'fa-copy'}`} /> {copied ? labels.copied : labels.copy}
         </button>
       </div>
     </div>
@@ -65,6 +67,7 @@ function TransferLink({ link }: { link: string }) {
 
 export function WarrantyCard({ warranty, transferLink, busy, status, onOfferTransfer, onCancelTransfer, locale = 'es' }: WarrantyCardProps) {
   const labels = getConsumerMessages(locale);
+  const card = labels.card;
   const now = useNow(true, warranty.transferExpiresAt !== null ? 1000 : 60_000);
   const coverage = warrantyCoverage(warranty.claimedAt, warranty.warrantyUntil, now);
   const active = coverage?.state === 'active';
@@ -86,17 +89,17 @@ export function WarrantyCard({ warranty, transferLink, busy, status, onOfferTran
       <WarrantyCoverage start={warranty.claimedAt} end={warranty.warrantyUntil} now={now} locale={locale} />
       <dl className="warranty-meta">
         <div>
-          <dt>Fecha de reclamo</dt>
-          <dd>{warranty.claimedAt ? formatDay(warranty.claimedAt) : '—'}</dd>
+          <dt>{card.claimedAt}</dt>
+          <dd>{warranty.claimedAt ? formatDay(warranty.claimedAt, locale) : '—'}</dd>
         </div>
         <div>
-          <dt>Vigencia de la cobertura</dt>
-          <dd>Garantía oficial hasta {warranty.warrantyUntil ? formatMonth(warranty.warrantyUntil) : '—'}</dd>
+          <dt>{card.coverage}</dt>
+          <dd>{card.until} {warranty.warrantyUntil ? formatMonth(warranty.warrantyUntil, locale) : '—'}</dd>
           {/* The buyer only ever sees the certification: the transaction that activated the warranty in the contract,
               signed by the issuing account. The payment that bought the batch belongs to the company's treasury. */}
           {warranty.certificateUrl && (
             <dd>
-              <LedgerLink href={warranty.certificateUrl} title="Transacción pública que certificó esta garantía en el contrato Verifire (Stellar testnet)">
+              <LedgerLink href={warranty.certificateUrl} title={card.certificateTitle}>
                 {labels.support.certificate}
               </LedgerLink>
             </dd>
@@ -106,8 +109,8 @@ export function WarrantyCard({ warranty, transferLink, busy, status, onOfferTran
 
       {warranty.history.length > 0 && (
         <details className="warranty-history">
-          <summary>Historial del producto <Icon name="fa-solid fa-chevron-down" /></summary>
-          <ProductHistory events={warranty.history} />
+          <summary>{card.history} <Icon name="fa-solid fa-chevron-down" /></summary>
+          <ProductHistory events={warranty.history} locale={locale} />
         </details>
       )}
 
@@ -117,32 +120,32 @@ export function WarrantyCard({ warranty, transferLink, busy, status, onOfferTran
           {offered ? (
             <>
               <p className="warranty-transfer-note">
-                <Icon name="fa-solid fa-right-left" /> Transferencia abierta: el producto pasa a quien abra el link con su cuenta Verifire y lo acepte.
+                <Icon name="fa-solid fa-right-left" /> {card.linkOpen}
               </p>
               {warranty.transferExpiresAt && (
                 <p className="transfer-countdown" role="timer">
-                  <Icon name="fa-regular fa-clock" /> El link vence en <strong>{formatCountdown(warranty.transferExpiresAt, now)}</strong>
+                  <Icon name="fa-regular fa-clock" /> {card.linkExpiresIn} <strong>{formatCountdown(warranty.transferExpiresAt, now)}</strong>
                 </p>
               )}
               {transferLink
-                ? <TransferLink link={transferLink} />
-                : <p className="field-hint">Abriste este link desde otro navegador. Si no lo tenés, generá uno nuevo: el anterior deja de funcionar.</p>}
+                ? <TransferLink link={transferLink} labels={card} />
+                : <p className="field-hint">{card.linkElsewhere}</p>}
               <div className="warranty-transfer-actions">
                 {!transferLink && (
                   <button className="button button-secondary" type="button" disabled={busy} onClick={onOfferTransfer}>
-                    <Icon name="fa-solid fa-link" /> Generar un link nuevo
+                    <Icon name="fa-solid fa-link" /> {card.newLink}
                   </button>
                 )}
                 <button className="button button-secondary" type="button" disabled={busy} onClick={onCancelTransfer}>
-                  <Icon name="fa-solid fa-xmark" /> Cancelar transferencia
+                  <Icon name="fa-solid fa-xmark" /> {card.cancel}
                 </button>
               </div>
             </>
           ) : (
             <>
-              {expired && <p className="field-hint">El link de transferencia venció sin que nadie lo aceptara. El producto sigue a tu nombre.</p>}
+              {expired && <p className="field-hint">{card.linkExpired}</p>}
               <button className="button button-secondary" type="button" disabled={busy} onClick={onOfferTransfer}>
-                <Icon name="fa-solid fa-right-left" /> Transferir a otra persona
+                <Icon name="fa-solid fa-right-left" /> {card.transfer}
               </button>
             </>
           )}

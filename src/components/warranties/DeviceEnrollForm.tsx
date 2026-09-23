@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type SubmitEvent } from 'react';
+import type { ConsumerMessages } from '@/i18n/consumer';
 
 interface DeviceEnrollFormProps {
   // Resolves once the attempt ends; the panel shows how it went.
@@ -6,10 +7,11 @@ interface DeviceEnrollFormProps {
   onCancel: () => void;
   submitLabel: string;
   hint: string;
+  labels: ConsumerMessages['device'];
 }
 
 // Asks for the account's password once, to enable this browser to sign or the account on other devices.
-export function DeviceEnrollForm({ onEnroll, onCancel, submitLabel, hint }: DeviceEnrollFormProps) {
+export function DeviceEnrollForm({ onEnroll, onCancel, submitLabel, hint, labels }: DeviceEnrollFormProps) {
   const [busy, setBusy] = useState(false);
   const passwordRef = useRef<HTMLInputElement>(null);
 
@@ -31,12 +33,12 @@ export function DeviceEnrollForm({ onEnroll, onCancel, submitLabel, hint }: Devi
 
   return (
     <form className="device-form" noValidate onSubmit={(event) => void handleSubmit(event)}>
-      <label htmlFor="enable-devices-password">Tu contraseña de Verifire</label>
-      <input ref={passwordRef} id="enable-devices-password" type="password" autoComplete="current-password" placeholder="La misma con la que entrás" required />
+      <label htmlFor="enable-devices-password">{labels.password}</label>
+      <input ref={passwordRef} id="enable-devices-password" type="password" autoComplete="current-password" placeholder={labels.placeholder} required />
       <p className="field-hint">{hint}</p>
       <div className="device-form-actions">
         <button className="button button-primary" type="submit" disabled={busy}>{submitLabel}</button>
-        <button className="button button-secondary" type="button" onClick={onCancel}>Cancelar</button>
+        <button className="button button-secondary" type="button" onClick={onCancel}>{labels.cancel}</button>
       </div>
     </form>
   );

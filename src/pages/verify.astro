@@ -6,8 +6,13 @@ import StandaloneHeader from '@/components/layout/StandaloneHeader.astro';
 import { ProductDetails } from '@/components/verification/ProductDetails';
 import { ProductHistory } from '@/components/verification/ProductHistory';
 import { VerifyScanner } from '@/components/verification/VerifyScanner';
+import { getVerifyMessages } from '@/i18n/verify';
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import { pageLocale } from '@/lib/server/page-locale';
 import { findProduct, publicProductView, recordVerification } from '@/lib/server/products';
+
+const locale = pageLocale(Astro);
+const copy = getVerifyMessages(locale);
 
 const requestedToken = Astro.url.searchParams.get('token') ?? '';
 const found = requestedToken.trim() ? findProduct(requestedToken) : undefined;
@@ -15,58 +20,54 @@ const found = requestedToken.trim() ? findProduct(requestedToken) : undefined;
 if (found) recordVerification(found);
 const product = found ? publicProductView(found) : null;
 
-let title = 'Verificá tu producto';
-let message = 'Escaneá el QR de la caja o ingresá el código público del producto.';
+let title = copy.product.title;
+let message = copy.product.lead;
 if (product) {
-  title = product.claimed ? 'Producto original · garantía activa' : 'Producto original · sellado';
-  if (product.lastTransfer) message = `Este producto fue transferido al usuario ${product.lastTransfer.to}. La garantía sigue vigente a su nombre.`;
-  else if (product.claimed) message = 'La garantía de este producto ya fue activada por su comprador.';
-  else message = 'La caja está sellada en fábrica y la garantía todavía no fue activada.';
+  title = product.claimed ? copy.product.claimedTitle : copy.product.sealedTitle;
+  if (product.lastTransfer) message = copy.product.transferred.replace('{to}', product.lastTransfer.to);
+  else if (product.claimed) message = copy.product.claimed;
+  else message = copy.product.sealed;
 } else if (requestedToken.trim()) {
-  title = 'No se pudo verificar';
-  message = 'El token de producto no existe.';
+  title = copy.product.notFoundTitle;
+  message = copy.product.notFound;
   Astro.response.status = 404;
 }
 ---
 
-<BaseLayout
-  title="Verifire | Verificación de producto"
-  description="Verificación pública de autenticidad y estado de un producto Verifire."
-  bodyClass="verify-page"
->
+<BaseLayout title={copy.meta.title} description={copy.meta.description} bodyClass="verify-page">
   <main class="verify-shell">
     <StandaloneHeader>
-      <span class="network-status"><span></span>Verificación pública</span>
+      <span class="network-status"><span></span>{copy.header.network}</span>
     </StandaloneHeader>
 
     <section class="verify-card" aria-labelledby="verify-title">
       <div class="verify-intro">
         <div class="verify-icon"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i></div>
         <div>
-          <span class="eyebrow">QR público del producto</span>
+          <span class="eyebrow">{copy.header.eyebrow}</span>
           <h1 id="verify-title">{title}</h1>
         </div>
       </div>
       <p class="verify-message">{message}</p>
-      {product && <ProductDetails product={product} />}
+      {product && <ProductDetails product={product} locale={locale} />}
       {
         product && product.history.length > 0 && (
           <section class="verify-history" aria-labelledby="history-title">
-            <h2 id="history-title">Historial del producto</h2>
-            <ProductHistory events={product.history} timeZone="UTC" />
+            <h2 id="history-title">{copy.product.history}</h2>
+            <ProductHistory events={product.history} timeZone="UTC" locale={locale} />
           </section>
         )
       }
 
-      <VerifyScanner client:load />
+      <VerifyScanner client:load locale={locale} />
 
       <form class="verification-form" method="get" action="/verify">
-        <label for="verification-code">O ingresá el código público del producto</label>
+        <label for="verification-code">{copy.form.label}</label>
         <div class="verification-input-row">
-          <input id="verification-code" name="token" type="text" placeholder="Ej. VF-001" autocomplete="off" spellcheck="false" value={requestedToken} required />
-          <button class="button button-primary" type="submit"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i> Verificar</button>
+          <input id="verification-code" name="token" type="text" placeholder={copy.form.placeholder} autocomplete="off" spellcheck="false" value={requestedToken} required />
+          <button class="button button-primary" type="submit"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i> {copy.form.submit}</button>
         </div>
-        <span class="verification-hint">No hace falta iniciar sesión: esta página solo muestra información pública del producto.</span>
+        <span class="verification-hint">{copy.form.note}</span>
       </form>
     </section>
   </main>

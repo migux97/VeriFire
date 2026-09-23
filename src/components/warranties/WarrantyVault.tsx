@@ -4,9 +4,8 @@ import { Pagination, usePagination } from '@/components/ui/Pagination';
 import type { Message } from '@/components/ui/StatusMessage';
 import { ProductHistory } from '@/components/verification/ProductHistory';
 import type { TransferredWarranty, Warranty } from '@/lib/types';
-import { formatDay, plural } from '@/lib/format';
 import { WarrantyCard } from './WarrantyCard';
-import { getConsumerMessages, type ConsumerLocale } from '@/i18n/consumer';
+import { consumerDate, fillIn, getConsumerMessages, type ConsumerLocale } from '@/i18n/consumer';
 
 const PAGE_SIZE = 6;
 
@@ -30,29 +29,32 @@ interface WarrantyVaultProps {
   locale?: ConsumerLocale;
 }
 
-function TransferredCard({ product }: { product: TransferredWarranty }) {
+function TransferredCard({ product, locale }: { product: TransferredWarranty; locale: ConsumerLocale }) {
+  const labels = getConsumerMessages(locale);
+  const { vault, card } = labels;
   return (
     <article className="warranty-card is-transferred">
       <div className="warranty-head">
         <div className="warranty-thumb" aria-hidden="true"><Icon name="fa-solid fa-right-left" /></div>
         <div className="warranty-top">
-          <span className="warranty-badge is-transferred"><Icon name="fa-solid fa-right-left" /> Transferido</span>
+          <span className="warranty-badge is-transferred"><Icon name="fa-solid fa-right-left" /> {vault.transferredBadge}</span>
           <h3>{product.model}</h3>
         </div>
       </div>
-      <p className="transferred-note">
-        Este producto fue transferido al usuario <strong>{product.to}</strong> el {formatDay(product.at)}. La garantía sigue vigente a su nombre.
-      </p>
-      {product.txUrl && <LedgerLink href={product.txUrl} title="Transacción pública del cambio de dueño (Stellar testnet)">Ver la transferencia en Stellar</LedgerLink>}
+      <p className="transferred-note">{fillIn(vault.transferredNote, { to: product.to, date: consumerDate(product.at, locale) })}</p>
+      {product.txUrl && <LedgerLink href={product.txUrl} title={vault.transferTitle}>{vault.transferLink}</LedgerLink>}
       <details className="warranty-history">
-        <summary>Historial del producto <Icon name="fa-solid fa-chevron-down" /></summary>
-        <ProductHistory events={product.history} />
+        <summary>{card.history} <Icon name="fa-solid fa-chevron-down" /></summary>
+        <ProductHistory events={product.history} locale={locale} />
       </details>
     </article>
   );
 }
 
 export function WarrantyVault({ warranties, status, transfers, transferred, locale = 'es' }: WarrantyVaultProps) {
+  const labels = getConsumerMessages(locale);
+  const { vault } = labels;
+  const productCount = (count: number) => (count === 1 ? vault.countOne : fillIn(vault.count, { count }));
   const count = warranties?.length ?? 0;
   const active = usePagination(warranties ?? [], PAGE_SIZE);
   const passedOn = usePagination(transferred, PAGE_SIZE);
@@ -60,8 +62,8 @@ export function WarrantyVault({ warranties, status, transfers, transferred, loca
   return (
     <section className="vault" aria-labelledby="vault-title">
       <div className="vault-header">
-        <h2 id="vault-title">{getConsumerMessages(locale).coverage.vault}</h2>
-        <span className="vault-count">{count ? `${count} ${plural(count, 'producto', 'productos')}` : ''}</span>
+        <h2 id="vault-title">{labels.coverage.vault}</h2>
+        <span className="vault-count">{count ? productCount(count) : ''}</span>
       </div>
       <p className="vault-status" role="status" aria-live="polite" hidden={status === null}>{status}</p>
       <div className="vault-grid">
@@ -78,25 +80,25 @@ export function WarrantyVault({ warranties, status, transfers, transferred, loca
           />
         ))}
       </div>
-      <Pagination page={active.page} pages={active.pages} onPage={active.setPage} label="Páginas de garantías activas" />
+      <Pagination page={active.page} pages={active.pages} onPage={active.setPage} label={vault.pagesActive} />
       <div className="vault-empty" hidden={warranties === null || count > 0}>
         <svg viewBox="0 0 96 96" aria-hidden="true" focusable="false">
           <path d="M48 8 16 20v24c0 22 13.6 38.6 32 44 18.4-5.4 32-22 32-44V20L48 8Z" fill="#fde6e4" stroke="#e3261f" strokeWidth="3" strokeLinejoin="miter" />
           <path d="m34 48 10 10 18-20" fill="none" stroke="#e3261f" strokeWidth="4" strokeLinecap="square" strokeLinejoin="miter" />
         </svg>
-        <p>No tenés garantías registradas todavía. Escaneá el QR de tu producto arriba para reclamar tu certificado de autenticidad.</p>
+        <p>{vault.empty}</p>
       </div>
 
       {transferred.length > 0 && (
         <div className="vault-transferred">
           <div className="vault-header">
-            <h2>Productos que transferiste</h2>
-            <span className="vault-count">{transferred.length} {plural(transferred.length, 'producto', 'productos')}</span>
+            <h2>{vault.transferred}</h2>
+            <span className="vault-count">{productCount(transferred.length)}</span>
           </div>
           <div className="vault-grid">
-            {passedOn.items.map((product) => <TransferredCard key={`${product.token}-${product.at}`} product={product} />)}
+            {passedOn.items.map((product) => <TransferredCard key={`${product.token}-${product.at}`} product={product} locale={locale} />)}
           </div>
-          <Pagination page={passedOn.page} pages={passedOn.pages} onPage={passedOn.setPage} label="Páginas de productos transferidos" />
+          <Pagination page={passedOn.page} pages={passedOn.pages} onPage={passedOn.setPage} label={vault.pagesTransferred} />
         </div>
       )}
     </section>

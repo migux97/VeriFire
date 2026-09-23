@@ -38,7 +38,8 @@ const es = {
   safeguardsTitle: 'Por qué una etiqueta copiada no sirve',
   footer: {
     description: 'Infraestructura antipiratería para marcas, con cada producto registrado en Stellar.', access: 'Accesos', warranties: 'Mis garantías', batches: 'Panel de lotes', sections: 'Secciones del sitio', history: 'Historial de un producto',
-    verify: 'Verificá un producto', hint: 'Ingresá el código impreso junto al QR público.', placeholder: 'Ej. VF-001'
+    verify: 'Verificá un producto', hint: 'Ingresá el código impreso junto al QR público.', placeholder: 'Ej. VF-001',
+    tagline: 'Seguridad y reclamo de productos.'
   },
   profile: { title: 'Mi perfil', user: 'Usuario Verifire', noEmail: 'Correo no disponible', dark: 'Modo oscuro', company: 'Modo empresa', logout: 'Cerrar sesión' },
   showcase: {
@@ -100,7 +101,8 @@ const en: typeof es = {
   },
   safeguardsTitle: 'Why a copied label does not work',
   footer: {
-    description: 'Anti-counterfeiting infrastructure for brands, with every product registered on Stellar.', access: 'Quick links', warranties: 'My warranties', batches: 'Batch dashboard', sections: 'Site sections', history: 'A product’s history', verify: 'Verify a product', hint: 'Enter the code printed next to the public QR code.', placeholder: 'e.g. VF-001'
+    description: 'Anti-counterfeiting infrastructure for brands, with every product registered on Stellar.', access: 'Quick links', warranties: 'My warranties', batches: 'Batch dashboard', sections: 'Site sections', history: 'A product’s history', verify: 'Verify a product', hint: 'Enter the code printed next to the public QR code.', placeholder: 'e.g. VF-001',
+    tagline: 'Product security and warranty claims.'
   },
   profile: { title: 'My profile', user: 'Verifire user', noEmail: 'Email unavailable', dark: 'Dark mode', company: 'Company workspace', logout: 'Sign out' },
   showcase: {

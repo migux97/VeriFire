@@ -5,6 +5,7 @@ import '@/styles/global.css';
 import { Font } from 'astro:assets';
 import SessionGate from '@/components/layout/SessionGate.astro';
 import { THEME_KEY } from '@/lib/client/theme';
+import { pageLocale } from '@/lib/server/page-locale';
 
 interface Props {
   title: string;
@@ -17,7 +18,7 @@ const { title, description, bodyClass, session = 'public' } = Astro.props;
 ---
 
 <!doctype html>
-<html lang={Astro.currentLocale ?? 'es'}>
+<html lang={pageLocale(Astro)}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
