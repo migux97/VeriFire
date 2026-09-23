@@ -1947,3 +1947,74 @@ a.network-status:hover {
 .label-branding span, .label-branding small { overflow-wrap: anywhere; }
 .label-compact .label-code img { width: 96px; height: 96px; }
 .label-compact { padding: 8px; }
+/* ---------- Confirmation dialog ---------- */
+
+.confirm-dialog {
+  /* A <dialog> only centres itself with these: the browser's default box sits at the top of the page. */
+  margin: auto;
+  width: min(460px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  padding: 0;
+  border: 1px solid var(--vf-line);
+  border-radius: 10px;
+  background: var(--vf-paper);
+  color: var(--vf-text);
+  box-shadow: 0 24px 60px rgb(0 0 0 / 28%);
+}
+
+.confirm-dialog::backdrop {
+  background: rgb(0 0 0 / 55%);
+}
+
+.confirm-dialog:not([open]) {
+  display: none;
+}
+
+.confirm-dialog-body {
+  display: flex;
+  gap: 16px;
+  padding: 24px 24px 8px;
+}
+
+.confirm-dialog-icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--vf-mist);
+  color: var(--vf-ink);
+}
+
+.confirm-dialog-icon.is-danger {
+  background: var(--vf-blush);
+  color: var(--vf-red);
+}
+
+.confirm-dialog h2 {
+  margin: 0 0 6px;
+  font-size: 1.125rem;
+  font-weight: 800;
+}
+
+.confirm-dialog p {
+  margin: 0;
+  color: var(--vf-muted);
+  font-size: 0.9375rem;
+  line-height: 1.55;
+}
+
+.confirm-dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 20px 24px 24px;
+}
+
+@media (max-width: 480px) {
+  .confirm-dialog-actions .button {
+    flex: 1 1 140px;
+  }
+}

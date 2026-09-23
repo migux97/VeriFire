@@ -67,7 +67,10 @@ const es = {
     linkOpen: 'Transferencia abierta: el producto pasa a quien abra el link con su cuenta Verifire y lo acepte.',
     linkReady: 'Link listo. Compartilo con el nuevo dueño: el producto pasa a su cuenta cuando lo acepte.',
     linkCancelled: 'Transferencia cancelada: el link ya no funciona.',
-    confirmCancel: '¿Cancelar la transferencia? El link deja de funcionar.'
+    confirmCancelTitle: '¿Cancelar la transferencia?',
+    confirmCancel: 'El link deja de funcionar y el producto sigue a tu nombre. Podés generar otro cuando quieras.',
+    confirmCancelYes: 'Cancelar la transferencia',
+    keep: 'Volver'
   },
   vault: {
     transferred: 'Productos que transferiste',
@@ -176,7 +179,10 @@ const en: Messages = {
     linkOpen: 'Transfer open: the product moves to whoever opens the link with their Verifire account and accepts it.',
     linkReady: 'Link ready. Share it with the new owner: the product moves to their account when they accept it.',
     linkCancelled: 'Transfer cancelled: the link no longer works.',
-    confirmCancel: 'Cancel the transfer? The link stops working.'
+    confirmCancelTitle: 'Cancel the transfer?',
+    confirmCancel: 'The link stops working and the product stays in your name. You can generate another one whenever you want.',
+    confirmCancelYes: 'Cancel the transfer',
+    keep: 'Go back'
   },
   vault: {
     transferred: 'Products you transferred',

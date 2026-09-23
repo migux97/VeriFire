@@ -3,6 +3,7 @@
 import { useStore } from '@nanostores/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
+import { ConfirmDialog, type Confirmation } from '@/components/ui/ConfirmDialog';
 import { Icon } from '@/components/ui/Icon';
 import { Pagination, usePagination } from '@/components/ui/Pagination';
 import type { Message } from '@/components/ui/StatusMessage';
@@ -74,6 +75,8 @@ export function BatchList() {
   const [open, setOpen] = useState<OpenDetail | null>(null);
   const [busy, setBusy] = useState<ReadonlySet<string>>(new Set());
   const [printing, setPrinting] = useState(false);
+  // What the panel is asking before doing something that cannot be taken back.
+  const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
   // purchaseId -> batch with secret codes and QR images, loaded when first needed.
   const fullBatches = useRef(new Map<string, CompanyBatch>());
   // Requests already in flight, so two actions on the same batch share one answer.
@@ -228,16 +231,23 @@ export function BatchList() {
         if (openId.current === purchaseId) closeDetail();
         else void openDetail(purchaseId);
         return;
-      case 'forget': {
-        const confirmed = window.confirm('¿Quitar esta compra de tu lista? Si ya la pagaste, el lote se genera igual, pero no lo vas a ver en este panel.');
-        if (!confirmed) return;
-        forgetPurchase(purchaseId);
-        setSummary(purchaseId, undefined);
-        fullBatches.current.delete(purchaseId);
-        if (openId.current === purchaseId) closeDetail();
-        $purchaseIds.set(savedPurchaseIds());
+      case 'forget':
+        setConfirmation({
+          title: '¿Quitar esta compra de tu lista?',
+          message: 'Si ya la pagaste, el lote se genera igual, pero no lo vas a ver en este panel.',
+          confirmLabel: 'Quitar de la lista',
+          cancelLabel: 'Volver',
+          danger: true,
+          onConfirm: () => {
+            setConfirmation(null);
+            forgetPurchase(purchaseId);
+            setSummary(purchaseId, undefined);
+            fullBatches.current.delete(purchaseId);
+            if (openId.current === purchaseId) closeDetail();
+            $purchaseIds.set(savedPurchaseIds());
+          }
+        });
         return;
-      }
       case 'retry':
         setSummary(purchaseId, undefined);
         await refreshSummary(purchaseId);
@@ -249,15 +259,22 @@ export function BatchList() {
       case 'csv':
         await runBusy(`${purchaseId}:csv`, async () => downloadBatchCsv(await loadFullBatch(purchaseId)));
         return;
-      case 'ship': {
-        const confirmed = window.confirm('¿Marcar el lote como despachado? Queda registrado en el historial de cada producto, y no se puede deshacer.');
-        if (!confirmed) return;
-        await runBusy(`${purchaseId}:ship`, async () => {
-          const { purchase } = await postJson<{ purchase: PurchaseSummary }>(`/api/purchases/${encodeURIComponent(purchaseId)}/ship`, {}, 'No se pudo marcar el lote como despachado.');
-          setSummary(purchaseId, purchase);
+      case 'ship':
+        setConfirmation({
+          title: '¿Marcar el lote como despachado?',
+          message: 'Queda registrado en el historial de cada producto de este lote, y no se puede deshacer.',
+          confirmLabel: 'Marcar como despachado',
+          cancelLabel: 'Volver',
+          danger: true,
+          onConfirm: () => {
+            setConfirmation(null);
+            void runBusy(`${purchaseId}:ship`, async () => {
+              const { purchase } = await postJson<{ purchase: PurchaseSummary }>(`/api/purchases/${encodeURIComponent(purchaseId)}/ship`, {}, 'No se pudo marcar el lote como despachado.');
+              setSummary(purchaseId, purchase);
+            });
+          }
         });
         return;
-      }
       case 'lot-qr':
         await runBusy(`${purchaseId}:lot-qr`, async () => {
           const batch = await loadFullBatch(purchaseId);
@@ -337,6 +354,7 @@ export function BatchList() {
         ))}
       </div>
       <Pagination page={batchPage.page} pages={batchPage.pages} onPage={batchPage.setPage} label="Páginas de lotes" />
+      <ConfirmDialog confirmation={confirmation} onCancel={() => setConfirmation(null)} />
       <div className="vault-empty" hidden={!loaded || visibleIds.length > 0}>
         <p>
           {total

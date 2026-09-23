@@ -1,6 +1,7 @@
 // The buyer's panel: scan the secret QR inside a product, activate its warranty, list the warranties already owned and
 // pass them on to a new owner through a transfer link, or accept one.
 import { useEffect, useRef, useState, type SubmitEvent } from 'react';
+import { ConfirmDialog, type Confirmation } from '@/components/ui/ConfirmDialog';
 import { Icon } from '@/components/ui/Icon';
 import type { Message, MessageTone } from '@/components/ui/StatusMessage';
 import { Toast } from '@/components/ui/Toast';
@@ -52,6 +53,8 @@ export function WarrantyDashboard({ cavosAppId, locale = 'es' }: WarrantyDashboa
   // What failed because this browser could not sign yet: "Reintentar" enables it and runs it again.
   const [repair, setRepair] = useState<{ run: () => Promise<void> } | null>(null);
   const [repairing, setRepairing] = useState(false);
+  // What the panel is asking before doing something that cannot be taken back.
+  const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
   const now = useNow(incoming !== null);
   const incomingExpired = incoming !== null && new Date(incoming.transfer.expiresAt).getTime() <= now;
   const walletAddress = useRef('');
@@ -229,14 +232,21 @@ export function WarrantyDashboard({ cavosAppId, locale = 'es' }: WarrantyDashboa
       setTransferLinks((current) => ({ ...current, [token]: link }));
       return warranty;
     }, card.linkReady),
-    onCancel: (token) => {
-      if (!window.confirm(card.confirmCancel)) return;
-      void runTransfer(token, async (owner, onProgress) => {
-        const warranty = await cancelTransfer(cavosAppId, token, owner, onProgress);
-        setTransferLinks(({ [token]: _closed, ...rest }) => rest);
-        return warranty;
-      }, card.linkCancelled);
-    }
+    onCancel: (token) => setConfirmation({
+      title: card.confirmCancelTitle,
+      message: card.confirmCancel,
+      confirmLabel: card.confirmCancelYes,
+      cancelLabel: card.keep,
+      danger: true,
+      onConfirm: () => {
+        setConfirmation(null);
+        void runTransfer(token, async (owner, onProgress) => {
+          const warranty = await cancelTransfer(cavosAppId, token, owner, onProgress);
+          setTransferLinks(({ [token]: _closed, ...rest }) => rest);
+          return warranty;
+        }, card.linkCancelled);
+      }
+    })
   };
 
   const applyScannedText = (text: string) => {
@@ -378,6 +388,7 @@ export function WarrantyDashboard({ cavosAppId, locale = 'es' }: WarrantyDashboa
       </section>
 
       <WarrantyVault warranties={warranties} status={vaultStatus} transfers={transfers} transferred={transferred} locale={locale} />
+      <ConfirmDialog confirmation={confirmation} onCancel={() => setConfirmation(null)} />
     </>
   );
 }
