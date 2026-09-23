@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Icon } from '@/components/ui/Icon';
 import { storedUser, type StoredUser } from '@/lib/client/account';
 import { leaveSession } from '@/lib/client/session';
-import { currentTheme, setTheme } from '@/lib/client/theme';
+import { currentTheme, setTheme, THEME_EVENT } from '@/lib/client/theme';
 import { companyMemberships } from '@/lib/client/workspace';
 import { getLandingMessages, type LandingMessages } from '@/i18n/landing';
 
@@ -19,6 +19,13 @@ export function ProfileMenu({ labels = getLandingMessages().profile }: { labels?
     setUser(currentUser);
     setCompanyAccess(Boolean(currentUser && (currentUser.accountType === 'business' || companyMemberships(currentUser.email).length)));
     setDark(currentTheme() === 'dark');
+  }, []);
+
+  // The header has a switch too: both show the same state.
+  useEffect(() => {
+    const follow = () => setDark(currentTheme() === 'dark');
+    window.addEventListener(THEME_EVENT, follow);
+    return () => window.removeEventListener(THEME_EVENT, follow);
   }, []);
 
   const toggleTheme = () => {

@@ -1,0 +1,60 @@
+---
+// The language of the site, picked from a small menu: the current one is the button, the other ones are inside.
+// A <details> gives the open/close behaviour and the keyboard for free; the script only closes it on a click outside
+// or on Escape, which <details> does not do by itself.
+import { getRelativeLocaleUrl } from 'astro:i18n';
+
+interface Props {
+  locale: string;
+  label: string;
+}
+
+const { locale, label } = Astro.props;
+const LANGUAGES = [
+  { code: 'es', name: 'Español', short: 'ES' },
+  { code: 'en', name: 'English', short: 'EN' }
+] as const;
+const current = LANGUAGES.find((language) => language.code === locale) ?? LANGUAGES[0];
+---
+
+<details class="lp-language-menu">
+  <summary aria-label={`${label}: ${current.name}`}>
+    <i class="fa-solid fa-globe" aria-hidden="true"></i>
+    <span>{current.short}</span>
+    <i class="fa-solid fa-chevron-down lp-language-caret" aria-hidden="true"></i>
+  </summary>
+  <ul>
+    {
+      LANGUAGES.map((language) => (
+        <li>
+          <a
+            href={getRelativeLocaleUrl(language.code)}
+            lang={language.code}
+            hreflang={language.code}
+            aria-current={language.code === current.code ? 'true' : undefined}
+          >
+            <span>{language.name}</span>
+            {language.code === current.code && <i class="fa-solid fa-check" aria-hidden="true"></i>}
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+</details>
+
+<script>
+  const menus = document.querySelectorAll<HTMLDetailsElement>('.lp-language-menu');
+  document.addEventListener('click', (event) => {
+    menus.forEach((menu) => {
+      if (menu.open && !menu.contains(event.target as Node)) menu.open = false;
+    });
+  });
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape') return;
+    menus.forEach((menu) => {
+      if (!menu.open) return;
+      menu.open = false;
+      menu.querySelector('summary')?.focus();
+    });
+  });
+</script>
