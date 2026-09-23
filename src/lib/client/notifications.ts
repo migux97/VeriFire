@@ -6,7 +6,18 @@ import { accountKey, userSession } from './session';
 import { readSchedules } from './schedules';
 import { readStored, writeStored } from './storage';
 
-export type NoticeKind = 'paymentSucceeded' | 'batchCreated' | 'paymentSoon' | 'paymentDue' | 'batchSoon' | 'batchDue' | 'demo' | 'test';
+export type NoticeKind =
+  | 'paymentSucceeded'
+  | 'batchCreated'
+  | 'paymentSoon'
+  | 'paymentDue'
+  | 'batchSoon'
+  | 'batchDue'
+  | 'teamInvite'
+  | 'inviteAccepted'
+  | 'inviteDeclined'
+  | 'demo'
+  | 'test';
 
 export interface Notice {
   // Also what keeps a notice from repeating: the same event always gets the same id.
@@ -15,7 +26,7 @@ export interface Notice {
   params: Record<string, string>;
   at: string;
   read: boolean;
-  // Where clicking it leads, a hash of the panel such as "#batches".
+  // Where clicking it leads: a view of the panel ("#batches") or another page ("/invite#t=...").
   href?: string;
 }
 

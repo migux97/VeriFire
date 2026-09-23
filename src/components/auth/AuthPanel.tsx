@@ -9,6 +9,7 @@ import { hasPendingClaim } from '@/lib/client/qr';
 import { userSession, type SessionEndReason } from '@/lib/client/session';
 import { readStored, writeStored } from '@/lib/client/storage';
 import { connectCavosWallet, createCavosAuth, rememberDeviceCode, rememberWallet } from '@/lib/client/wallet';
+import { pendingInvite } from '@/lib/client/invitations';
 import { pendingCompanyInvitation } from '@/lib/client/workspace';
 import { errorMessage } from '@/lib/errors';
 import { isStellarAddress } from '@/lib/validation';
@@ -112,7 +113,15 @@ export function AuthPanel({ cavosAppId }: AuthPanelProps) {
     // A warning (for example, a device that cannot sign yet) is readable before the panel opens.
     showNotice(warning || (loginMode === 'login' ? 'Sesión iniciada correctamente. Redirigiendo...' : 'Cuenta creada correctamente. Redirigiendo...'), warning ? 'info' : 'success');
     window.setTimeout(() => {
-      window.location.href = pendingCompanyInvitation(user.email) ? '/choose-workspace' : user.accountType === 'business' ? '/company' : '/app';
+      // An invitation link opened before logging in comes first: the login was only the way to answer it.
+      const invite = pendingInvite();
+      window.location.href = invite
+        ? `/invite#t=${invite}`
+        : pendingCompanyInvitation(user.email)
+          ? '/choose-workspace'
+          : user.accountType === 'business'
+            ? '/company'
+            : '/app';
     }, warning ? 3200 : 700);
   };
 

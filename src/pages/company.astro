@@ -6,7 +6,6 @@ import { CompanyDemoBanner } from '@/components/company/CompanyDemoBanner';
 import { CompanyIdentity } from '@/components/company/CompanyIdentity';
 import { CompanyIssuance } from '@/components/company/CompanyIssuance';
 import { CompanyNotifications } from '@/components/company/CompanyNotifications';
-import { CompanyOperations } from '@/components/company/CompanyOperations';
 import { CompanySettings } from '@/components/company/CompanySettings';
 import { CompanyTeamManager } from '@/components/company/CompanyTeamManager';
 import BrandLogo from '@/components/layout/BrandLogo.astro';
@@ -129,7 +128,6 @@ const views = t.views;
           </header>
           <div class="company-subview" data-catalog-view="catalog">
             <CompanyCatalogSummary client:load locale={locale} />
-            <CompanyOperations client:load locale={locale} />
           </div>
           <div class="company-subview" data-catalog-view="batches" hidden>
             <div class="company-catalog-heading">
@@ -140,7 +138,7 @@ const views = t.views;
               </a>
             </div>
             <div class="company-card company-batches">
-              <BatchList client:load locale={locale} />
+              <BatchList client:load locale={locale} pageSize={6} layout="grid" />
             </div>
           </div>
           <div class="company-subview" data-catalog-view="products" hidden>

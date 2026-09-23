@@ -68,6 +68,12 @@ export const acceptCompanyInvitation = (invitation: CompanyInvitation) => {
   writeStored(localStorage, MEMBERSHIPS_KEY, [...readList<CompanyMembership>(MEMBERSHIPS_KEY), membership]);
 };
 
+// Joins a team whose invitation this account accepted (see invitations.ts). Accepting the same one twice changes nothing.
+export const addCompanyMembership = (membership: CompanyMembership) => {
+  const memberships = readList<CompanyMembership>(MEMBERSHIPS_KEY).filter((item) => item.invitationId !== membership.invitationId);
+  writeStored(localStorage, MEMBERSHIPS_KEY, [...memberships, { ...membership, email: membership.email.trim().toLowerCase() }]);
+};
+
 export const companyMemberships = (email: string) =>
   readList<CompanyMembership>(MEMBERSHIPS_KEY).filter((membership) => membership.email === email.trim().toLowerCase());
 
