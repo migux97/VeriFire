@@ -56,10 +56,7 @@
   color: var(--vf-red-deep);
 }
 
-.lp-arrows {
-  display: flex;
-  gap: 8px;
-}
+
 
 .lp-arrow {
   display: grid;
@@ -260,33 +257,11 @@
   line-height: 1.7;
 }
 
-.lp-hero-art {
-  position: relative;
-  display: grid;
-  place-items: center;
-  min-height: 520px;
-  align-content: center;
-  isolation: isolate;
-  width: 100%;
-  min-width: 0;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  overflow: hidden;
-}
 
-.lp-hero-guilloche {
-  position: absolute;
-  width: 90%;
-  aspect-ratio: 1;
-  color: var(--vf-line-strong);
-  opacity: .4;
-}
 
-.lp-hero-package {
-  position: relative;
-  width: min(270px, 80%);
-}
+
+
+
 
 /* The images share one grid cell so a slide never changes the hero's height. */
 .lp-showcase-stage {
@@ -427,83 +402,31 @@
   color: var(--vf-muted);
 }
 
-.lp-rail {
-  display: grid;
-  grid-auto-columns: minmax(236px, 1fr);
-  grid-auto-flow: column;
-  padding: 16px var(--vf-gutter);
-  overflow-x: auto;
-  scroll-padding-inline: var(--vf-gutter);
-  scroll-snap-type: x mandatory;
-  scrollbar-width: none;
-  border-top: 1px solid var(--vf-line);
-  border-bottom: 1px solid var(--vf-line);
-}
 
-.lp-rail::-webkit-scrollbar {
-  display: none;
-}
+
+
 
 /* ---------- Product mockup gallery ---------- */
 
-.products-grid {
-  display: grid;
-  grid-auto-columns: 248px;
-  grid-auto-flow: column;
-  gap: 16px;
-  overflow-x: auto;
-  max-width: 100%;
-  padding: 8px var(--vf-gutter) 24px;
-  background: var(--vf-paper);
-  font-family: var(--vf-font);
-  scroll-snap-type: x mandatory;
-  scrollbar-width: none;
-  scroll-padding-inline: var(--vf-gutter);
-}
 
-.products-grid::-webkit-scrollbar {
-  display: none;
-}
 
-.product-card {
-  position: relative;
-  display: flex;
-  box-sizing: border-box;
-  min-width: 205px;
-  min-height: 350px;
-  padding: 20px;
-  border: 1px solid var(--vf-line);
-  box-shadow: none;
-  border-radius: 16px;
-  background: var(--vf-paper);
-  color: var(--vf-text);
-  text-align: left;
-  cursor: pointer;
-  flex-direction: column;
-  scroll-snap-align: start;
-  transition: background-color .25s ease, border-color .25s ease, box-shadow .25s ease;
-}
 
-.product-card.active {
-  position: relative;
-  border-color: var(--vf-red);
-  box-shadow: inset 0 0 0 1px var(--vf-red);
-  background: var(--vf-paper);
-}
 
-.product-card.active::before {
-  content: none;
-}
 
-.product-card:focus-visible { outline: 3px solid var(--vf-red); outline-offset: -6px; }
-.product-card:hover:not(.active) { background: var(--vf-mist); }
-.product-card .product-svg { transition: transform .35s cubic-bezier(.2,.8,.2,1); }
-.product-card:hover .product-svg { transform: translateY(-5px); }
-.product-card.active .product-svg { transform: translateY(-5px) scale(1.06); }
-.product-card .floor-shadow { transition: transform .35s ease, opacity .35s ease; }
-.product-card.active .floor-shadow { transform: scale(.85); opacity: .65; }
-.product-card .btn-action { transition: transform .3s ease, background-color .3s ease; font-size: 12px; }
-.product-card.active .btn-action { transform: rotate(-35deg); }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 .product-brand-mark {
   position: absolute;
@@ -548,22 +471,11 @@
   height: 100%;
 }
 
-.products-grid .product-card:first-child {
-  margin-left: 0;
-}
 
-.products-grid .product-card:last-child {
-  margin-right: 0;
-}
 
-.floor-shadow {
-  position: absolute;
-  bottom: 8px;
-  z-index: 0;
-  width: 80px;
-  height: 14px;
-  background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0) 70%);
-}
+
+
+
 
 .product-header {
   display: flex;
@@ -609,180 +521,57 @@
   letter-spacing: -0.5px;
 }
 
-.product-card.active .product-code {
-  color: #e63946;
-}
 
-.btn-action {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  padding: 0;
-  border: 1px solid var(--vf-line-strong);
-  border-radius: 50%;
-  background: var(--vf-paper);
-  color: var(--vf-ink);
-  font-size: 16px;
-}
 
-.product-card.active .btn-action {
-  border-color: var(--vf-red);
-  background: var(--vf-red);
-  color: var(--vf-on-red);
-}
+
+
+
 
 :root[data-theme='dark'] .product-svg {
   filter: drop-shadow(0 10px 15px rgba(0, 0, 0, 0.35));
 }
 
-:root[data-theme='dark'] .floor-shadow {
-  opacity: 0.7;
-}
 
-.lp-card {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 16px 20px 20px;
-  border: 0;
-  border-left: 1px solid var(--vf-line);
-  border-radius: 0;
-  background: var(--vf-paper);
-  color: var(--vf-text);
-  font-family: var(--vf-font);
-  text-align: left;
-  scroll-snap-align: start;
-  cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
 
-.lp-card:last-child {
-  border-right: 1px solid var(--vf-line);
-}
 
-.lp-card[aria-pressed='true'] {
-  position: relative;
-  z-index: 1;
-  border-left-color: transparent;
-  box-shadow: inset 0 0 0 2px var(--vf-ink), 8px 8px 0 var(--vf-red);
-  transform: translate(-4px, -4px);
-}
 
-.lp-card[aria-pressed='true'] + .lp-card {
-  border-left-color: transparent;
-}
 
-.lp-card:hover:not([aria-pressed='true']) .lp-card-action {
-  background: var(--vf-ink);
-  color: var(--vf-paper);
-}
 
-.lp-card:focus-visible {
-  outline-offset: -6px;
-}
 
-.lp-card-art {
-  display: grid;
-  place-items: center;
-  height: 210px;
-  margin-bottom: 14px;
-}
 
-.lp-card-art .lp-package {
-  height: 100%;
-  width: auto;
-}
 
-.lp-card-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-}
 
-.lp-card-head strong {
-  color: var(--vf-ink);
-  font-size: 1.0625rem;
-  font-weight: 800;
-}
 
-.lp-card-head span {
-  color: var(--vf-muted);
-  font-size: 0.8125rem;
-  font-weight: 600;
-  white-space: nowrap;
-}
 
-.lp-card-text {
-  flex: 1;
-  font-size: 0.9375rem;
-  line-height: 1.4;
-}
 
-.lp-card-foot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 10px;
-}
 
-.lp-card-token {
-  color: var(--vf-ink);
-  font-size: 1.25rem;
-  font-weight: 900;
-  letter-spacing: -0.01em;
-}
 
-.lp-card-action {
-  display: grid;
-  flex: none;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  border: 1.5px solid var(--vf-ink);
-  border-radius: 50%;
-  color: var(--vf-ink);
-  font-size: 0.875rem;
-  transition: background-color 0.15s ease, color 0.15s ease;
-}
 
-.lp-card[aria-pressed='true'] .lp-card-action {
-  border-color: var(--vf-red);
-  background: var(--vf-red);
-  color: var(--vf-on-red);
-}
 
-.lp-card[aria-pressed='true'] .lp-card-token {
-  color: var(--vf-red);
-}
 
-.lp-trace-panel {
-  display: grid;
-  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
-  gap: 40px;
-  margin: 0 var(--vf-gutter) 28px;
-  padding: 28px;
-  background: var(--vf-mist);
-  border: 1px solid var(--vf-line);
-  border-radius: 16px;
-}
 
-.lp-trace-panel:not([hidden]) .lp-trace-facts,
-.lp-trace-panel:not([hidden]) .lp-event {
-  animation: lp-trace-in .45s both cubic-bezier(.2,.8,.2,1);
-}
 
-.lp-trace-panel:not([hidden]) .lp-event {
-  animation-delay: calc(var(--event-order, 0) * 65ms);
-}
 
-@keyframes lp-trace-in {
-  from { opacity: 0; transform: translateY(14px); }
-  to { opacity: 1; transform: translateY(0); }
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 .lp-trace-facts {
   display: grid;
@@ -811,78 +600,26 @@
   text-align: right;
 }
 
-.lp-timeline {
-  display: grid;
-  grid-auto-columns: minmax(0, 1fr);
-  grid-auto-flow: column;
-  list-style: none;
-}
 
-.lp-event {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding-right: 20px;
-}
+
+
 
 /* The rail that joins the stages. */
-.lp-event::before {
-  content: '';
-  position: absolute;
-  top: 21px;
-  left: 44px;
-  right: 0;
-  height: 2px;
-  background: var(--vf-ink);
-}
 
-.lp-event:last-child::before {
-  display: none;
-}
 
-.lp-event-icon {
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  margin-bottom: 10px;
-  border: 2px solid var(--vf-ink);
-  border-radius: 50%;
-  background: var(--vf-paper);
-  color: var(--vf-ink);
-  font-size: 0.9375rem;
-}
 
-.lp-event-activated .lp-event-icon,
-.lp-event-transferred .lp-event-icon {
-  border-color: var(--vf-red);
-  background: var(--vf-red);
-  color: var(--vf-on-red);
-}
 
-.lp-event-rejected .lp-event-icon {
-  background: var(--vf-ink);
-  color: var(--vf-paper);
-}
 
-.lp-event strong {
-  color: var(--vf-ink);
-  font-size: 0.9375rem;
-  font-weight: 800;
-  line-height: 1.25;
-}
 
-.lp-event span,
-.lp-event time {
-  font-size: 0.875rem;
-  line-height: 1.35;
-}
 
-.lp-event .lp-event-date {
-  color: var(--vf-muted);
-  font-weight: 600;
-}
+
+
+
+
+
+
+
+
 
 .lp-catalog-foot {
   display: flex;
@@ -1344,7 +1081,7 @@
 
 @media (max-width: 960px) {
   .lp-hero { gap: 36px; }
-  .lp-hero-art { max-width: 560px; justify-self: center; }
+  
   .lp-journey-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; }
   .lp-journey-heading { flex-direction: column; gap: 8px; }
   .lp-hero,
@@ -1352,21 +1089,13 @@
     grid-template-columns: 1fr;
   }
 
-  .lp-hero-art {
-    min-height: 440px;
-  }
+  
 
-  .lp-hero-guilloche {
-    width: min(460px, 100%);
-  }
+  
 
-  .lp-hero-package {
-    width: min(320px, 72%);
-  }
+  
 
-  .lp-trace-panel {
-    grid-template-columns: 1fr;
-  }
+  
 
   .lp-audiences,
   .lp-arches {
@@ -1387,7 +1116,7 @@
 }
 
 @media (max-width: 720px) {
-  .lp-hero-art { padding: 0; }
+  
   .lp-showcase-object { padding: 16px; width: min(300px, 95%); }
   .lp-showcase-object .product-svg { width: 176px; height: 220px; }
   .lp-showcase-label { gap: 8px; }
@@ -1422,48 +1151,24 @@
     padding-bottom: 40px;
   }
 
-  .lp-hero-art {
-    min-height: 320px;
-  }
+  
 
-  .lp-hero-package {
-    width: min(250px, 84%);
-  }
+  
 
   .lp-slide {
     grid-template-columns: 1fr;
     gap: 20px;
   }
 
-  .lp-rail {
-    grid-auto-columns: 78%;
-  }
+  
 
-  .lp-timeline {
-    grid-auto-flow: row;
-    gap: 18px;
-  }
+  
 
-  .lp-event {
-    display: grid;
-    grid-template-columns: 44px minmax(0, 1fr);
-    column-gap: 14px;
-    padding-right: 0;
-  }
+  
 
-  .lp-event-icon {
-    grid-row: span 3;
-    margin-bottom: 0;
-  }
+  
 
-  .lp-event::before {
-    top: 44px;
-    bottom: -18px;
-    left: 21px;
-    right: auto;
-    width: 2px;
-    height: auto;
-  }
+  
 
   .lp-band {
     padding-block: 64px;

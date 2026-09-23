@@ -1,6 +1,6 @@
 ---
 import { CompanyIssuance } from '@/components/company/CompanyIssuance';
-import { config } from '@/lib/server/config';
+import { publicConfig } from '@/lib/server/config';
 import { countryOptions } from '@/lib/server/countries';
 import { CompanyCatalogSummary } from '@/components/company/CompanyCatalogSummary';
 import { BatchList } from '@/components/batches/BatchList';
@@ -84,7 +84,7 @@ import { CompanyTeamManager } from '@/components/company/CompanyTeamManager';
           <CompanyData client:load view="products" />
         </section>
         <section data-catalog-view="generate" hidden>
-          <CompanyIssuance client:load countries={countryOptions} pricePerToken={config.cosmosPay.amountPerToken} />
+          <CompanyIssuance client:load countries={countryOptions} pricePerToken={publicConfig.pricePerToken} />
         </section>
       </div>      <div data-company-view="activity" hidden>
         <header class="company-topbar"><div><span class="company-eyebrow">Trazabilidad</span><h1 tabindex="-1">Verificaciones</h1></div></header>

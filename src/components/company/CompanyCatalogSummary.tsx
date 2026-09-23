@@ -1,8 +1,7 @@
 import { useStore } from '@nanostores/react';
 import { $purchaseIds, $summaries, isSummary } from '@/stores/batches';
 import type { PurchaseSummary } from '@/lib/types';
-
-const number = (value: number) => value.toLocaleString('es-AR', { maximumFractionDigits: 2 });
+import { formatNumber as number } from '@/lib/format';
 export function CompanyCatalogSummary() {
   const ids = useStore($purchaseIds);
   const summaries = useStore($summaries);

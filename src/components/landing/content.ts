@@ -42,7 +42,6 @@ export const heroSlides: HeroSlide[] = [
   }
 ];
 
-export const HERO_TOKEN = 'VF-1043-018';
 
 export type TraceKind = 'minted' | 'shipped' | 'verified' | 'activated' | 'transferred' | 'rejected';
 
@@ -69,14 +68,6 @@ export interface SampleProduct {
   events: TraceEvent[];
 }
 
-export const traceIcons: Record<TraceKind, string> = {
-  minted: 'fa-solid fa-stamp',
-  shipped: 'fa-solid fa-truck-fast',
-  verified: 'fa-solid fa-qrcode',
-  activated: 'fa-solid fa-key',
-  transferred: 'fa-solid fa-right-left',
-  rejected: 'fa-solid fa-ban'
-};
 
 export const sampleProducts: SampleProduct[] = [
   {

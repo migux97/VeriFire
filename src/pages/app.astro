@@ -5,7 +5,7 @@ import { ProfileMenu } from '@/components/warranties/ProfileMenu';
 import { WarrantyDashboard } from '@/components/warranties/WarrantyDashboard';
 import { WalletStatus } from '@/components/warranties/WalletStatus';
 import BaseLayout from '@/layouts/BaseLayout.astro';
-import { config } from '@/lib/server/config';
+import { publicConfig } from '@/lib/server/config';
 import '@/styles/consumer.css';
 
 const locale = Astro.currentLocale === 'en' ? 'en' : 'es';
@@ -23,7 +23,7 @@ const locale = Astro.currentLocale === 'en' ? 'en' : 'es';
   </AppTopbar>
 
   <main class="container dashboard">
-    <WarrantyDashboard client:load cavosAppId={config.cavosAppId} locale={locale} />
+    <WarrantyDashboard client:load cavosAppId={publicConfig.cavosAppId} locale={locale} />
   </main>
 
   <SiteFooter />

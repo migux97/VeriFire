@@ -28,4 +28,10 @@ export const formatCountdown = (until: string, now: number) => {
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 };
 
+// "GABC…WXYZ": a Stellar address short enough to read, in the two places that show one.
+export const shortAddress = (address: string | undefined | null) => (address ? `${address.slice(0, 4)}…${address.slice(-4)}` : 'desconocido');
+
+// "1.234,5": an amount of tokens or XLM, as the company panels show it.
+export const formatNumber = (value: number, maximumFractionDigits = 2) => value.toLocaleString('es-AR', { maximumFractionDigits });
+
 export const plural = (count: number, singular: string, pluralForm: string) => (count === 1 ? singular : pluralForm);

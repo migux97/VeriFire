@@ -6,7 +6,7 @@ import { ACTIVATION_DOMAIN } from '../activation';
 import type { PreparedClaim, Warranty } from '../types';
 import { ApiError, postJson } from './api';
 import { base64ToBytes, base64UrlToBytes, bytesToBase64, bytesToHex } from './bytes';
-import type { ScannedClaim } from './qr';
+import type { ScannedClaim } from '../qr-codes';
 import { connectSigningWallet, createAccountOnChain, storedDeviceCode } from './wallet';
 
 export type Progress = (message: string) => void;

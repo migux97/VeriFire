@@ -10,8 +10,9 @@ import { activateWarranty } from '@/lib/client/activation';
 import { ApiError, getJson } from '@/lib/client/api';
 import { verifyPassword, deviceCodeFor } from '@/lib/client/password';
 import {
-  captureClaimLink, keepPendingClaim, keepPendingTransfer, parseScannedQr, takePendingClaim, takePendingTransfer, type ScannedClaim
+  captureClaimLink, keepPendingClaim, keepPendingTransfer, takePendingClaim, takePendingTransfer
 } from '@/lib/client/qr';
+import { parseScannedQr, type ScannedClaim } from '@/lib/qr-codes';
 import { leaveSession, userSession } from '@/lib/client/session';
 import {
   acceptTransfer, cancelTransfer, offerTransfer, readTransferLink, savedTransferLink, type IncomingTransfer

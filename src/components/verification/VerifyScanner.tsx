@@ -4,7 +4,7 @@ import { useState } from 'react';
 import type { Message } from '@/components/ui/StatusMessage';
 import { Toast } from '@/components/ui/Toast';
 import { QrScanPanel } from '@/components/warranties/QrScanPanel';
-import { parseScannedQr } from '@/lib/client/qr';
+import { parseScannedQr } from '@/lib/qr-codes';
 
 // A QR that holds only the code, without the link.
 const PLAIN_CODE = /^[A-Z0-9][A-Z0-9-]{2,40}$/i;

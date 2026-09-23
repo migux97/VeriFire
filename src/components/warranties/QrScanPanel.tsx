@@ -3,7 +3,7 @@ import { Icon } from '@/components/ui/Icon';
 import type { Message } from '@/components/ui/StatusMessage';
 import { useQrScanner } from './useQrScanner';
 import { getConsumerMessages, type ConsumerLocale } from '@/i18n/consumer';
-import { parseManualCode, parseScannedQr, type ScannedClaim } from '@/lib/client/qr';
+import { parseManualCode, parseScannedQr, type ScannedClaim } from '@/lib/qr-codes';
 
 interface QrScanPanelProps {
   onDetected: (text: string) => void;

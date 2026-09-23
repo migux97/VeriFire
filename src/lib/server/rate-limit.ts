@@ -2,6 +2,7 @@
 // product histories or the payment provider with requests; it is not a defence against a distributed flood, and it
 // lives in memory, so it resets with the process.
 import { HttpError } from './errors';
+import { messages } from './messages';
 import { singleton } from './singleton';
 
 const WINDOW_MS = 60 * 1000;
@@ -25,6 +26,6 @@ export const rateLimit = (bucket: string, caller: string | undefined, limit: num
   }
   current.count += 1;
   if (current.count > limit) {
-    throw new HttpError(429, 'Demasiados intentos seguidos. Esperá un minuto y volvé a probar.', { retryable: true });
+    throw new HttpError(429, messages.tooManyRequests, { retryable: true });
   }
 };

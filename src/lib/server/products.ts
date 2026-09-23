@@ -7,6 +7,7 @@ import { destinationForCountry } from './countries';
 import { textField, type JsonBody } from './http';
 import { activationUrl, secretUrl, verificationUrl } from './links';
 import { singleton } from './singleton';
+import { shortAddress } from '../format';
 import { activationKeyFor, explorerTxUrl, isTxHash } from './stellar';
 import { hashSecret, saveState, store, type Product, type ProductFields, type StoredEvent } from './store';
 
@@ -48,7 +49,6 @@ export const isCurrentOnChain = (product: Product): product is Product & { chain
     // no way to tell, it is registered again instead of pointing at whatever token carries that id now.
     && (product.chain.contractId ?? (config.previousContractId ? config.previousContractId : null)) === config.contractId);
 
-export const shortAddress = (address: string | undefined | null) => (address ? `${address.slice(0, 4)}…${address.slice(-4)}` : 'desconocido');
 const txUrlOf = (tx: string | undefined) => (isTxHash(tx) ? explorerTxUrl(tx) : null);
 
 // Whoever activated the warranty: the first transfer's previous owner, or the current owner if it never moved.

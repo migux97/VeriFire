@@ -1,7 +1,0 @@
----
-import { getLandingMessages } from '@/i18n/landing';
-import { ProductIllustration } from './ProductIllustration';
-interface Props { kind: string; color: string; instance?: string; }
-const { kind, color, instance = 'gallery' } = Astro.props;
----
-<ProductIllustration kind={kind} color={color} instance={instance} labels={getLandingMessages(Astro.currentLocale).artwork} />

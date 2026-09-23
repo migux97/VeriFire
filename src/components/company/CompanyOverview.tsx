@@ -1,7 +1,8 @@
 import type { CSSProperties } from 'react';
 import type { PurchaseStatus } from '@/lib/types';
+import { formatNumber } from '@/lib/format';
 
-const number = (value: number) => value.toLocaleString('es-AR', { maximumFractionDigits: 1 });
+const number = (value: number) => formatNumber(value, 1);
 const percentage = (value: number, total: number) => total > 0 ? Math.min(100, Math.max(0, value / total * 100)) : 0;
 
 export function CompanyOverview({ records, loading }: { records: PurchaseStatus[]; loading: boolean }) {

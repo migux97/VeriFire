@@ -26,9 +26,12 @@ El puerto 5501 es fijo a propósito: Cavos guarda la llave de firma de cada wall
 | --- | --- |
 | `npm run dev` | Servidor de desarrollo |
 | `npm run check` | Chequeo de tipos de `.astro`, `.ts` y `.tsx` |
-| `npm run build` | Chequeo de tipos y build de producción en `dist/` |
+| `npm test` | Tests de la lógica pura (`node --test`, sin dependencias) |
+| `npm run build` | Chequeo de tipos, tests y build de producción en `dist/` |
+| `npm run tunnel` | Expone el servidor local con ngrok, para probar desde el celular |
 | `npm start` | Servidor de producción (lee `.env` al arrancar) |
 | `npm run contract:deploy` | Despliega el contrato en testnet y guarda sus datos en `.env` |
+| `npm run contract:upgrade` | Reemplaza el código del contrato conservando su dirección y sus datos |
 | `npm run contract:test-activation` | Prueba de punta a punta de la activación contra testnet |
 
 Todas las variables de `.env` se leen en tiempo de ejecución, así que el mismo build sirve para cualquier configuración.
@@ -55,21 +58,35 @@ src/
   layouts/          Layout base (head, fuentes, control de sesión)
   components/       Componentes .astro de layout e islas .tsx por funcionalidad
   stores/           Estado compartido entre islas (nanostores)
+  i18n/             Textos en español e inglés de la landing y del panel del comprador
   lib/
     client/         Código del navegador: sesión, wallet Cavos, activación, lectura de QR
     server/         Código del servidor: estado, Cosmos Pay, Stellar, reglas de negocio
+    qr-codes.ts     Qué significa cada QR: sin navegador ni servidor, cubierto por tests
+    format.ts       Fechas, direcciones y números tal como se muestran
     types.ts        Contrato de la API compartido por servidor y cliente
-  styles/           brand.css (colores y logo), global.css (base y vistas), landing.css y auth.css
+  styles/           brand.css (colores y logo), global.css (base y vistas), landing*.css, auth.css,
+                    company.css y consumer.css
 scripts/            Scripts de despliegue y prueba del contrato (TypeScript ejecutado por Node)
+tests/              Tests de la lógica pura, ejecutados con `node --test`
 contracts/          Contrato Soroban en Rust
 ```
+
+`lib/server` nunca se importa desde el navegador: las páginas solo pasan a las islas lo que expone `publicConfig`
+(`lib/server/config.ts`), para que una clave no pueda viajar al HTML por descuido. `lib/server/messages.ts` reúne los
+mensajes que el usuario puede llegar a ver, porque la misma situación se detecta desde el contrato y desde el servidor.
+
+`src/lib/server/stellar.ts` es el único archivo que importa con extensión `.ts`: los scripts de `scripts/` lo ejecutan
+directamente con Node.
 
 ## Rutas
 
 | Ruta | Página |
 | --- | --- |
-| `/` | Landing pública de Verifire |
-| `/login` | Ingreso y registro |
+| `/` | Landing pública de Verifire (en inglés, `/en/`) |
+| `/login` | Ingreso y registro (`?modo=registro` abre el registro) |
+| `/choose-workspace` | Elegir entre la cuenta personal y el espacio de empresa |
+| `/company` | Panel de empresa: resumen, catálogo, equipo y agenda |
 | `/app` | Panel del comprador: escanear QR y ver garantías |
 | `/batches` | Panel de empresa: lotes, etiquetas y activaciones |
 | `/admin` | Compra de un lote con Cosmos Pay |

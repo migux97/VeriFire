@@ -4,7 +4,7 @@ import BrandLogo from '@/components/layout/BrandLogo.astro';
 import LandingSprite from '@/components/landing/LandingSprite.astro';
 import PackageArt from '@/components/landing/PackageArt.astro';
 import BaseLayout from '@/layouts/BaseLayout.astro';
-import { config } from '@/lib/server/config';
+import { publicConfig } from '@/lib/server/config';
 import '@/styles/auth.css';
 ---
 
@@ -43,7 +43,7 @@ import '@/styles/auth.css';
       </nav>
 
       <div class="auth-card">
-        <AuthPanel client:load cavosAppId={config.cavosAppId} />
+        <AuthPanel client:load cavosAppId={publicConfig.cavosAppId} />
       </div>
     </main>
   </div>

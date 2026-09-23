@@ -4,6 +4,7 @@ import { getConsumerMessages, type ConsumerLocale } from '@/i18n/consumer';
 import { storedUser } from '@/lib/client/account';
 import { userSession, WALLET_KEY, WALLET_UPDATED_EVENT } from '@/lib/client/session';
 import { readStored } from '@/lib/client/storage';
+import { shortAddress } from '@/lib/format';
 import { isStellarAddress } from '@/lib/validation';
 
 export function WalletStatus({ locale = 'es' }: { locale?: ConsumerLocale }) {
@@ -43,7 +44,7 @@ export function WalletStatus({ locale = 'es' }: { locale?: ConsumerLocale }) {
       <button type="button" className="consumer-address" disabled={!address} onClick={() => void copy()}
         title={address || labels.unavailable} aria-label={address ? `${labels.copy}: ${address}` : labels.unavailable}>
         <Icon name="fa-solid fa-wallet" />
-        <span>{address ? `${address.slice(0, 4)}…${address.slice(-4)}` : '—'}</span>
+        <span>{address ? shortAddress(address) : '—'}</span>
         <Icon name="fa-regular fa-copy" />
       </button>
       <span className="visually-hidden" role="status">{notice}</span>

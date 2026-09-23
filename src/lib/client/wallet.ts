@@ -1,6 +1,7 @@
 // The buyer's Stellar wallet, held by Cavos. Its signing key lives in this browser (IndexedDB) and under this site
 // address: localhost and the public URL are two different places for it, even on the same computer.
 import type { CavosAuth, CavosStellar, Identity } from '@cavos/kit';
+import { errorMessage } from '../errors';
 import { isStellarAddress } from '../validation';
 import { storedUser, updateStoredUser } from './account';
 import { DEVICE_CODE_KEY, userSession, WALLET_KEY, WALLET_UPDATED_EVENT } from './session';
@@ -112,7 +113,7 @@ const authorizeDevice = async (wallet: CavosStellar, deviceCode: string): Promis
       await wallet.approveThisDeviceWithRecovery(deviceCode);
       return { ok: true, error: '' };
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+      const message = errorMessage(error);
       const wrongPassword = /wrong factor|not enrolled/i.test(message);
       return { ok: false, wrongPassword, error: wrongPassword ? WRONG_PASSWORD : message };
     }
@@ -125,7 +126,7 @@ const authorizeDevice = async (wallet: CavosStellar, deviceCode: string): Promis
     if (wallet.status === 'undeployed') await createAccountOnChain(wallet);
     return { ok: true, error: '' };
   } catch (error) {
-    return { ok: false, error: `No se pudo guardar el uso en varios dispositivos: ${error instanceof Error ? error.message : String(error)}` };
+    return { ok: false, error: `No se pudo guardar el uso en varios dispositivos: ${errorMessage(error)}` };
   }
 };
 
@@ -136,7 +137,7 @@ export const createAccountOnChain = async (wallet: CavosStellar) => {
     await wallet.execute(1n, wallet.address);
   } catch (error) {
     // execute() moves the status to "ready" as soon as the account exists, even when the payment itself failed.
-    if ((wallet.status as string) !== 'ready') throw new Error(`No se pudo crear tu cuenta en Stellar: ${error instanceof Error ? error.message : String(error)}`);
+    if ((wallet.status as string) !== 'ready') throw new Error(`No se pudo crear tu cuenta en Stellar: ${errorMessage(error)}`);
   }
 };
 
@@ -199,7 +200,7 @@ export const enableSigning = async (appId: string, expectedAddress: string, devi
     try {
       await wallet.approveThisDeviceWithRecovery(deviceCode);
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+      const message = errorMessage(error);
       throw new Error(/wrong factor|not enrolled/i.test(message) ? WRONG_PASSWORD : message);
     }
   } else if (wallet.status === 'undeployed') {

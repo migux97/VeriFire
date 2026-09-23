@@ -1,6 +1,7 @@
 import { useId, useRef, useState } from 'react';
 import { Icon } from '@/components/ui/Icon';
 import { LedgerLink } from '@/components/ui/LedgerLink';
+import { downloadBlob } from '@/lib/client/download';
 import { consumerDate, getConsumerMessages, type ConsumerLocale } from '@/i18n/consumer';
 import type { Warranty } from '@/lib/types';
 import { WarrantyCoverage } from './WarrantyCoverage';
@@ -26,14 +27,7 @@ export function WarrantySupport({ warranty, now, locale = 'es' }: { warranty: Wa
         ...(warranty.certificateUrl ? [`${labels.support.certificate}: ${warranty.certificateUrl}`] : [labels.support.noCertificate]),
         '', labels.support.instructions, labels.support.note].join('\n');
       // Only public warranty data: never include activation or transfer secrets.
-      const url = URL.createObjectURL(new Blob(['\uFEFF', text], { type: 'text/plain;charset=utf-8' }));
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `verifire-${warranty.token.replace(/[^a-zA-Z0-9_-]/g, '_')}.txt`;
-      document.body.append(link);
-      link.click();
-      link.remove();
-      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      downloadBlob(new Blob(['\uFEFF', text], { type: 'text/plain;charset=utf-8' }), `verifire-${warranty.token.replace(/[^a-zA-Z0-9_-]/g, '_')}.txt`);
       setNotice(labels.support.downloaded);
     } catch {
       setNotice(labels.support.downloadError);
