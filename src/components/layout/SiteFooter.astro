@@ -1,5 +1,12 @@
+---
+import { getLandingMessages } from '@/i18n/landing';
+import { pageLocale } from '@/lib/server/page-locale';
+
+const { footer } = getLandingMessages(pageLocale(Astro));
+---
+
 <footer class="footer">
   <div class="container footer-inner">
-    <p>© {new Date().getFullYear()} Verifire. Seguridad y reclamo de productos.</p>
+    <p>© {new Date().getFullYear()} Verifire. {footer.tagline}</p>
   </div>
 </footer>

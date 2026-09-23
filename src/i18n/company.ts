@@ -1,0 +1,1104 @@
+// The company panel (/company) and the batch and purchase screens it embeds, in Spanish and English. The language is
+// the one chosen in the panel's settings or on the landing (the verifireLang cookie, see src/lib/locale.ts). Batch
+// codes, lot references, token ids and product names are data and are never translated.
+import type { Locale } from '@/lib/locale';
+
+const es = {
+  intl: 'es-AR',
+  meta: {
+    title: 'Verifire | Panel empresa',
+    description: 'Panel operativo para gestionar productos, lotes y verificaciones de Verifire.'
+  },
+  shell: {
+    navLabel: 'Navegación de empresa',
+    openMenu: 'Abrir menú',
+    closeMenu: 'Cerrar menú',
+    catalogOpen: 'Desplegar opciones de Productos y lotes',
+    catalogClose: 'Cerrar opciones de Productos y lotes'
+  },
+  nav: {
+    dashboard: 'Resumen',
+    catalog: 'Productos y lotes',
+    batches: 'Mis lotes',
+    products: 'Mis productos',
+    generate: 'Generar tokens',
+    activity: 'Verificaciones',
+    team: 'Equipo',
+    settings: 'Configuración',
+    back: 'Volver al sitio'
+  },
+  views: {
+    dashboard: { eyebrow: 'Panel empresa', title: 'Resumen operativo', description: 'Indicadores de las compras y lotes disponibles en tu cuenta.' },
+    catalog: {
+      eyebrow: 'Inventario y producción',
+      title: 'Productos y lotes',
+      description: 'Administrá tus productos, emití tokens y consultá los pagos y etiquetas de cada lote.'
+    },
+    activity: {
+      eyebrow: 'Trazabilidad',
+      title: 'Verificaciones',
+      description: 'Consultá el estado de activación de los productos y abrí su verificación pública. No hay estadísticas de escaneos disponibles.'
+    },
+    team: { eyebrow: 'Accesos', title: 'Equipo', description: 'Administrá los integrantes y sus permisos.' },
+    settings: {
+      eyebrow: 'Administración',
+      title: 'Configuración',
+      description: 'Personalizá el panel: apariencia, idioma, animaciones, notificaciones y permisos.'
+    }
+  },
+  catalogHeading: { batches: 'Mis lotes', create: 'Generar tokens' },
+  identity: { organization: 'Organización', business: 'Cuenta empresarial', unconfigured: 'Empresa sin configurar' },
+  roles: { admin: 'Administrador', operator: 'Operador', auditor: 'Auditor', viewer: 'Solo lectura' },
+  common: { pending: 'Pendiente', cancel: 'Cancelar', delete: 'Eliminar', unitsLabel: 'unidades' },
+  overview: {
+    loading: 'Cargando el resumen de tu cuenta…',
+    greeting: { morning: 'Buenos días', afternoon: 'Buenas tardes', evening: 'Buenas noches' },
+    hello: (greeting: string, name: string) => `${greeting}, ${name}`,
+    heroText: (batches: number, activation: string) =>
+      batches ? `Tenés ${batches} ${batches === 1 ? 'lote generado' : 'lotes generados'} y el ${activation}% de sus productos ya tiene la garantía activada.` : 'Todavía no generaste lotes. Empezá emitiendo tus primeros tokens.',
+    quick: { generate: 'Generar tokens', payment: 'Programar pago', batches: 'Ver mis lotes' },
+    emptyTitle: 'Tu actividad, en un solo lugar',
+    empty: 'Todavía no hay compras disponibles. Cuando generes un lote, aquí verás sus indicadores y porcentajes.',
+    metricsLabel: 'Indicadores de la cuenta',
+    metrics: {
+      units: 'Unidades en lotes generados',
+      unitsDetail: (count: number) => `${count} ${count === 1 ? 'lote generado' : 'lotes generados'}`,
+      claimed: 'Productos activados',
+      claimedDetail: (percent: string) => `${percent}% de las unidades`,
+      pending: 'Compras pendientes',
+      pendingDetail: (percent: string) => `${percent}% de las compras`,
+      investment: 'Inversión en lotes generados',
+      investmentDetail: 'Según compras completadas'
+    },
+    chart: {
+      eyebrow: 'Últimos seis meses',
+      title: 'Unidades por mes de compra',
+      caption: 'Compras que ya tienen un lote generado.',
+      label: (month: string, count: string) => `${month}: ${count} unidades`
+    },
+    donut: {
+      eyebrow: 'Garantías',
+      title: 'Porcentaje de activación',
+      label: (percent: string) => `${percent}% de unidades activadas`,
+      activated: 'activado',
+      claimed: 'Activadas',
+      unclaimed: 'Sin activar'
+    },
+    status: { eyebrow: 'Estado de las compras', title: 'Distribución operativa', issued: 'Con lote generado', pending: 'Pendientes de generación' },
+    agenda: {
+      eyebrow: 'Agenda',
+      title: 'Próximos vencimientos',
+      empty: 'No hay pagos ni lotes programados. Programalos desde Generar tokens.',
+      open: 'Ir a la agenda'
+    },
+    table: {
+      eyebrow: 'Detalle informativo',
+      title: 'Compras y activaciones por lote',
+      caption: 'Las unidades y la inversión del resumen incluyen únicamente compras con lote generado.',
+      lot: 'Lote / producto',
+      status: 'Estado',
+      units: 'Unidades',
+      claimed: 'Activadas',
+      activation: 'Activación',
+      amount: 'Importe',
+      generated: 'Generado'
+    }
+  },
+  data: {
+    failed: 'No se pudieron cargar todas las compras. Recargá la página para consultar los datos completos.',
+    eyebrow: 'Inventario real',
+    productsTitle: 'Productos de tu cuenta',
+    activityTitle: 'Estado de los productos',
+    seeBatches: 'Ver lotes',
+    loading: 'Cargando los datos de tu cuenta...',
+    empty: 'Todavía no hay productos asociados a esta cuenta. Generá tu primer lote para verlos aquí.',
+    columns: { product: 'Producto', model: 'Modelo', status: 'Estado', destination: 'Destino', created: 'Creado' },
+    lot: (lot: string) => `Lote ${lot}`,
+    claimed: 'Activado',
+    sealed: 'Sellado'
+  },
+  catalog: {
+    incomplete: 'Algunos datos todavía no están disponibles. El resumen muestra las compras cargadas.',
+    metricsLabel: 'Resumen de lotes',
+    metrics: { batches: 'Lotes generados', tokens: 'Tokens en lotes', claimed: 'Tokens activados', percent: 'Porcentaje activado' },
+    emission: {
+      title: 'Estado de emisión',
+      pendingPurchases: 'Compras sin lote generado',
+      pendingTokens: 'Tokens solicitados sin lote',
+      pendingAmount: 'Importe de compras sin lote',
+      investment: 'Inversión en lotes generados',
+      onChain: 'Tokens registrados en cadena',
+      pendingOnChain: 'Tokens pendientes en cadena'
+    },
+    recent: {
+      title: 'Últimos lotes generados',
+      empty: 'Todavía no hay lotes generados disponibles.',
+      lot: 'Lote / modelo',
+      destination: 'Destino',
+      tokens: 'Tokens',
+      claimed: 'Activados',
+      date: 'Fecha de compra'
+    }
+  },
+  operations: {
+    eyebrow: 'Producción y tesorería',
+    title: 'Operaciones',
+    batchTitle: 'Programar lote',
+    paymentTitle: 'Programar pago',
+    badge: 'Agenda local',
+    disclaimer: 'Recordatorios guardados en este navegador. Te avisamos antes de cada fecha, pero la programación no ejecuta pagos ni genera tokens automáticamente.',
+    generate: 'Generar tokens',
+    scheduleBatch: 'Programar lote',
+    schedulePayment: 'Programar pago',
+    fields: {
+      batchName: 'Modelo del producto',
+      paymentName: 'Concepto del pago',
+      batchNamePlaceholder: 'Ej. Zapatilla Runner X',
+      paymentNamePlaceholder: 'Ej. Pago de producción',
+      batchReference: 'Referencia del lote',
+      paymentReference: 'Referencia o destinatario',
+      batchReferencePlaceholder: 'Ej. 1043',
+      paymentReferencePlaceholder: 'Ej. Proveedor / factura',
+      destination: 'Destino',
+      destinationPlaceholder: 'Ej. Argentina',
+      tokens: 'Cantidad de tokens',
+      amount: 'Importe en XLM',
+      date: 'Fecha y hora local'
+    },
+    save: 'Guardar programación',
+    invalid: 'Revisá el nombre, la fecha futura y la cantidad: de 1 a 500 tokens o un importe mayor a cero.',
+    saved: 'Programación guardada en la agenda. Te vamos a avisar antes de la fecha.',
+    removed: 'Programación eliminada.',
+    readFailed: 'No se pudo leer la agenda de este navegador.',
+    saveFailed: 'No se pudo guardar. Revisá el almacenamiento del navegador.',
+    agenda: (count: number) => `Agenda · ${count} ${count === 1 ? 'operación' : 'operaciones'}`,
+    export: 'Exportar CSV',
+    empty: (mode: 'batch' | 'payment' | undefined) =>
+      `Todavía no hay operaciones programadas${mode === 'batch' ? ' de lotes' : mode === 'payment' ? ' de pagos' : ''}.`,
+    batchTitleValue: (name: string, amount: number) => `${name} · ${amount} unidades`,
+    batchDetail: (reference: string, destination: string) => `Referencia: ${reference || 'Pendiente'} · Destino: ${destination || 'Pendiente'}`,
+    paymentDetail: (amount: number, reference: string) => `${amount} XLM · ${reference || 'Tesorería'}`,
+    removeLabel: (title: string) => `Eliminar programación: ${title}`,
+    overdue: 'Vencido',
+    csvHeader: 'Tipo,Operación,Detalle,Fecha',
+    csvFile: 'verifire-operaciones.csv'
+  },
+  issuance: {
+    eyebrow: 'Producción y pagos',
+    title: 'Planificá tu próxima emisión',
+    lead: 'Emití tokens ahora o prepará la agenda de lotes y pagos desde este espacio.',
+    modesLabel: 'Tipo de operación',
+    modes: {
+      now: { title: 'Emitir ahora', detail: 'Crear el lote y continuar al pago' },
+      batch: { title: 'Programar lote', detail: 'Organizar la próxima producción' },
+      payment: { title: 'Programar pago', detail: 'Agendar un importe y vencimiento' }
+    },
+    batchData: 'Datos del lote',
+    batchDataLead: 'Un producto, una referencia y un destino por emisión.',
+    infoEyebrow: 'Emisión inmediata',
+    infoTitle: 'Pago y disponibilidad',
+    allowed: 'Cantidad permitida',
+    allowedValue: '1–500 tokens',
+    currency: 'Moneda',
+    method: 'Medio de pago',
+    infoAmount: 'El importe exacto y el QR aparecen al continuar. El lote se genera después de confirmar el pago.',
+    infoBatches: 'Podés consultar el estado del pago y descargar las etiquetas desde Mis lotes.'
+  },
+  team: {
+    roleHelp: {
+      admin: 'Gestiona equipo, lotes, productos y configuración.',
+      operator: 'Gestiona productos, lotes y verificaciones.',
+      auditor: 'Consulta reportes, alertas y actividad.',
+      viewer: 'Solo puede consultar el resumen y los productos.'
+    },
+    invalidEmail: 'Ingresá un correo válido.',
+    duplicate: 'Ese correo ya pertenece al equipo.',
+    invited: (email: string) => `Invitación preparada para ${email}.`,
+    roleUpdated: 'Rol actualizado.',
+    revoked: 'Acceso revocado.',
+    roleOf: (email: string) => `Rol de ${email}`,
+    pending: 'Pendiente',
+    active: 'Activo',
+    revokeLabel: (email: string) => `Revocar acceso de ${email}`,
+    email: 'Correo del integrante',
+    role: 'Rol y permisos',
+    create: 'Crear invitación',
+    invite: 'Invitar integrante',
+    closeInvite: 'Cerrar invitación'
+  },
+  rolesSettings: {
+    eyebrow: 'Administración',
+    title: 'Permisos por rol',
+    badge: 'Configuración local',
+    intro: 'Definí qué puede consultar o programar cada rol dentro de la empresa.',
+    permissions: {
+      viewProducts: 'Ver productos',
+      viewBatches: 'Ver lotes',
+      viewSensitive: 'Ver información importante',
+      scheduleBatches: 'Programar lotes y pagos',
+      manageTeam: 'Gestionar equipo',
+      manageSettings: 'Gestionar configuración'
+    },
+    save: 'Guardar permisos',
+    saved: 'Permisos guardados para este navegador.'
+  },
+  settings: {
+    local: 'Se guarda en este navegador',
+    profile: {
+      title: 'Perfil de empresa',
+      lead: 'Cómo se presenta tu empresa en el panel. El nombre comercial también figura como marca en las etiquetas nuevas.',
+      logo: 'Logo',
+      logoHint: 'PNG, JPG, WebP, SVG o GIF de hasta 5 MB. Se ajusta a un cuadrado de 256 × 256.',
+      upload: 'Subir logo',
+      change: 'Cambiar logo',
+      remove: 'Quitar',
+      drop: 'Soltá la imagen para usarla como logo',
+      logoErrors: {
+        type: 'Ese archivo no es una imagen compatible. Usá PNG, JPG, WebP, SVG o GIF.',
+        size: 'La imagen pesa más de 5 MB.',
+        read: 'No se pudo leer la imagen. Probá con otro archivo.'
+      },
+      fields: {
+        name: 'Nombre comercial *',
+        legalName: 'Razón social',
+        taxId: 'CUIT / identificación fiscal',
+        industry: 'Rubro',
+        website: 'Sitio web',
+        email: 'Correo de contacto',
+        phone: 'Teléfono',
+        country: 'País',
+        address: 'Dirección',
+        description: 'Descripción'
+      },
+      placeholders: {
+        name: 'Ej. Andes Tech',
+        legalName: 'Ej. Andes Tech S.A.',
+        taxId: 'Ej. 30-12345678-9',
+        website: 'https://tuempresa.com',
+        email: 'contacto@tuempresa.com',
+        phone: '+54 11 1234-5678',
+        country: 'Ej. Argentina',
+        address: 'Calle, número, ciudad',
+        description: 'Qué fabrica o vende tu empresa, en pocas palabras.'
+      },
+      industries: {
+        '': 'Elegí un rubro',
+        electronics: 'Electrónica',
+        cosmetics: 'Cosmética y perfumería',
+        watches: 'Relojería y joyería',
+        beverages: 'Vinos y bebidas',
+        automotive: 'Autopartes',
+        apparel: 'Indumentaria y calzado',
+        pharma: 'Salud y farmacia',
+        other: 'Otro'
+      } as Record<string, string>,
+      preview: 'Vista previa',
+      previewHint: 'Así se ve en la barra lateral.',
+      save: 'Guardar perfil',
+      discard: 'Descartar cambios',
+      saved: 'Perfil guardado.',
+      saveFailed: 'No se pudo guardar: el navegador no tiene lugar. Probá con un logo más liviano.',
+      invalidName: 'Ingresá el nombre comercial.',
+      invalidEmail: 'Revisá el correo de contacto.',
+      invalidWebsite: 'Revisá el sitio web: tiene que empezar con http:// o https://.',
+      readOnly: 'Solo un administrador puede editar el perfil de la empresa.',
+      counter: (used: number, max: number) => `${used}/${max}`
+    },
+    appearance: {
+      title: 'Apariencia',
+      lead: 'Elegí cómo se ve el panel.',
+      theme: 'Tema',
+      themes: { light: 'Claro', dark: 'Oscuro', system: 'Sistema' },
+      motion: 'Animaciones',
+      motionHelp: 'Transiciones suaves al cambiar de sección, gráficos animados y avisos que aparecen con movimiento.',
+      motionSystem: 'Tu sistema pide reducir el movimiento: las animaciones se muestran al mínimo aunque estén activadas.'
+    },
+    language: {
+      title: 'Idioma',
+      lead: 'El idioma del panel, del panel del comprador y de las páginas públicas de verificación.',
+      reloading: 'Cambiando el idioma…'
+    },
+    notifications: {
+      title: 'Notificaciones',
+      lead: 'Avisos dentro del panel, en la campana de arriba.',
+      payments: 'Pagos confirmados',
+      paymentsHelp: 'Cuando Cosmos Pay confirma el pago de un lote.',
+      batches: 'Lotes creados',
+      batchesHelp: 'Cuando un lote queda generado con sus etiquetas.',
+      reminders: 'Pagos y lotes programados',
+      remindersHelp: 'Antes de cada fecha de tu agenda y cuando la fecha llega.',
+      lead_time: 'Avisarme antes',
+      leadOptions: { 1: '1 hora antes', 24: '1 día antes', 72: '3 días antes' } as Record<1 | 24 | 72, string>,
+      browser: 'Notificaciones del navegador',
+      browserHelp: 'También fuera de la pestaña, mientras el panel esté abierto.',
+      browserDenied: 'El navegador bloqueó las notificaciones. Habilitalas desde la configuración del sitio.',
+      browserUnsupported: 'Este navegador no admite notificaciones.',
+      test: 'Enviar notificación de prueba'
+    },
+    demo: {
+      title: 'Modo demo',
+      badge: 'Temporal',
+      lead: 'Completa la cuenta con compras, lotes, agenda, equipo y notificaciones de ejemplo para probar la visualización y la edición. Los datos de ejemplo quedan aparte: tus datos reales no se tocan.',
+      toggle: 'Activar modo demo',
+      on: 'El modo demo está activo. Al desactivarlo se borran todos los datos de ejemplo.',
+      reset: 'Restablecer datos de ejemplo',
+      working: 'Preparando los datos…'
+    }
+  },
+  notifications: {
+    button: 'Notificaciones',
+    buttonUnread: (count: number) => `Notificaciones, ${count} sin leer`,
+    title: 'Notificaciones',
+    markAll: 'Marcar todo como leído',
+    clear: 'Vaciar',
+    empty: 'No tenés notificaciones. Te avisamos cuando se confirme un pago, se cree un lote o se acerque una fecha de tu agenda.',
+    close: 'Cerrar aviso',
+    settings: 'Configurar',
+    kinds: {
+      paymentSucceeded: {
+        title: 'Pago realizado con éxito',
+        body: (p: Record<string, string>) => `Cosmos Pay confirmó el pago de ${p['amount'] ?? ''} XLM para ${p['model'] ?? 'tu lote'}.`
+      },
+      batchCreated: {
+        title: 'Lote creado con éxito',
+        body: (p: Record<string, string>) => `El lote ${p['batchId'] ?? ''} de ${p['model'] ?? ''} ya tiene ${p['quantity'] ?? ''} etiquetas listas.`
+      },
+      paymentSoon: {
+        title: 'Se acerca un pago programado',
+        body: (p: Record<string, string>) => `${p['title'] ?? ''} vence ${p['when'] ?? ''}.`
+      },
+      paymentDue: {
+        title: 'Llegó la fecha de un pago programado',
+        body: (p: Record<string, string>) => `${p['title'] ?? ''} estaba programado para ${p['when'] ?? ''}.`
+      },
+      batchSoon: {
+        title: 'Se acerca un lote programado',
+        body: (p: Record<string, string>) => `${p['title'] ?? ''} está programado ${p['when'] ?? ''}.`
+      },
+      batchDue: {
+        title: 'Llegó la fecha de un lote programado',
+        body: (p: Record<string, string>) => `${p['title'] ?? ''} estaba programado para ${p['when'] ?? ''}. Emitilo desde Generar tokens.`
+      },
+      demo: { title: 'Modo demo activado', body: () => 'Estás viendo datos de ejemplo. Podés desactivarlo desde Configuración.' },
+      test: { title: 'Notificación de prueba', body: () => 'Así vas a ver los avisos de pagos, lotes y vencimientos.' }
+    }
+  },
+  demo: {
+    banner: 'Modo demo activo: estás viendo datos de ejemplo.',
+    turnOff: 'Desactivar',
+    paymentQr: 'DEMO: ejemplo sin validez. No realiza pagos.',
+    labelQr: 'DEMO: ejemplo sin validez. No activa productos.'
+  },
+  batches: {
+    title: 'Lotes',
+    count: (visible: number, total: number) => `${visible} de ${total} ${total === 1 ? 'lote' : 'lotes'}`,
+    search: 'Buscar lote',
+    searchPlaceholder: 'Buscar por modelo, lote, destino o número de lote',
+    sort: 'Ordenar lotes',
+    sortOptions: {
+      recent: 'Fecha: más nuevos primero',
+      oldest: 'Fecha: más antiguos primero',
+      'claimed-desc': 'Activaciones: de mayor a menor',
+      'claimed-asc': 'Activaciones: de menor a mayor',
+      'quantity-desc': 'Tokens: de mayor a menor',
+      'quantity-asc': 'Tokens: de menor a mayor'
+    },
+    pages: 'Páginas de lotes',
+    noMatch: 'Ningún lote coincide con la búsqueda. Probá con otro modelo, lote o destino.',
+    empty: 'Todavía no emitiste lotes. Comprá tokens para generar tus primeras etiquetas.',
+    notReady: 'Este lote todavía no está listo: falta confirmar el pago.',
+    gone: 'Esta compra ya no existe en el servidor.',
+    forgetTitle: '¿Quitar esta compra de tu lista?',
+    forgetMessage: 'Si ya la pagaste, el lote se genera igual, pero no lo vas a ver en este panel.',
+    forgetConfirmLabel: 'Quitar de la lista',
+    shipTitle: '¿Marcar el lote como despachado?',
+    shipMessage: 'Queda registrado en el historial de cada producto de este lote, y no se puede deshacer.',
+    shipConfirmLabel: 'Marcar como despachado',
+    back: 'Volver',
+    shipFailed: 'No se pudo marcar el lote como despachado.',
+    loadingLabels: 'Cargando etiquetas...',
+    lotQrFile: (batchId: string) => `${batchId}-qr-publico-del-lote.svg`,
+    qrFile: (token: string, secret: boolean) => `${token}-qr-${secret ? 'secreto' : 'publico'}.svg`,
+    item: {
+      loading: 'Cargando lote...',
+      unavailable: 'Compra no disponible',
+      retry: 'Reintentar',
+      forget: 'Quitar de la lista',
+      waiting: 'Esperando pago',
+      registering: 'Registrando en Stellar',
+      readyChain: 'Listo · en Stellar',
+      ready: 'Listo',
+      paymentPending: 'Pago pendiente',
+      lot: (lot: string) => `Lote ${lot}`,
+      destination: (destination: string) => `Destino ${destination}`,
+      tokens: (count: number) => `${count} ${count === 1 ? 'token' : 'tokens'}`,
+      progress: (claimed: number, total: number) => `${claimed} / ${total} ${total === 1 ? 'activado' : 'activados'} por clientes`,
+      progressLabel: (claimed: number, total: number) => `${claimed} de ${total} productos con la garantía activada`,
+      shipped: (destination: string, date: string) => `Despachado a ${destination} el ${date}`,
+      hideLabels: 'Ocultar etiquetas',
+      showLabels: 'Ver etiquetas',
+      print: 'Imprimir',
+      csv: 'Descargar CSV',
+      lotQr: 'QR del lote',
+      ship: 'Marcar como despachado',
+      hidePayment: 'Ocultar QR de pago',
+      showPayment: 'Ver QR de pago',
+      ledger: 'Ver pago de emisión en Stellar'
+    },
+    labels: {
+      intro: 'Cada producto tiene dos QR:',
+      publicGuide: 'QR público, por fuera de la caja.',
+      publicGuideText: 'Cualquiera lo escanea sin iniciar sesión y solo ve los datos públicos del producto.',
+      secretGuide: 'QR secreto, adentro del empaque.',
+      secretGuideText: 'El cliente lo escanea desde su panel de Verifire para activar la garantía. Sirve una sola vez.',
+      csvNote: 'El CSV incluye los códigos secretos: guardalo solo para el control interno de tu empresa.',
+      alt: (secret: boolean, token: string) => `QR ${secret ? 'secreto' : 'público'} del producto ${token}`,
+      secret: 'Interior · secreto',
+      public: 'Exterior de la caja',
+      download: 'Descargar',
+      lot: (lot: string) => `Lote ${lot}`,
+      pages: 'Páginas de etiquetas'
+    },
+    payment: {
+      pay: (amount: string, asset: string) => `Pagá ${amount} ${asset}`,
+      toIssue: (quantity: number, model: string) => ` para emitir ${quantity} ${quantity === 1 ? 'token' : 'tokens'} de ${model}.`,
+      note: 'Escaneá el QR con Cosmos Pay. El lote se genera solo cuando se confirma el pago, y esta tarjeta se actualiza sola.',
+      alt: 'QR de pago Cosmos Pay',
+      missing: 'Esta compra no tiene un QR de pago guardado.'
+    }
+  },
+  purchase: {
+    waiting: 'Esperando confirmación de Cosmos Pay...',
+    confirmed: (batchId: string) => `Pago confirmado. El lote ${batchId} ya está en Mis lotes con sus etiquetas.`,
+    preparing: 'Pago confirmado. Preparando los tokens...',
+    status: (status: string) => `Estado Cosmos Pay: ${status || 'pendiente'}. Comprobando automáticamente...`,
+    creating: 'Creando el pago en Cosmos Pay...',
+    createFailed: 'No se pudo crear el pago del lote.',
+    payTitle: (amount: string, asset: string, quantity: number) => `Pagá ${amount} ${asset} para emitir ${quantity} ${quantity === 1 ? 'token' : 'tokens'}`,
+    payNote: 'Escaneá el QR con Cosmos Pay. El lote se genera solo cuando se confirma el pago.',
+    qrAlt: 'QR de pago Cosmos Pay',
+    ready: 'Pago confirmado. Tu lote ya está listo en Mis lotes.',
+    leaveNote: 'Podés cambiar de pestaña: el pago pendiente queda guardado en Mis lotes.',
+    another: 'Crear otro lote',
+    seeBatches: 'Ver pagos y lotes',
+    myBatches: 'Ver mis lotes',
+    warning:
+      'Pagá una sola vez: este QR es una transferencia real y se puede volver a pagar, pero un segundo pago no genera otro lote.',
+    demoWarning: 'Modo demo: este QR no es un pago real. El pago se confirma solo en unos segundos.'
+  },
+  configurator: {
+    steps: ['Producto', 'Lote y unidades', 'Etiquetas', 'Revisar'],
+    stepsLabel: 'Pasos de emisión',
+    template: 'Usar plantilla guardada',
+    templatePick: 'Seleccionar plantilla',
+    productLegend: 'Identidad del producto',
+    savedProduct: 'Producto guardado',
+    newProduct: 'Nuevo producto',
+    model: 'Modelo del producto *',
+    brand: 'Marca',
+    brandFromCompany: 'Se completa con el nombre de tu empresa.',
+    brandHint: 'Completá el nombre de tu empresa para identificar las etiquetas.',
+    saveProduct: 'Guardar producto',
+    lotLegend: 'Lote y unidades',
+    lot: 'Referencia del lote *',
+    autoLot: 'Asignar referencia automática',
+    lotHint: 'Podés editar la referencia. Los identificadores de cada token se asignan al emitir.',
+    country: 'País de destino *',
+    countryPick: 'Elegí un país',
+    quantity: 'Cantidad de tokens *',
+    labelLegend: 'Personalización de etiquetas',
+    format: 'Formato',
+    standard: 'Estándar',
+    compact: 'Compacto',
+    compactLabel: 'Compacta',
+    labelText: 'Texto adicional en la etiqueta',
+    yourBrand: 'Tu marca',
+    modelPlaceholder: 'Modelo',
+    lotPreview: (lot: string) => `Lote ${lot || 'Pendiente'}`,
+    publicQr: 'QR público',
+    secretQr: 'QR secreto · interior',
+    previewNote: 'Vista previa de distribución. Los QR reales se generan después del pago.',
+    reviewLegend: 'Revisar emisión',
+    review: { product: 'Producto', lot: 'Lote', destination: 'Destino', tokens: 'Tokens', amount: 'Importe estimado', label: 'Etiqueta' },
+    amountLater: 'Se calcula al continuar',
+    destinationPending: 'Destino pendiente',
+    reviewHint: 'Al continuar se calcula el importe y se crea la solicitud de pago. No se debita automáticamente.',
+    saveTemplate: 'Guardar como plantilla',
+    templatePlaceholder: 'Ej. Calzado Argentina',
+    saveTemplateButton: 'Guardar plantilla',
+    storageHint: 'Productos y plantillas se guardan en este navegador. La configuración emitida se conserva con la compra.',
+    readFailed: 'No se pudieron leer las configuraciones guardadas.',
+    needModelToSave: 'Ingresá un modelo para guardar el producto.',
+    needTemplateName: 'Ingresá un nombre para la plantilla.',
+    saved: 'Guardado en este navegador.',
+    saveFailed: 'No se pudo guardar la configuración.',
+    needModel: 'Completá el modelo del producto.',
+    checkLot: 'Revisá la referencia, el destino y la cantidad (1–500).',
+    enterModel: 'Ingresá un modelo.',
+    previous: 'Anterior',
+    next: 'Siguiente',
+    preparing: 'Preparando pago…',
+    confirm: 'Confirmar y obtener pago'
+  },
+  pagination: {
+    previous: 'Anterior',
+    next: 'Siguiente',
+    page: (page: number, pages: number) => `Página ${page} de ${pages}`
+  }
+};
+
+export type CompanyMessages = typeof es;
+
+const en: CompanyMessages = {
+  intl: 'en-US',
+  meta: {
+    title: 'Verifire | Company dashboard',
+    description: 'Operations dashboard to manage Verifire products, batches and verifications.'
+  },
+  shell: {
+    navLabel: 'Company navigation',
+    openMenu: 'Open menu',
+    closeMenu: 'Close menu',
+    catalogOpen: 'Expand Products and batches',
+    catalogClose: 'Collapse Products and batches'
+  },
+  nav: {
+    dashboard: 'Overview',
+    catalog: 'Products and batches',
+    batches: 'My batches',
+    products: 'My products',
+    generate: 'Issue tokens',
+    activity: 'Verifications',
+    team: 'Team',
+    settings: 'Settings',
+    back: 'Back to site'
+  },
+  views: {
+    dashboard: { eyebrow: 'Company dashboard', title: 'Operations overview', description: 'Key figures for the purchases and batches in your account.' },
+    catalog: {
+      eyebrow: 'Inventory and production',
+      title: 'Products and batches',
+      description: 'Manage your products, issue tokens and review the payments and labels of every batch.'
+    },
+    activity: {
+      eyebrow: 'Traceability',
+      title: 'Verifications',
+      description: 'Check the activation status of your products and open their public verification. Scan statistics are not available.'
+    },
+    team: { eyebrow: 'Access', title: 'Team', description: 'Manage members and their permissions.' },
+    settings: { eyebrow: 'Administration', title: 'Settings', description: 'Personalize the dashboard: appearance, language, animations, notifications and permissions.' }
+  },
+  catalogHeading: { batches: 'My batches', create: 'Issue tokens' },
+  identity: { organization: 'Organization', business: 'Business account', unconfigured: 'Company not set up' },
+  roles: { admin: 'Administrator', operator: 'Operator', auditor: 'Auditor', viewer: 'Read only' },
+  common: { pending: 'Pending', cancel: 'Cancel', delete: 'Delete', unitsLabel: 'units' },
+  overview: {
+    loading: 'Loading your account overview…',
+    greeting: { morning: 'Good morning', afternoon: 'Good afternoon', evening: 'Good evening' },
+    hello: (greeting: string, name: string) => `${greeting}, ${name}`,
+    heroText: (batches: number, activation: string) =>
+      batches ? `You have ${batches} ${batches === 1 ? 'issued batch' : 'issued batches'} and ${activation}% of their products already have an active warranty.` : 'You have not issued any batch yet. Start by issuing your first tokens.',
+    quick: { generate: 'Issue tokens', payment: 'Schedule payment', batches: 'See my batches' },
+    emptyTitle: 'Your activity, in one place',
+    empty: 'There are no purchases yet. Once you issue a batch, its figures and percentages show up here.',
+    metricsLabel: 'Account figures',
+    metrics: {
+      units: 'Units in issued batches',
+      unitsDetail: (count: number) => `${count} ${count === 1 ? 'issued batch' : 'issued batches'}`,
+      claimed: 'Activated products',
+      claimedDetail: (percent: string) => `${percent}% of all units`,
+      pending: 'Pending purchases',
+      pendingDetail: (percent: string) => `${percent}% of all purchases`,
+      investment: 'Spent on issued batches',
+      investmentDetail: 'From completed purchases'
+    },
+    chart: {
+      eyebrow: 'Last six months',
+      title: 'Units by purchase month',
+      caption: 'Purchases that already have an issued batch.',
+      label: (month: string, count: string) => `${month}: ${count} units`
+    },
+    donut: {
+      eyebrow: 'Warranties',
+      title: 'Activation rate',
+      label: (percent: string) => `${percent}% of units activated`,
+      activated: 'activated',
+      claimed: 'Activated',
+      unclaimed: 'Not activated'
+    },
+    status: { eyebrow: 'Purchase status', title: 'Operational breakdown', issued: 'Batch issued', pending: 'Waiting to be issued' },
+    agenda: {
+      eyebrow: 'Agenda',
+      title: 'Upcoming dates',
+      empty: 'No payments or batches are scheduled. Schedule them from Issue tokens.',
+      open: 'Go to the agenda'
+    },
+    table: {
+      eyebrow: 'Details',
+      title: 'Purchases and activations by batch',
+      caption: 'Units and spending in the overview only include purchases with an issued batch.',
+      lot: 'Lot / product',
+      status: 'Status',
+      units: 'Units',
+      claimed: 'Activated',
+      activation: 'Activation',
+      amount: 'Amount',
+      generated: 'Issued'
+    }
+  },
+  data: {
+    failed: 'Some purchases could not be loaded. Reload the page to see the full data.',
+    eyebrow: 'Live inventory',
+    productsTitle: 'Products in your account',
+    activityTitle: 'Product status',
+    seeBatches: 'See batches',
+    loading: 'Loading your account data...',
+    empty: 'There are no products in this account yet. Issue your first batch to see them here.',
+    columns: { product: 'Product', model: 'Model', status: 'Status', destination: 'Destination', created: 'Created' },
+    lot: (lot: string) => `Lot ${lot}`,
+    claimed: 'Activated',
+    sealed: 'Sealed'
+  },
+  catalog: {
+    incomplete: 'Some data is not available yet. The summary shows the purchases that loaded.',
+    metricsLabel: 'Batch summary',
+    metrics: { batches: 'Issued batches', tokens: 'Tokens in batches', claimed: 'Activated tokens', percent: 'Activation rate' },
+    emission: {
+      title: 'Issuance status',
+      pendingPurchases: 'Purchases without a batch',
+      pendingTokens: 'Requested tokens without a batch',
+      pendingAmount: 'Amount of purchases without a batch',
+      investment: 'Spent on issued batches',
+      onChain: 'Tokens registered on-chain',
+      pendingOnChain: 'Tokens pending on-chain'
+    },
+    recent: {
+      title: 'Latest issued batches',
+      empty: 'There are no issued batches yet.',
+      lot: 'Lot / model',
+      destination: 'Destination',
+      tokens: 'Tokens',
+      claimed: 'Activated',
+      date: 'Purchase date'
+    }
+  },
+  operations: {
+    eyebrow: 'Production and treasury',
+    title: 'Operations',
+    batchTitle: 'Schedule batch',
+    paymentTitle: 'Schedule payment',
+    badge: 'Local agenda',
+    disclaimer: 'Reminders stored in this browser. We warn you before each date, but scheduling does not make payments or issue tokens automatically.',
+    generate: 'Issue tokens',
+    scheduleBatch: 'Schedule batch',
+    schedulePayment: 'Schedule payment',
+    fields: {
+      batchName: 'Product model',
+      paymentName: 'Payment concept',
+      batchNamePlaceholder: 'E.g. Runner X sneaker',
+      paymentNamePlaceholder: 'E.g. Production payment',
+      batchReference: 'Lot reference',
+      paymentReference: 'Reference or payee',
+      batchReferencePlaceholder: 'E.g. 1043',
+      paymentReferencePlaceholder: 'E.g. Supplier / invoice',
+      destination: 'Destination',
+      destinationPlaceholder: 'E.g. Argentina',
+      tokens: 'Number of tokens',
+      amount: 'Amount in XLM',
+      date: 'Local date and time'
+    },
+    save: 'Save schedule',
+    invalid: 'Check the name, a future date and the amount: 1 to 500 tokens or an amount above zero.',
+    saved: 'Saved to the agenda. We will remind you before the date.',
+    removed: 'Schedule removed.',
+    readFailed: 'The agenda of this browser could not be read.',
+    saveFailed: 'It could not be saved. Check the browser storage.',
+    agenda: (count: number) => `Agenda · ${count} ${count === 1 ? 'operation' : 'operations'}`,
+    export: 'Export CSV',
+    empty: (mode: 'batch' | 'payment' | undefined) =>
+      `There are no scheduled ${mode === 'batch' ? 'batches' : mode === 'payment' ? 'payments' : 'operations'} yet.`,
+    batchTitleValue: (name: string, amount: number) => `${name} · ${amount} units`,
+    batchDetail: (reference: string, destination: string) => `Reference: ${reference || 'Pending'} · Destination: ${destination || 'Pending'}`,
+    paymentDetail: (amount: number, reference: string) => `${amount} XLM · ${reference || 'Treasury'}`,
+    removeLabel: (title: string) => `Remove schedule: ${title}`,
+    overdue: 'Overdue',
+    csvHeader: 'Type,Operation,Detail,Date',
+    csvFile: 'verifire-operations.csv'
+  },
+  issuance: {
+    eyebrow: 'Production and payments',
+    title: 'Plan your next issuance',
+    lead: 'Issue tokens now, or plan your batches and payments from here.',
+    modesLabel: 'Operation type',
+    modes: {
+      now: { title: 'Issue now', detail: 'Create the batch and continue to payment' },
+      batch: { title: 'Schedule batch', detail: 'Plan the next production run' },
+      payment: { title: 'Schedule payment', detail: 'Set an amount and a due date' }
+    },
+    batchData: 'Batch details',
+    batchDataLead: 'One product, one reference and one destination per issuance.',
+    infoEyebrow: 'Immediate issuance',
+    infoTitle: 'Payment and availability',
+    allowed: 'Allowed quantity',
+    allowedValue: '1–500 tokens',
+    currency: 'Currency',
+    method: 'Payment method',
+    infoAmount: 'The exact amount and the QR appear when you continue. The batch is issued once the payment is confirmed.',
+    infoBatches: 'You can check the payment status and download the labels from My batches.'
+  },
+  team: {
+    roleHelp: {
+      admin: 'Manages the team, batches, products and settings.',
+      operator: 'Manages products, batches and verifications.',
+      auditor: 'Reviews reports, alerts and activity.',
+      viewer: 'Can only see the overview and the products.'
+    },
+    invalidEmail: 'Enter a valid email.',
+    duplicate: 'That email is already on the team.',
+    invited: (email: string) => `Invitation ready for ${email}.`,
+    roleUpdated: 'Role updated.',
+    revoked: 'Access revoked.',
+    roleOf: (email: string) => `Role of ${email}`,
+    pending: 'Pending',
+    active: 'Active',
+    revokeLabel: (email: string) => `Revoke access for ${email}`,
+    email: 'Member email',
+    role: 'Role and permissions',
+    create: 'Create invitation',
+    invite: 'Invite member',
+    closeInvite: 'Close invitation'
+  },
+  rolesSettings: {
+    eyebrow: 'Administration',
+    title: 'Permissions by role',
+    badge: 'Local setting',
+    intro: 'Choose what each role in the company can see or schedule.',
+    permissions: {
+      viewProducts: 'See products',
+      viewBatches: 'See batches',
+      viewSensitive: 'See sensitive information',
+      scheduleBatches: 'Schedule batches and payments',
+      manageTeam: 'Manage team',
+      manageSettings: 'Manage settings'
+    },
+    save: 'Save permissions',
+    saved: 'Permissions saved for this browser.'
+  },
+  settings: {
+    local: 'Stored in this browser',
+    profile: {
+      title: 'Company profile',
+      lead: 'How your company shows up in the dashboard. The trade name is also the brand on new labels.',
+      logo: 'Logo',
+      logoHint: 'PNG, JPG, WebP, SVG or GIF up to 5 MB. It is fitted into a 256 × 256 square.',
+      upload: 'Upload logo',
+      change: 'Change logo',
+      remove: 'Remove',
+      drop: 'Drop the image to use it as your logo',
+      logoErrors: {
+        type: 'That file is not a supported image. Use PNG, JPG, WebP, SVG or GIF.',
+        size: 'The image is larger than 5 MB.',
+        read: 'The image could not be read. Try another file.'
+      },
+      fields: {
+        name: 'Trade name *',
+        legalName: 'Legal name',
+        taxId: 'Tax ID',
+        industry: 'Industry',
+        website: 'Website',
+        email: 'Contact email',
+        phone: 'Phone',
+        country: 'Country',
+        address: 'Address',
+        description: 'Description'
+      },
+      placeholders: {
+        name: 'E.g. Andes Tech',
+        legalName: 'E.g. Andes Tech Inc.',
+        taxId: 'E.g. 30-12345678-9',
+        website: 'https://yourcompany.com',
+        email: 'contact@yourcompany.com',
+        phone: '+1 555 123 4567',
+        country: 'E.g. Argentina',
+        address: 'Street, number, city',
+        description: 'What your company makes or sells, in a few words.'
+      },
+      industries: {
+        '': 'Choose an industry',
+        electronics: 'Electronics',
+        cosmetics: 'Cosmetics and fragrances',
+        watches: 'Watches and jewelry',
+        beverages: 'Wine and beverages',
+        automotive: 'Auto parts',
+        apparel: 'Apparel and footwear',
+        pharma: 'Health and pharmacy',
+        other: 'Other'
+      },
+      preview: 'Preview',
+      previewHint: 'This is how it looks in the sidebar.',
+      save: 'Save profile',
+      discard: 'Discard changes',
+      saved: 'Profile saved.',
+      saveFailed: 'It could not be saved: the browser is out of space. Try a lighter logo.',
+      invalidName: 'Enter the trade name.',
+      invalidEmail: 'Check the contact email.',
+      invalidWebsite: 'Check the website: it must start with http:// or https://.',
+      readOnly: 'Only an administrator can edit the company profile.',
+      counter: (used: number, max: number) => `${used}/${max}`
+    },
+    appearance: {
+      title: 'Appearance',
+      lead: 'Choose how the dashboard looks.',
+      theme: 'Theme',
+      themes: { light: 'Light', dark: 'Dark', system: 'System' },
+      motion: 'Animations',
+      motionHelp: 'Smooth transitions between sections, animated charts and notices that slide in.',
+      motionSystem: 'Your system asks for reduced motion: animations stay minimal even when they are on.'
+    },
+    language: {
+      title: 'Language',
+      lead: 'The language of this dashboard, the buyer dashboard and the public verification pages.',
+      reloading: 'Switching language…'
+    },
+    notifications: {
+      title: 'Notifications',
+      lead: 'Notices inside the dashboard, under the bell at the top.',
+      payments: 'Confirmed payments',
+      paymentsHelp: 'When Cosmos Pay confirms the payment of a batch.',
+      batches: 'Created batches',
+      batchesHelp: 'When a batch is issued with its labels.',
+      reminders: 'Scheduled payments and batches',
+      remindersHelp: 'Before each date in your agenda and when the date arrives.',
+      lead_time: 'Remind me',
+      leadOptions: { 1: '1 hour before', 24: '1 day before', 72: '3 days before' },
+      browser: 'Browser notifications',
+      browserHelp: 'Also outside the tab, while the dashboard is open.',
+      browserDenied: 'The browser blocked notifications. Allow them from the site settings.',
+      browserUnsupported: 'This browser does not support notifications.',
+      test: 'Send a test notification'
+    },
+    demo: {
+      title: 'Demo mode',
+      badge: 'Temporary',
+      lead: 'Fills the account with sample purchases, batches, agenda, team and notifications to try the charts and editing. Sample data is kept apart: your real data is not touched.',
+      toggle: 'Turn on demo mode',
+      on: 'Demo mode is on. Turning it off deletes all the sample data.',
+      reset: 'Reset sample data',
+      working: 'Preparing the data…'
+    }
+  },
+  notifications: {
+    button: 'Notifications',
+    buttonUnread: (count: number) => `Notifications, ${count} unread`,
+    title: 'Notifications',
+    markAll: 'Mark all as read',
+    clear: 'Clear',
+    empty: 'You have no notifications. We will let you know when a payment is confirmed, a batch is created or a date in your agenda is near.',
+    close: 'Dismiss notice',
+    settings: 'Settings',
+    kinds: {
+      paymentSucceeded: {
+        title: 'Payment completed',
+        body: (p: Record<string, string>) => `Cosmos Pay confirmed the payment of ${p['amount'] ?? ''} XLM for ${p['model'] ?? 'your batch'}.`
+      },
+      batchCreated: {
+        title: 'Batch created',
+        body: (p: Record<string, string>) => `Batch ${p['batchId'] ?? ''} of ${p['model'] ?? ''} has ${p['quantity'] ?? ''} labels ready.`
+      },
+      paymentSoon: {
+        title: 'A scheduled payment is coming up',
+        body: (p: Record<string, string>) => `${p['title'] ?? ''} is due ${p['when'] ?? ''}.`
+      },
+      paymentDue: {
+        title: 'A scheduled payment is due',
+        body: (p: Record<string, string>) => `${p['title'] ?? ''} was scheduled for ${p['when'] ?? ''}.`
+      },
+      batchSoon: {
+        title: 'A scheduled batch is coming up',
+        body: (p: Record<string, string>) => `${p['title'] ?? ''} is scheduled ${p['when'] ?? ''}.`
+      },
+      batchDue: {
+        title: 'A scheduled batch is due',
+        body: (p: Record<string, string>) => `${p['title'] ?? ''} was scheduled for ${p['when'] ?? ''}. Issue it from Issue tokens.`
+      },
+      demo: { title: 'Demo mode on', body: () => 'You are looking at sample data. You can turn it off in Settings.' },
+      test: { title: 'Test notification', body: () => 'This is how payment, batch and due date notices look.' }
+    }
+  },
+  demo: {
+    banner: 'Demo mode is on: you are looking at sample data.',
+    turnOff: 'Turn off',
+    paymentQr: 'DEMO: sample only. It makes no payment.',
+    labelQr: 'DEMO: sample only. It activates no product.'
+  },
+  batches: {
+    title: 'Batches',
+    count: (visible: number, total: number) => `${visible} of ${total} ${total === 1 ? 'batch' : 'batches'}`,
+    search: 'Search batches',
+    searchPlaceholder: 'Search by model, lot, destination or batch number',
+    sort: 'Sort batches',
+    sortOptions: {
+      recent: 'Date: newest first',
+      oldest: 'Date: oldest first',
+      'claimed-desc': 'Activations: most first',
+      'claimed-asc': 'Activations: fewest first',
+      'quantity-desc': 'Tokens: most first',
+      'quantity-asc': 'Tokens: fewest first'
+    },
+    pages: 'Batch pages',
+    noMatch: 'No batch matches the search. Try another model, lot or destination.',
+    empty: 'You have not issued any batch yet. Buy tokens to create your first labels.',
+    notReady: 'This batch is not ready yet: the payment still has to be confirmed.',
+    gone: 'This purchase no longer exists on the server.',
+    forgetTitle: 'Remove this purchase from your list?',
+    forgetMessage: 'If you already paid it, the batch is still issued, but you will not see it in this dashboard.',
+    forgetConfirmLabel: 'Remove from list',
+    shipTitle: 'Mark the batch as shipped?',
+    shipMessage: 'It is recorded in the history of every product in this batch and cannot be undone.',
+    shipConfirmLabel: 'Mark as shipped',
+    back: 'Back',
+    shipFailed: 'The batch could not be marked as shipped.',
+    loadingLabels: 'Loading labels...',
+    lotQrFile: (batchId: string) => `${batchId}-batch-public-qr.svg`,
+    qrFile: (token: string, secret: boolean) => `${token}-${secret ? 'secret' : 'public'}-qr.svg`,
+    item: {
+      loading: 'Loading batch...',
+      unavailable: 'Purchase not available',
+      retry: 'Retry',
+      forget: 'Remove from list',
+      waiting: 'Waiting for payment',
+      registering: 'Registering on Stellar',
+      readyChain: 'Ready · on Stellar',
+      ready: 'Ready',
+      paymentPending: 'Payment pending',
+      lot: (lot: string) => `Lot ${lot}`,
+      destination: (destination: string) => `Destination ${destination}`,
+      tokens: (count: number) => `${count} ${count === 1 ? 'token' : 'tokens'}`,
+      progress: (claimed: number, total: number) => `${claimed} / ${total} activated by customers`,
+      progressLabel: (claimed: number, total: number) => `${claimed} of ${total} products with an active warranty`,
+      shipped: (destination: string, date: string) => `Shipped to ${destination} on ${date}`,
+      hideLabels: 'Hide labels',
+      showLabels: 'See labels',
+      print: 'Print',
+      csv: 'Download CSV',
+      lotQr: 'Batch QR',
+      ship: 'Mark as shipped',
+      hidePayment: 'Hide payment QR',
+      showPayment: 'See payment QR',
+      ledger: 'See the issuance payment on Stellar'
+    },
+    labels: {
+      intro: 'Every product has two QR codes:',
+      publicGuide: 'Public QR, on the outside of the box.',
+      publicGuideText: 'Anyone can scan it without signing in and only sees the public product data.',
+      secretGuide: 'Secret QR, inside the packaging.',
+      secretGuideText: 'The customer scans it from their Verifire dashboard to activate the warranty. It works only once.',
+      csvNote: 'The CSV includes the secret codes: keep it for your company’s internal records only.',
+      alt: (secret: boolean, token: string) => `${secret ? 'Secret' : 'Public'} QR of product ${token}`,
+      secret: 'Inside · secret',
+      public: 'Outside the box',
+      download: 'Download',
+      lot: (lot: string) => `Lot ${lot}`,
+      pages: 'Label pages'
+    },
+    payment: {
+      pay: (amount: string, asset: string) => `Pay ${amount} ${asset}`,
+      toIssue: (quantity: number, model: string) => ` to issue ${quantity} ${quantity === 1 ? 'token' : 'tokens'} of ${model}.`,
+      note: 'Scan the QR with Cosmos Pay. The batch is issued only once the payment is confirmed, and this card updates on its own.',
+      alt: 'Cosmos Pay payment QR',
+      missing: 'This purchase has no saved payment QR.'
+    }
+  },
+  purchase: {
+    waiting: 'Waiting for Cosmos Pay confirmation...',
+    confirmed: (batchId: string) => `Payment confirmed. Batch ${batchId} is in My batches with its labels.`,
+    preparing: 'Payment confirmed. Preparing the tokens...',
+    status: (status: string) => `Cosmos Pay status: ${status || 'pending'}. Checking automatically...`,
+    creating: 'Creating the Cosmos Pay payment...',
+    createFailed: 'The batch payment could not be created.',
+    payTitle: (amount: string, asset: string, quantity: number) => `Pay ${amount} ${asset} to issue ${quantity} ${quantity === 1 ? 'token' : 'tokens'}`,
+    payNote: 'Scan the QR with Cosmos Pay. The batch is issued only once the payment is confirmed.',
+    qrAlt: 'Cosmos Pay payment QR',
+    ready: 'Payment confirmed. Your batch is ready in My batches.',
+    leaveNote: 'You can switch tabs: the pending payment stays in My batches.',
+    another: 'Create another batch',
+    seeBatches: 'See payments and batches',
+    myBatches: 'See my batches',
+    warning: 'Pay only once: this QR is a real transfer and can be paid again, but a second payment does not issue another batch.',
+    demoWarning: 'Demo mode: this QR is not a real payment. It is confirmed on its own in a few seconds.'
+  },
+  configurator: {
+    steps: ['Product', 'Lot and units', 'Labels', 'Review'],
+    stepsLabel: 'Issuance steps',
+    template: 'Use a saved template',
+    templatePick: 'Choose a template',
+    productLegend: 'Product identity',
+    savedProduct: 'Saved product',
+    newProduct: 'New product',
+    model: 'Product model *',
+    brand: 'Brand',
+    brandFromCompany: 'Filled in with your company name.',
+    brandHint: 'Enter your company name to identify the labels.',
+    saveProduct: 'Save product',
+    lotLegend: 'Lot and units',
+    lot: 'Lot reference *',
+    autoLot: 'Assign a reference automatically',
+    lotHint: 'You can edit the reference. Token ids are assigned when the batch is issued.',
+    country: 'Destination country *',
+    countryPick: 'Choose a country',
+    quantity: 'Number of tokens *',
+    labelLegend: 'Label customization',
+    format: 'Format',
+    standard: 'Standard',
+    compact: 'Compact',
+    compactLabel: 'Compact',
+    labelText: 'Extra text on the label',
+    yourBrand: 'Your brand',
+    modelPlaceholder: 'Model',
+    lotPreview: (lot: string) => `Lot ${lot || 'Pending'}`,
+    publicQr: 'Public QR',
+    secretQr: 'Secret QR · inside',
+    previewNote: 'Layout preview. The real QR codes are created after the payment.',
+    reviewLegend: 'Review issuance',
+    review: { product: 'Product', lot: 'Lot', destination: 'Destination', tokens: 'Tokens', amount: 'Estimated amount', label: 'Label' },
+    amountLater: 'Calculated when you continue',
+    destinationPending: 'Destination pending',
+    reviewHint: 'When you continue, the amount is calculated and a payment request is created. Nothing is charged automatically.',
+    saveTemplate: 'Save as template',
+    templatePlaceholder: 'E.g. Footwear Argentina',
+    saveTemplateButton: 'Save template',
+    storageHint: 'Products and templates are stored in this browser. The issued configuration is kept with the purchase.',
+    readFailed: 'The saved configurations could not be read.',
+    needModelToSave: 'Enter a model to save the product.',
+    needTemplateName: 'Enter a name for the template.',
+    saved: 'Saved in this browser.',
+    saveFailed: 'The configuration could not be saved.',
+    needModel: 'Fill in the product model.',
+    checkLot: 'Check the reference, the destination and the quantity (1–500).',
+    enterModel: 'Enter a model.',
+    previous: 'Back',
+    next: 'Next',
+    preparing: 'Preparing payment…',
+    confirm: 'Confirm and get payment'
+  },
+  pagination: {
+    previous: 'Previous',
+    next: 'Next',
+    page: (page: number, pages: number) => `Page ${page} of ${pages}`
+  }
+};
+
+export const companyMessages = (locale: Locale = 'es'): CompanyMessages => (locale === 'en' ? en : es);
+
+// "in 3 days", "hace 2 horas": how far a moment is from now, in the panel's language.
+export const relativeTime = (iso: string, intl: string, now = Date.now()) => {
+  const seconds = Math.round((Date.parse(iso) - now) / 1000);
+  const format = new Intl.RelativeTimeFormat(intl, { numeric: 'auto' });
+  const units: [Intl.RelativeTimeFormatUnit, number][] = [
+    ['day', 86400],
+    ['hour', 3600],
+    ['minute', 60]
+  ];
+  for (const [unit, size] of units) if (Math.abs(seconds) >= size) return format.format(Math.round(seconds / size), unit);
+  return format.format(0, 'minute');
+};

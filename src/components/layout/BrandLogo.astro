@@ -1,4 +1,6 @@
 ---
+import { getRelativeLocaleUrl } from 'astro:i18n';
+import { getLandingMessages } from '@/i18n/landing';
 // The Verifire logo: black letters on light backgrounds, white ones on the black footer (`light`) and in dark mode.
 // Both images are in the page and brand.css shows the one that fits.
 interface Props {
@@ -6,10 +8,12 @@ interface Props {
   light?: boolean;
 }
 
-const { href = '/', light = false } = Astro.props;
+const locale = Astro.currentLocale ?? 'es';
+const { href = getRelativeLocaleUrl(locale), light = false } = Astro.props;
+const { common } = getLandingMessages(locale);
 ---
 
-<a class:list={['lp-logo', { 'lp-logo-light': light }]} href={href} aria-label="Verifire, inicio">
+<a class:list={['lp-logo', { 'lp-logo-light': light }]} href={href} aria-label={common.home}>
   <img class="lp-logo-on-light" src="/brand/verifire.png" alt="" width="516" height="160" />
   <img class="lp-logo-on-dark" src="/brand/verifire-light.png" alt="" width="516" height="160" />
 </a>

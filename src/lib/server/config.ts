@@ -28,5 +28,12 @@ export const config = {
   stellar: stellarConfigFromEnv({ STELLAR_CONTRACT_ID, STELLAR_ISSUER_SECRET, STELLAR_ADMIN_SECRET, STELLAR_RPC_URL })
 };
 
+// The only values a page may pass to a component that runs in the browser. `config` holds the issuing key and the
+// payment credentials, so pages import this instead.
+export const publicConfig = {
+  cavosAppId: config.cavosAppId,
+  pricePerToken: config.cosmosPay.amountPerToken
+};
+
 // Base of the links inside QR codes: PUBLIC_APP_URL when set, otherwise the address this request reached.
 export const publicBaseUrl = (requestUrl: URL) => config.publicAppUrl || requestUrl.origin;

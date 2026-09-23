@@ -1,27 +1,10 @@
-// Reading the QR codes of a product: links, camera frames and images.
-import { readStored } from './storage';
-
-// What a secret QR carries. It is sent to the server on activation and never shown.
-export type ScannedClaim = { qr: string } | { secret: string };
+// Keeping a scanned QR across the login, and reading one from a camera frame or an image. What the codes mean is
+// in src/lib/qr-codes.ts.
+import { claimFromLink, isTransferSecret, transferFromLink, type ScannedClaim } from '../qr-codes';
+import { readRaw, readStored, removeStored, writeRaw } from './storage';
 
 const PENDING_QR_KEY = 'verifirePendingQr';
 const PENDING_TRANSFER_KEY = 'verifirePendingTransfer';
-// Secret of a transfer link (/app#t=...): random bytes in base64url, created by the owner's browser.
-const TRANSFER_SECRET = /^[A-Za-z0-9_-]{16,64}$/;
-
-export const transferFromLink = (hash: string): string | null => {
-  const secret = new URLSearchParams(hash.replace(/^#/, '')).get('t');
-  return secret && TRANSFER_SECRET.test(secret) ? secret : null;
-};
-
-// Secret QR links carry an opaque key (/app#q=...). Labels printed before used ?codigo= or ?secret=.
-export const claimFromLink = (search: string, hash: string): ScannedClaim | null => {
-  const qr = new URLSearchParams(hash.replace(/^#/, '')).get('q');
-  if (qr) return { qr };
-  const params = new URLSearchParams(search);
-  const secret = params.get('codigo') || params.get('secret');
-  return secret ? { secret } : null;
-};
 
 // Opening a secret QR or a transfer link: keep it across the login redirect and remove it from the address bar.
 export const captureClaimLink = () => {
@@ -33,18 +16,18 @@ export const captureClaimLink = () => {
   window.history.replaceState({}, document.title, window.location.pathname);
 };
 
-export const keepPendingTransfer = (secret: string) => sessionStorage.setItem(PENDING_TRANSFER_KEY, secret);
+export const keepPendingTransfer = (secret: string) => writeRaw(sessionStorage, PENDING_TRANSFER_KEY, secret);
 
 // The transfer link kept across the login, removed as it is read.
 export const takePendingTransfer = () => {
-  const secret = sessionStorage.getItem(PENDING_TRANSFER_KEY);
-  sessionStorage.removeItem(PENDING_TRANSFER_KEY);
-  return secret && TRANSFER_SECRET.test(secret) ? secret : null;
+  const secret = readRaw(sessionStorage, PENDING_TRANSFER_KEY);
+  removeStored(sessionStorage, PENDING_TRANSFER_KEY);
+  return secret && isTransferSecret(secret) ? secret : null;
 };
 
-export const keepPendingClaim = (claim: ScannedClaim) => sessionStorage.setItem(PENDING_QR_KEY, JSON.stringify(claim));
+export const keepPendingClaim = (claim: ScannedClaim) => writeRaw(sessionStorage, PENDING_QR_KEY, JSON.stringify(claim));
 
-export const hasPendingClaim = () => Boolean(sessionStorage.getItem(PENDING_QR_KEY));
+export const hasPendingClaim = () => Boolean(readRaw(sessionStorage, PENDING_QR_KEY));
 
 const isScannedClaim = (value: unknown): value is ScannedClaim =>
   typeof value === 'object' && value !== null
@@ -54,17 +37,8 @@ const isScannedClaim = (value: unknown): value is ScannedClaim =>
 export const takePendingClaim = (): ScannedClaim | 'invalid' | null => {
   if (!hasPendingClaim()) return null;
   const claim = readStored<unknown>(sessionStorage, PENDING_QR_KEY);
-  sessionStorage.removeItem(PENDING_QR_KEY);
+  removeStored(sessionStorage, PENDING_QR_KEY);
   return isScannedClaim(claim) ? claim : 'invalid';
-};
-
-export const parseScannedQr = (text: string): { claim: ScannedClaim | null; publicToken: string | null; transfer: string | null } => {
-  try {
-    const url = new URL(text.trim());
-    return { claim: claimFromLink(url.search, url.hash), publicToken: url.searchParams.get('token'), transfer: transferFromLink(url.hash) };
-  } catch {
-    return { claim: null, publicToken: null, transfer: null };
-  }
 };
 
 // BarcodeDetector is not in TypeScript's DOM library yet.

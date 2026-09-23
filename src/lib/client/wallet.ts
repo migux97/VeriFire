@@ -1,16 +1,17 @@
 // The buyer's Stellar wallet, held by Cavos. Its signing key lives in this browser (IndexedDB) and under this site
 // address: localhost and the public URL are two different places for it, even on the same computer.
 import type { CavosAuth, CavosStellar, Identity } from '@cavos/kit';
+import { errorMessage } from '../errors';
 import { isStellarAddress } from '../validation';
 import { storedUser, updateStoredUser } from './account';
-import { DEVICE_CODE_KEY, userSession, WALLET_KEY } from './session';
+import { DEVICE_CODE_KEY, userSession, WALLET_KEY, WALLET_UPDATED_EVENT } from './session';
 import { readStored, writeStored } from './storage';
 
 const APP_SALT = 'verifire-demo';
 // The multi-device factor is an encrypted wrap stored in the account itself (a cv:wr entry).
 const HORIZON_URL = 'https://horizon-testnet.stellar.org';
 
-// Thrown when signing needs the Gmail confirmed again with a code: the panel sends the user to log in.
+// Thrown when signing needs the email confirmed again with a code: the panel sends the user to log in.
 export class EmailCodeRequiredError extends Error {
   constructor() {
     super('Para firmar en Stellar necesitamos confirmar tu correo con un código.');
@@ -41,7 +42,10 @@ export const createCavosAuth = async (appId: string) => {
 };
 
 export const rememberWallet = (address: string | undefined) => {
-  if (isStellarAddress(address)) writeStored(localStorage, WALLET_KEY, { address, connectedAt: new Date().toISOString() });
+  if (isStellarAddress(address)) {
+    writeStored(localStorage, WALLET_KEY, { address, connectedAt: new Date().toISOString() });
+    window.dispatchEvent(new Event(WALLET_UPDATED_EVENT));
+  }
 };
 
 export const rememberDeviceCode = (deviceCode: string | undefined) => {
@@ -109,7 +113,7 @@ const authorizeDevice = async (wallet: CavosStellar, deviceCode: string): Promis
       await wallet.approveThisDeviceWithRecovery(deviceCode);
       return { ok: true, error: '' };
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+      const message = errorMessage(error);
       const wrongPassword = /wrong factor|not enrolled/i.test(message);
       return { ok: false, wrongPassword, error: wrongPassword ? WRONG_PASSWORD : message };
     }
@@ -122,7 +126,7 @@ const authorizeDevice = async (wallet: CavosStellar, deviceCode: string): Promis
     if (wallet.status === 'undeployed') await createAccountOnChain(wallet);
     return { ok: true, error: '' };
   } catch (error) {
-    return { ok: false, error: `No se pudo guardar el uso en varios dispositivos: ${error instanceof Error ? error.message : String(error)}` };
+    return { ok: false, error: `No se pudo guardar el uso en varios dispositivos: ${errorMessage(error)}` };
   }
 };
 
@@ -133,7 +137,7 @@ export const createAccountOnChain = async (wallet: CavosStellar) => {
     await wallet.execute(1n, wallet.address);
   } catch (error) {
     // execute() moves the status to "ready" as soon as the account exists, even when the payment itself failed.
-    if ((wallet.status as string) !== 'ready') throw new Error(`No se pudo crear tu cuenta en Stellar: ${error instanceof Error ? error.message : String(error)}`);
+    if ((wallet.status as string) !== 'ready') throw new Error(`No se pudo crear tu cuenta en Stellar: ${errorMessage(error)}`);
   }
 };
 
@@ -147,7 +151,7 @@ export const connectCavosWallet = async (appId: string, auth: CavosAuth, identit
 };
 
 // The account's wallet, whatever this browser can do with it. A password-only login has no Cavos session, but the Cavos
-// user id saved when the Gmail was verified reconnects the same wallet, whose keys stay in this browser's IndexedDB.
+// user id saved when the email was verified reconnects the same wallet, whose keys stay in this browser's IndexedDB.
 const openOwnWallet = async (appId: string, expectedAddress: string) => {
   const account = storedUser();
   const auth = await createCavosAuth(appId);
@@ -196,7 +200,7 @@ export const enableSigning = async (appId: string, expectedAddress: string, devi
     try {
       await wallet.approveThisDeviceWithRecovery(deviceCode);
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+      const message = errorMessage(error);
       throw new Error(/wrong factor|not enrolled/i.test(message) ? WRONG_PASSWORD : message);
     }
   } else if (wallet.status === 'undeployed') {
@@ -211,7 +215,7 @@ export const enableSigning = async (appId: string, expectedAddress: string, devi
 export const resolveWalletAddress = async (appId: string) => {
   const cached = readStored<{ address?: unknown }>(localStorage, WALLET_KEY);
   if (isStellarAddress(cached?.address)) return cached.address;
-  // The account keeps the wallet linked when its Gmail was verified, so a new session does not reconnect to Cavos.
+  // The account keeps the wallet linked when its email was verified, so a new session does not reconnect to Cavos.
   const account = storedUser();
   if (isStellarAddress(account?.walletAddress) && account.email === userSession.email()) {
     rememberWallet(account.walletAddress);

@@ -4,30 +4,30 @@
 // signs transfer_message with it and accepts with their own wallet (accept_transfer): the secret never leaves the link.
 // Every call that changes the contract goes in two requests, like activations: without signedXdr the server answers the
 // unsigned transaction for the user's wallet; with it, the issuing account pays and submits it.
+import { shortAddress } from '../format';
 import type { PreparedTransfer, Warranty } from '../types';
 import { isStellarAddress } from '../validation';
 import { chain } from './chain';
+import { reconcileProduct } from './chain-sync';
 import { HttpError } from './errors';
 import { textField, type JsonBody } from './http';
 import {
-  anchorPendingProducts, findProduct, isCurrentOnChain, openTransferOf, recordEvent, shortAddress,
+  anchorPendingProducts, findProduct, isCurrentOnChain, openTransferOf, recordEvent,
   TRANSFER_LINK_MS, warrantyView
 } from './products';
+import { messages } from './messages';
 import { singleton } from './singleton';
 import { saveState, store, type Product } from './store';
 
 type Step = { xdr: string } | { warranty: Warranty };
 
-const LINK_EXPIRED = 'Este link de transferencia ya no está vigente: el dueño lo canceló, generó otro o el producto ya cambió de dueño.';
-const NOT_OWNER = 'Solo el dueño actual puede transferir este producto.';
-const LINK_TIMED_OUT = 'Este link de transferencia venció. Pedile al dueño que genere uno nuevo.';
 
 // Keeps two requests for the same product from submitting at the same time.
 const inFlight = singleton('transfers-in-flight', () => new Set<string>());
 
 const exclusive = async <T>(product: Product, task: () => Promise<T>) => {
   if (inFlight.has(product.token)) {
-    throw new HttpError(409, 'Ya se está registrando un cambio de este producto en Stellar. Esperá unos segundos.', { retryable: true });
+    throw new HttpError(409, messages.busy, { retryable: true });
   }
   inFlight.add(product.token);
   try {
@@ -48,12 +48,14 @@ const transferKeyOf = (body: JsonBody) => {
 };
 
 // The owner's side: the product by its public token, held by the account asking.
-const ownedProduct = (body: JsonBody) => {
+const ownedProduct = async (body: JsonBody) => {
   requireChain();
-  const product = findProduct(textField(body, 'token'));
-  if (!product) throw new HttpError(404, 'El producto no existe.');
+  const found = findProduct(textField(body, 'token'));
+  if (!found) throw new HttpError(404, 'El producto no existe.');
+  // A transfer that landed after this server stopped waiting for it already changed the owner in the contract.
+  const product = await reconcileProduct(found);
   const owner = textField(body, 'owner').trim();
-  if (!isStellarAddress(owner) || !product.claimed || product.owner !== owner) throw new HttpError(403, NOT_OWNER);
+  if (!isStellarAddress(owner) || !product.claimed || product.owner !== owner) throw new HttpError(403, messages.notOwner);
   if (!isCurrentOnChain(product)) {
     anchorPendingProducts();
     throw new HttpError(409, 'Este producto todavía se está registrando en el contrato de Stellar. Probá de nuevo en unos minutos.', { retryable: true });
@@ -62,20 +64,22 @@ const ownedProduct = (body: JsonBody) => {
 };
 
 // The recipient's side: the product whose open link matches the key derived from the link's secret.
-const offeredProduct = (body: JsonBody) => {
+const offeredProduct = async (body: JsonBody) => {
   requireChain();
   const key = transferKeyOf(body);
-  const product = [...store.products.values()].find((candidate) => candidate.transfer?.key === key);
-  if (!product || !isCurrentOnChain(product)) throw new HttpError(404, LINK_EXPIRED);
-  if (!openTransferOf(product)) throw new HttpError(410, LINK_TIMED_OUT);
+  const found = [...store.products.values()].find((candidate) => candidate.transfer?.key === key);
+  if (!found || !isCurrentOnChain(found)) throw new HttpError(404, messages.linkClosed);
+  const product = await reconcileProduct(found);
+  if (!isCurrentOnChain(product)) throw new HttpError(404, messages.linkClosed);
+  if (!openTransferOf(product)) throw new HttpError(410, messages.linkExpired);
   const recipient = textField(body, 'recipient').trim();
-  if (!isStellarAddress(recipient)) throw new HttpError(400, 'Indica una dirección pública Stellar válida (G...).');
-  if (product.owner === recipient) throw new HttpError(409, 'Este producto ya es tuyo. Para pasárselo a otra persona, compartile el link.');
+  if (!isStellarAddress(recipient)) throw new HttpError(400, messages.invalidOwner);
+  if (product.owner === recipient) throw new HttpError(409, messages.alreadyYoursShareLink);
   return { product, recipient, tokenId: product.chain.tokenId };
 };
 
 export const offerTransfer = async (body: JsonBody, baseUrl: string): Promise<Step> => {
-  const { product, owner, tokenId } = ownedProduct(body);
+  const { product, owner, tokenId } = await ownedProduct(body);
   const key = transferKeyOf(body);
   const transferKey = Buffer.from(key, 'hex');
   const signedXdr = textField(body, 'signedXdr');
@@ -89,7 +93,7 @@ export const offerTransfer = async (body: JsonBody, baseUrl: string): Promise<St
 };
 
 export const cancelTransfer = async (body: JsonBody, baseUrl: string): Promise<Step> => {
-  const { product, owner, tokenId } = ownedProduct(body);
+  const { product, owner, tokenId } = await ownedProduct(body);
   const signedXdr = textField(body, 'signedXdr');
   if (!signedXdr) return { xdr: await chain.buildTransferCancel({ tokenId, owner }) };
 
@@ -101,7 +105,7 @@ export const cancelTransfer = async (body: JsonBody, baseUrl: string): Promise<S
 
 // What the link offers, so the recipient sees the product before accepting, and the message to sign with its key.
 export const prepareTransfer = async (body: JsonBody): Promise<PreparedTransfer> => {
-  const { product, recipient, tokenId } = offeredProduct(body);
+  const { product, recipient, tokenId } = await offeredProduct(body);
   return {
     token: product.token,
     model: product.model,
@@ -114,7 +118,7 @@ export const prepareTransfer = async (body: JsonBody): Promise<PreparedTransfer>
 };
 
 export const acceptTransfer = async (body: JsonBody, baseUrl: string): Promise<Step> => {
-  const { product, recipient, tokenId } = offeredProduct(body);
+  const { product, recipient, tokenId } = await offeredProduct(body);
   const signedXdr = textField(body, 'signedXdr');
   if (!signedXdr) {
     const signature = Buffer.from(textField(body, 'signature'), 'base64');

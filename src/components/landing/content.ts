@@ -42,7 +42,6 @@ export const heroSlides: HeroSlide[] = [
   }
 ];
 
-export const HERO_TOKEN = 'VF-1043-018';
 
 export type TraceKind = 'minted' | 'shipped' | 'verified' | 'activated' | 'transferred' | 'rejected';
 
@@ -69,14 +68,6 @@ export interface SampleProduct {
   events: TraceEvent[];
 }
 
-export const traceIcons: Record<TraceKind, string> = {
-  minted: 'fa-solid fa-stamp',
-  shipped: 'fa-solid fa-truck-fast',
-  verified: 'fa-solid fa-qrcode',
-  activated: 'fa-solid fa-key',
-  transferred: 'fa-solid fa-right-left',
-  rejected: 'fa-solid fa-ban'
-};
 
 export const sampleProducts: SampleProduct[] = [
   {
@@ -92,11 +83,11 @@ export const sampleProducts: SampleProduct[] = [
     owner: 'GD4M…Q2LP',
     activations: '1 de 1',
     events: [
-      { kind: 'minted', title: 'Registrado en el contrato', place: 'Planta Córdoba', date: '3 mar 2026' },
-      { kind: 'shipped', title: 'Despachado a su destino', place: 'Santiago, Chile', date: '12 mar 2026' },
-      { kind: 'verified', title: 'Verificado en tienda con el QR público', place: 'Santiago, Chile', date: '28 mar 2026' },
-      { kind: 'activated', title: 'Garantía activada con el QR secreto', place: 'Dueño GBQK…7XHA', date: '2 abr 2026' },
-      { kind: 'transferred', title: 'Cambió de dueño', place: 'Dueño GD4M…Q2LP', date: '19 jul 2026' }
+      { kind: 'minted', title: 'Registrado en el contrato', place: 'Planta Córdoba', date: '2026-03-03' },
+      { kind: 'shipped', title: 'Despachado a su destino', place: 'Santiago, Chile', date: '2026-03-12' },
+      { kind: 'verified', title: 'Verificado en tienda con el QR público', place: 'Santiago, Chile', date: '2026-03-28' },
+      { kind: 'activated', title: 'Garantía activada con el QR secreto', place: 'Dueño GBQK…7XHA', date: '2026-04-02' },
+      { kind: 'transferred', title: 'Cambió de dueño', place: 'Dueño GD4M…Q2LP', date: '2026-07-19' }
     ]
   },
   {
@@ -112,10 +103,10 @@ export const sampleProducts: SampleProduct[] = [
     owner: 'GCX2…L9TE',
     activations: '1 de 1',
     events: [
-      { kind: 'minted', title: 'Registrado en el contrato', place: 'Planta Pilar', date: '9 feb 2026' },
-      { kind: 'shipped', title: 'Despachado a su destino', place: 'Guadalajara, México', date: '20 feb 2026' },
-      { kind: 'activated', title: 'Garantía activada con el QR secreto', place: 'Dueño GCX2…L9TE', date: '14 mar 2026' },
-      { kind: 'rejected', title: 'Activación rechazada: etiqueta copiada', place: 'Guadalajara, México', date: '30 mar 2026' }
+      { kind: 'minted', title: 'Registrado en el contrato', place: 'Planta Pilar', date: '2026-02-09' },
+      { kind: 'shipped', title: 'Despachado a su destino', place: 'Guadalajara, México', date: '2026-02-20' },
+      { kind: 'activated', title: 'Garantía activada con el QR secreto', place: 'Dueño GCX2…L9TE', date: '2026-03-14' },
+      { kind: 'rejected', title: 'Activación rechazada: etiqueta copiada', place: 'Guadalajara, México', date: '2026-03-30' }
     ]
   },
   {
@@ -131,10 +122,10 @@ export const sampleProducts: SampleProduct[] = [
     owner: 'GAHT…3MRW',
     activations: '1 de 1',
     events: [
-      { kind: 'minted', title: 'Registrado en el contrato', place: 'Planta Tierra del Fuego', date: '15 abr 2026' },
-      { kind: 'shipped', title: 'Despachado a su destino', place: 'Rosario, Argentina', date: '22 abr 2026' },
-      { kind: 'verified', title: 'Verificado en tienda con el QR público', place: 'Rosario, Argentina', date: '6 may 2026' },
-      { kind: 'activated', title: 'Garantía activada con el QR secreto', place: 'Dueño GAHT…3MRW', date: '6 may 2026' }
+      { kind: 'minted', title: 'Registrado en el contrato', place: 'Planta Tierra del Fuego', date: '2026-04-15' },
+      { kind: 'shipped', title: 'Despachado a su destino', place: 'Rosario, Argentina', date: '2026-04-22' },
+      { kind: 'verified', title: 'Verificado en tienda con el QR público', place: 'Rosario, Argentina', date: '2026-05-06' },
+      { kind: 'activated', title: 'Garantía activada con el QR secreto', place: 'Dueño GAHT…3MRW', date: '2026-05-06' }
     ]
   },
   {
@@ -150,9 +141,9 @@ export const sampleProducts: SampleProduct[] = [
     owner: 'Sin dueño todavía',
     activations: '0 de 1',
     events: [
-      { kind: 'minted', title: 'Registrado en el contrato', place: 'Bodega Luján de Cuyo', date: '2 jun 2026' },
-      { kind: 'shipped', title: 'Despachado a su destino', place: 'Miami, Estados Unidos', date: '18 jun 2026' },
-      { kind: 'verified', title: 'Verificado por el importador', place: 'Miami, Estados Unidos', date: '9 jul 2026' }
+      { kind: 'minted', title: 'Registrado en el contrato', place: 'Bodega Luján de Cuyo', date: '2026-06-02' },
+      { kind: 'shipped', title: 'Despachado a su destino', place: 'Miami, Estados Unidos', date: '2026-06-18' },
+      { kind: 'verified', title: 'Verificado por el importador', place: 'Miami, Estados Unidos', date: '2026-07-09' }
     ]
   },
   {
@@ -168,10 +159,10 @@ export const sampleProducts: SampleProduct[] = [
     owner: 'GBWN…8KDA',
     activations: '1 de 1',
     events: [
-      { kind: 'minted', title: 'Registrado en el contrato', place: 'Planta Rafaela', date: '11 ene 2026' },
-      { kind: 'shipped', title: 'Despachado a su destino', place: 'Montevideo, Uruguay', date: '25 ene 2026' },
-      { kind: 'verified', title: 'Verificado en taller con el QR público', place: 'Montevideo, Uruguay', date: '3 feb 2026' },
-      { kind: 'activated', title: 'Garantía activada con el QR secreto', place: 'Dueño GBWN…8KDA', date: '3 feb 2026' }
+      { kind: 'minted', title: 'Registrado en el contrato', place: 'Planta Rafaela', date: '2026-01-11' },
+      { kind: 'shipped', title: 'Despachado a su destino', place: 'Montevideo, Uruguay', date: '2026-01-25' },
+      { kind: 'verified', title: 'Verificado en taller con el QR público', place: 'Montevideo, Uruguay', date: '2026-02-03' },
+      { kind: 'activated', title: 'Garantía activada con el QR secreto', place: 'Dueño GBWN…8KDA', date: '2026-02-03' }
     ]
   },
   {
@@ -187,8 +178,8 @@ export const sampleProducts: SampleProduct[] = [
     owner: 'Sin dueño todavía',
     activations: '0 de 1',
     events: [
-      { kind: 'minted', title: 'Registrado en el contrato', place: 'Laboratorio Munro', date: '20 ago 2026' },
-      { kind: 'shipped', title: 'Despachado a su destino', place: 'Lima, Perú', date: '1 sep 2026' }
+      { kind: 'minted', title: 'Registrado en el contrato', place: 'Laboratorio Munro', date: '2026-08-20' },
+      { kind: 'shipped', title: 'Despachado a su destino', place: 'Lima, Perú', date: '2026-09-01' }
     ]
   }
 ];

@@ -7,21 +7,22 @@ import type { PreparedTransfer, Warranty } from '../types';
 import { postJson } from './api';
 import { deriveSigningKey, ensureAccountCreated, signWith, type Progress, type SigningKey } from './activation';
 import { bytesToBase64Url } from './bytes';
+import { accountKey } from './session';
 import { readStored, writeStored } from './storage';
 import { connectSigningWallet } from './wallet';
 
 type Step = { xdr: string } | { warranty: Warranty };
 
 // token -> secret of the link this browser opened, so the owner can share it again after reloading.
-const LINKS_KEY = 'verifireTransferLinks';
+const linksKey = () => accountKey('transfer-links', 'verifireTransferLinks');
 
-const savedLinks = () => readStored<Record<string, string>>(localStorage, LINKS_KEY) ?? {};
+const savedLinks = () => readStored<Record<string, string>>(localStorage, linksKey()) ?? {};
 
 const saveLink = (token: string, secret: string | null) => {
   const links = savedLinks();
   if (secret) links[token] = secret;
   else delete links[token];
-  writeStored(localStorage, LINKS_KEY, links);
+  writeStored(localStorage, linksKey(), links);
 };
 
 export const transferLinkUrl = (secret: string) => `${window.location.origin}/app#t=${secret}`;

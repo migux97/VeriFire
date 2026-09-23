@@ -1,3 +1,4 @@
+import { parseIssuanceOptions } from '../issuance';
 // Company purchases: a batch of products is paid with Cosmos Pay and minted once the payment is confirmed.
 import { randomUUID } from 'node:crypto';
 import { Client } from '@cosmosapp/pay_sdk';
@@ -60,6 +61,7 @@ export const companyBatchView = async (batch: Batch, baseUrl: string): Promise<C
   }));
   return {
     ...base,
+    ...(batch.configuration ? { configuration: batch.configuration } : {}),
     publicQr: await qrImage(base.publicUrl),
     tokens,
     payment: { amount: batch.amount, asset: 'XLM', pricePerToken: config.cosmosPay.amountPerToken }
@@ -73,6 +75,9 @@ export const createBatchPayment = async (body: JsonBody): Promise<CreatedPurchas
     throw new HttpError(400, `Indica una cantidad entre 1 y ${MAX_QUANTITY}, modelo, lote y destino.`);
   }
 
+  let configuration;
+  try { configuration = parseIssuanceOptions(body['configuration']); }
+  catch (error) { throw new HttpError(400, error instanceof Error ? error.message : 'Configuración inválida.'); }
   const total = (Number(config.cosmosPay.amountPerToken) * quantity).toFixed(2);
   const intent = await cosmosPay().paymentIntents.createPay({
     destination: config.cosmosPay.destination,
@@ -82,7 +87,7 @@ export const createBatchPayment = async (body: JsonBody): Promise<CreatedPurchas
   const purchaseId = `PUR-${randomUUID()}`;
   // The payment QR is kept so a pending purchase can be reopened from the company's list of batches.
   store.purchases.set(purchaseId, {
-    purchaseId, quantity, ...fields, total, intentId: intent.id,
+    purchaseId, quantity, ...fields, ...(configuration ? { configuration } : {}), total, intentId: intent.id,
     createdAt: new Date().toISOString(), paymentQr: intent.qr || null, paymentUri: intent.uri || null
   });
   saveState();
@@ -105,7 +110,7 @@ const finalizePurchase = (purchase: Purchase, txHash: string | null) => {
     const batchId = `BATCH-${String(store.nextBatchId++).padStart(4, '0')}`;
     const { model, lot, destination } = purchase;
     const tokens = Array.from({ length: purchase.quantity }, () => mintProduct({ model, lot, destination, batchId }));
-    store.batches.set(batchId, { batchId, tokens, model, lot, destination, amount: purchase.total, txHash });
+    store.batches.set(batchId, { batchId, tokens, model, lot, destination, amount: purchase.total, txHash, ...(purchase.configuration ? { configuration: purchase.configuration } : {}) });
     Object.assign(purchase, { batchId, txHash });
     saveState();
     // Registers the new products in the contract in the background; the QR sheet does not wait for it.

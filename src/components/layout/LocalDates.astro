@@ -5,8 +5,10 @@
 
 <script>
   import { formatLongDate } from '@/lib/format';
+  import { toLocale } from '@/lib/locale';
 
+  const locale = toLocale(document.documentElement.lang) ?? 'es';
   document.querySelectorAll<HTMLTimeElement>('time[data-local-date]').forEach((time) => {
-    time.textContent = formatLongDate(time.dateTime);
+    time.textContent = formatLongDate(time.dateTime, undefined, locale);
   });
 </script>

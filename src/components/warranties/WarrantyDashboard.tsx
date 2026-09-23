@@ -1,6 +1,7 @@
 // The buyer's panel: scan the secret QR inside a product, activate its warranty, list the warranties already owned and
 // pass them on to a new owner through a transfer link, or accept one.
 import { useEffect, useRef, useState, type SubmitEvent } from 'react';
+import { ConfirmDialog, type Confirmation } from '@/components/ui/ConfirmDialog';
 import { Icon } from '@/components/ui/Icon';
 import type { Message, MessageTone } from '@/components/ui/StatusMessage';
 import { Toast } from '@/components/ui/Toast';
@@ -10,8 +11,9 @@ import { activateWarranty } from '@/lib/client/activation';
 import { ApiError, getJson } from '@/lib/client/api';
 import { verifyPassword, deviceCodeFor } from '@/lib/client/password';
 import {
-  captureClaimLink, keepPendingClaim, keepPendingTransfer, parseScannedQr, takePendingClaim, takePendingTransfer, type ScannedClaim
+  captureClaimLink, keepPendingClaim, keepPendingTransfer, takePendingClaim, takePendingTransfer
 } from '@/lib/client/qr';
+import { parseScannedQr, type ScannedClaim } from '@/lib/qr-codes';
 import { leaveSession, userSession } from '@/lib/client/session';
 import {
   acceptTransfer, cancelTransfer, offerTransfer, readTransferLink, savedTransferLink, type IncomingTransfer
@@ -24,23 +26,25 @@ import { isStellarAddress } from '@/lib/validation';
 import { DeviceEnrollForm } from './DeviceEnrollForm';
 import { QrScanPanel } from './QrScanPanel';
 import { WarrantyVault, type TransferControls } from './WarrantyVault';
+import { fillIn, getConsumerMessages, type ConsumerLocale } from '@/i18n/consumer';
 
 // While a transfer link is open, the list is checked this often, so the owner sees when someone accepts it.
 const TRANSFER_POLL_MS = 8000;
 
-const DETECTED_MESSAGE = 'QR del producto detectado. Tocá "Activar Garantía Oficial" para registrarlo a tu nombre.';
-
 interface WarrantyDashboardProps {
   cavosAppId: string;
+  locale?: ConsumerLocale;
 }
 
-export function WarrantyDashboard({ cavosAppId }: WarrantyDashboardProps) {
+export function WarrantyDashboard({ cavosAppId, locale = 'es' }: WarrantyDashboardProps) {
+  const labels = getConsumerMessages(locale);
+  const { claim: claimCopy, incoming: incomingCopy, card, device } = labels;
   const [message, setMessage] = useState<Message | null>(null);
   const [scannedClaim, setScannedClaim] = useState<ScannedClaim | null>(null);
   const [claiming, setClaiming] = useState(false);
   const [warranties, setWarranties] = useState<Warranty[] | null>(null);
   const [transferred, setTransferred] = useState<TransferredWarranty[]>([]);
-  const [vaultStatus, setVaultStatus] = useState<string | null>('Cargando tus garantías...');
+  const [vaultStatus, setVaultStatus] = useState<string | null>(claimCopy.loading);
   const [incoming, setIncoming] = useState<{ secret: string; transfer: IncomingTransfer } | null>(null);
   const [accepting, setAccepting] = useState(false);
   const [transferLinks, setTransferLinks] = useState<Record<string, string>>({});
@@ -49,9 +53,14 @@ export function WarrantyDashboard({ cavosAppId }: WarrantyDashboardProps) {
   // What failed because this browser could not sign yet: "Reintentar" enables it and runs it again.
   const [repair, setRepair] = useState<{ run: () => Promise<void> } | null>(null);
   const [repairing, setRepairing] = useState(false);
+  // What the panel is asking before doing something that cannot be taken back.
+  const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
   const now = useNow(incoming !== null);
   const incomingExpired = incoming !== null && new Date(incoming.transfer.expiresAt).getTime() <= now;
   const walletAddress = useRef('');
+  // Answers of loads started before the last change to the list are stale: a slow poll must not undo what an action
+  // (a link just opened, a warranty just activated) already wrote on screen.
+  const loadRequest = useRef(0);
   const claimButtonRef = useRef<HTMLButtonElement>(null);
 
   const showMessage = (text: string, tone: MessageTone) => setMessage({ text, tone });
@@ -62,10 +71,12 @@ export function WarrantyDashboard({ cavosAppId }: WarrantyDashboardProps) {
 
   // quiet: a background check, which neither shows "Cargando" nor replaces the list with an error.
   const loadWarranties = async ({ quiet = false } = {}) => {
-    if (!quiet) setVaultStatus('Cargando tus garantías...');
+    if (!quiet) setVaultStatus(claimCopy.loading);
+    const request = ++loadRequest.current;
     try {
       walletAddress.current ||= await resolveWalletAddress(cavosAppId);
-      const data = await getJson<WarrantiesResponse>(`/api/warranties?owner=${encodeURIComponent(walletAddress.current)}`, 'No se pudieron cargar tus garantías.');
+      const data = await getJson<WarrantiesResponse>(`/api/warranties?owner=${encodeURIComponent(walletAddress.current)}`, claimCopy.loadError);
+      if (request !== loadRequest.current) return data;
       setWarranties(data.warranties);
       setTransferred(data.transferred);
       // Links this browser opened can be shared again; the secret of a link lives only here.
@@ -76,10 +87,13 @@ export function WarrantyDashboard({ cavosAppId }: WarrantyDashboardProps) {
       setVaultStatus(null);
       return data;
     } catch (error) {
-      if (!quiet) setVaultStatus(errorMessage(error));
+      if (!quiet && request === loadRequest.current) setVaultStatus(errorMessage(error));
       return null;
     }
   };
+
+  // What is on screen is newer than any load in flight.
+  const listChanged = () => { loadRequest.current += 1; };
 
   // An open link is accepted in someone else's browser: check until it happens and tell the owner right away.
   const openOffers = warranties?.filter((warranty) => warranty.transferExpiresAt).map((warranty) => warranty.token).join(',') ?? '';
@@ -89,7 +103,7 @@ export function WarrantyDashboard({ cavosAppId }: WarrantyDashboardProps) {
     const timer = window.setInterval(async () => {
       const data = await loadWarranties({ quiet: true });
       const given = data?.transferred.find((product) => tokens.includes(product.token));
-      if (given) showMessage(`${given.model}: este producto fue transferido al usuario ${given.to}. Quedó registrado en su historial.`, 'success');
+      if (given) showMessage(fillIn(incomingCopy.given, { model: given.model, to: given.to }), 'success');
     }, TRANSFER_POLL_MS);
     return () => window.clearInterval(timer);
   }, [openOffers]);
@@ -97,14 +111,14 @@ export function WarrantyDashboard({ cavosAppId }: WarrantyDashboardProps) {
   // Enables this browser to sign and saves the account's key in Stellar, so every other device can sign too.
   const enrollDeviceFactor = async (deviceCode: string) => {
     const address = walletAddress.current || storedUser()?.walletAddress || '';
-    if (!isStellarAddress(address)) throw new Error('Todavía no encontramos tu wallet. Recargá la página e intentá de nuevo.');
+    if (!isStellarAddress(address)) throw new Error(device.noWallet);
     await enableSigning(cavosAppId, address, deviceCode);
   };
 
   // The key is derived from the password this account uses in this browser.
   const deviceCodeFromPassword = async (password: string) => {
     const account = storedUser();
-    if (!account || !(await verifyPassword(account, password))) throw new Error('Esa no es la contraseña de tu cuenta.');
+    if (!account || !(await verifyPassword(account, password))) throw new Error(device.wrongPassword);
     return deviceCodeFor(account.email, password);
   };
 
@@ -116,7 +130,7 @@ export function WarrantyDashboard({ cavosAppId }: WarrantyDashboardProps) {
   const repairAndRetry = async (password?: string) => {
     if (!repair) return;
     setRepairing(true);
-    showMessage('Habilitando este navegador para firmar...', 'info');
+    showMessage(device.working, 'info');
     try {
       await enrollDeviceFactor(password ? await deviceCodeFromPassword(password) : storedDeviceCode());
       setRepair(null);
@@ -141,7 +155,7 @@ export function WarrantyDashboard({ cavosAppId }: WarrantyDashboardProps) {
     }
   };
 
-  // The wallet cannot be reconnected without confirming the Gmail again: ask for a code at login and come back.
+  // The wallet cannot be reconnected without confirming the email again: ask for a code at login and come back.
   const leaveForEmailCode = () => {
     updateStoredUser({ emailVerifiedAt: 0 });
     leaveSession('verificar');
@@ -152,7 +166,7 @@ export function WarrantyDashboard({ cavosAppId }: WarrantyDashboardProps) {
   // A transfer link opened or scanned: show what it offers before accepting.
   const openTransferLink = async (secret: string) => {
     setIncoming(null);
-    showMessage('Leyendo el link de transferencia...', 'info');
+    showMessage(incomingCopy.reading, 'info');
     try {
       setIncoming({ secret, transfer: await readTransferLink(secret, await ownerAddress()) });
       setMessage(null);
@@ -168,7 +182,7 @@ export function WarrantyDashboard({ cavosAppId }: WarrantyDashboardProps) {
     try {
       const warranty = await acceptTransfer(cavosAppId, incoming.transfer, await ownerAddress(), (progress) => showMessage(progress, 'info'));
       setIncoming(null);
-      showMessage(`¡Listo! ${warranty.model} ya está a tu nombre. El cambio de dueño quedó registrado en Stellar.`, 'success');
+      showMessage(fillIn(incomingCopy.accepted, { model: warranty.model }), 'success');
       await loadWarranties();
     } catch (error) {
       if (error instanceof EmailCodeRequiredError) {
@@ -190,6 +204,7 @@ export function WarrantyDashboard({ cavosAppId }: WarrantyDashboardProps) {
     setBusyToken(token);
     try {
       const warranty = await task(await ownerAddress(), (progress) => setStatus(progress, 'info'));
+      listChanged();
       setWarranties((current) => current?.map((candidate) => (candidate.token === token ? warranty : candidate)) ?? current);
       setStatus(done, 'success');
     } catch (error) {
@@ -216,15 +231,22 @@ export function WarrantyDashboard({ cavosAppId }: WarrantyDashboardProps) {
       const { warranty, link } = await offerTransfer(cavosAppId, token, owner, onProgress);
       setTransferLinks((current) => ({ ...current, [token]: link }));
       return warranty;
-    }, 'Link listo. Compartilo con el nuevo dueño: el producto pasa a su cuenta cuando lo acepte.'),
-    onCancel: (token) => {
-      if (!window.confirm('¿Cancelar la transferencia? El link deja de funcionar.')) return;
-      void runTransfer(token, async (owner, onProgress) => {
-        const warranty = await cancelTransfer(cavosAppId, token, owner, onProgress);
-        setTransferLinks(({ [token]: _closed, ...rest }) => rest);
-        return warranty;
-      }, 'Transferencia cancelada: el link ya no funciona.');
-    }
+    }, card.linkReady),
+    onCancel: (token) => setConfirmation({
+      title: card.confirmCancelTitle,
+      message: card.confirmCancel,
+      confirmLabel: card.confirmCancelYes,
+      cancelLabel: card.keep,
+      danger: true,
+      onConfirm: () => {
+        setConfirmation(null);
+        void runTransfer(token, async (owner, onProgress) => {
+          const warranty = await cancelTransfer(cavosAppId, token, owner, onProgress);
+          setTransferLinks(({ [token]: _closed, ...rest }) => rest);
+          return warranty;
+        }, card.linkCancelled);
+      }
+    })
   };
 
   const applyScannedText = (text: string) => {
@@ -236,18 +258,16 @@ export function WarrantyDashboard({ cavosAppId }: WarrantyDashboardProps) {
     }
     setScannedClaim(claim);
     if (claim) {
-      showMessage(DETECTED_MESSAGE, 'success');
+      showMessage(claimCopy.detected, 'success');
       return;
     }
-    showMessage(publicToken
-      ? 'Ese es el QR público del producto: sirve para verificarlo. Para activar la garantía escaneá el QR de la etiqueta interna.'
-      : 'No reconocimos ese QR como un QR de Verifire.', 'error');
+    showMessage(publicToken ? claimCopy.publicQr : claimCopy.unknownQr, 'error');
   };
 
   const handleClaim = (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!scannedClaim) {
-      showMessage('Primero escaneá el QR de la etiqueta interna del producto.', 'error');
+      showMessage(claimCopy.scanFirst, 'error');
       return;
     }
     void claim(scannedClaim);
@@ -256,17 +276,15 @@ export function WarrantyDashboard({ cavosAppId }: WarrantyDashboardProps) {
   const claim = async (scannedClaim: ScannedClaim) => {
     setRepair(null);
     setClaiming(true);
-    showMessage('Verificando el QR y preparando tu garantía...', 'info');
+    showMessage(claimCopy.working, 'info');
     try {
       const owner = walletAddress.current || await resolveWalletAddress(cavosAppId);
       const product = await activateWarranty(cavosAppId, scannedClaim, owner, (progress) => showMessage(progress, 'info'));
       setScannedClaim(null);
-      showMessage(product.certificateUrl
-        ? `¡Listo! La garantía de ${product.model} quedó registrada en Stellar a tu nombre.`
-        : `¡Listo! La garantía de ${product.model} quedó activada a tu nombre.`, 'success');
+      showMessage(fillIn(product.certificateUrl ? claimCopy.doneOnChain : claimCopy.done, { model: product.model }), 'success');
       await loadWarranties();
     } catch (error) {
-      // The wallet cannot be reconnected without confirming the Gmail again: keep the QR and ask for a code at login.
+      // The wallet cannot be reconnected without confirming the email again: keep the QR and ask for a code at login.
       if (error instanceof EmailCodeRequiredError) {
         keepPendingClaim(scannedClaim);
         leaveForEmailCode();
@@ -289,10 +307,10 @@ export function WarrantyDashboard({ cavosAppId }: WarrantyDashboardProps) {
     const pendingTransfer = takePendingTransfer();
     const pendingClaim = takePendingClaim();
     if (pendingClaim === 'invalid') {
-      showMessage('No pudimos leer ese QR. Escanealo de nuevo.', 'error');
+      showMessage(claimCopy.unreadableQr, 'error');
     } else if (pendingClaim) {
       setScannedClaim(pendingClaim);
-      showMessage(DETECTED_MESSAGE, 'success');
+      showMessage(claimCopy.detected, 'success');
     }
 
     void loadWarranties()
@@ -306,41 +324,41 @@ export function WarrantyDashboard({ cavosAppId }: WarrantyDashboardProps) {
       {incoming && (
         <section className="claim-card transfer-card" aria-labelledby="transfer-title">
           <div>
-            <span className="eyebrow">Cambio de dueño</span>
-            <h2 id="transfer-title">Te pasaron un producto</h2>
+            <span className="eyebrow">{incomingCopy.eyebrow}</span>
+            <h2 id="transfer-title">{incomingCopy.title}</h2>
           </div>
           <dl className="transfer-summary">
-            <div><dt>Producto</dt><dd>{incoming.transfer.model}</dd></div>
-            <div><dt>Código</dt><dd>{incoming.transfer.token}</dd></div>
-            <div><dt>Dueño actual</dt><dd>{incoming.transfer.from}</dd></div>
+            <div><dt>{incomingCopy.product}</dt><dd>{incoming.transfer.model}</dd></div>
+            <div><dt>{incomingCopy.code}</dt><dd>{incoming.transfer.token}</dd></div>
+            <div><dt>{incomingCopy.owner}</dt><dd>{incoming.transfer.from}</dd></div>
           </dl>
-          <p className="claim-hint">
-            Al aceptar, la garantía y el historial del producto pasan a tu cuenta, y el cambio de dueño queda registrado en Stellar. Tu wallet Cavos firma la aceptación: no pagás comisiones.
-          </p>
+          <p className="claim-hint">{incomingCopy.note}</p>
           <p className="transfer-countdown" role="timer">
             <Icon name="fa-regular fa-clock" />
             {incomingExpired
-              ? ' Este link venció. Pedile al dueño que genere uno nuevo.'
-              : <> El link vence en <strong>{formatCountdown(incoming.transfer.expiresAt, now)}</strong></>}
+              ? ` ${incomingCopy.expired}`
+              : <> {incomingCopy.expiresIn} <strong>{formatCountdown(incoming.transfer.expiresAt, now)}</strong></>}
           </p>
           <div className="scan-actions">
             <button className="button button-primary" type="button" disabled={accepting || incomingExpired} onClick={() => void handleAcceptTransfer()}>
-              Aceptar transferencia
+              {incomingCopy.accept}
             </button>
-            <button className="button button-secondary" type="button" disabled={accepting} onClick={() => setIncoming(null)}>Descartar</button>
+            <button className="button button-secondary" type="button" disabled={accepting} onClick={() => setIncoming(null)}>{incomingCopy.discard}</button>
           </div>
         </section>
       )}
 
       <section className="claim-card" aria-labelledby="claim-title">
         <div>
-          <span className="eyebrow">Acción rápida</span>
-          <h1 id="claim-title">Activá la garantía de tu producto</h1>
+          <span className="eyebrow">{claimCopy.eyebrow}</span>
+          <h1 id="claim-title">{claimCopy.title}</h1>
         </div>
         <p className="claim-hint">
-          Escaneá el QR de la etiqueta interna o raspadita del empaque original. También podés subir una imagen del QR o pegarla con <kbd>Ctrl</kbd> + <kbd>V</kbd>. Cada QR puede activarse una única vez.
+          {claimCopy.hint} <kbd>Ctrl</kbd> + <kbd>V</kbd>. {claimCopy.onceHint}
         </p>
         <QrScanPanel
+          locale={locale}
+          disabled={claiming}
           onDetected={applyScannedText}
           onMessage={setMessage}
           onScanStart={() => setScannedClaim(null)}
@@ -349,26 +367,28 @@ export function WarrantyDashboard({ cavosAppId }: WarrantyDashboardProps) {
         {repair && (storedDeviceCode()
           ? (
             <div className="repair-prompt">
-              <p>Este navegador todavía no está habilitado para firmar con tu cuenta.</p>
+              <p>{device.prompt}</p>
               <button className="button button-primary" type="button" disabled={repairing} onClick={() => void repairAndRetry()}>
-                <Icon name="fa-solid fa-rotate-right" /> Reintentar
+                <Icon name="fa-solid fa-rotate-right" /> {device.retry}
               </button>
             </div>
           )
           : (
             <DeviceEnrollForm
-              submitLabel="Reintentar"
-              hint="Con tu contraseña habilitamos este navegador para firmar y repetimos lo que estabas haciendo. No se guarda en ningún lado."
+              submitLabel={device.retry}
+              hint={device.hint}
+              labels={device}
               onEnroll={repairAndRetry}
               onCancel={() => setRepair(null)}
             />
           ))}
         <form id="claim-form" noValidate hidden={!scannedClaim} onSubmit={handleClaim}>
-          <button ref={claimButtonRef} className="button button-primary" type="submit" disabled={claiming}>Activar Garantía Oficial</button>
+          <button ref={claimButtonRef} className="button button-primary" type="submit" disabled={claiming}>{claimCopy.activate}</button>
         </form>
       </section>
 
-      <WarrantyVault warranties={warranties} status={vaultStatus} transfers={transfers} transferred={transferred} />
+      <WarrantyVault warranties={warranties} status={vaultStatus} transfers={transfers} transferred={transferred} locale={locale} />
+      <ConfirmDialog confirmation={confirmation} onCancel={() => setConfirmation(null)} />
     </>
   );
 }

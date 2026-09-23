@@ -1,0 +1,9 @@
+---
+import LandingPage from '@/components/landing/LandingPage.astro';
+
+if (Astro.url.searchParams.has('cavos_auth_code') || Astro.url.searchParams.has('sesion')) {
+  return Astro.redirect(`/login${Astro.url.search}`);
+}
+---
+
+<LandingPage />

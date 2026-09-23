@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
+import { readRaw, removeStored, writeRaw } from '@/lib/client/storage';
 
 const COOLDOWN_KEY = 'verifireOtpCooldownUntil';
 // Cavos rejects a new code request within 60 seconds of the previous one.
 const RESEND_COOLDOWN_MS = 60 * 1000;
 
-const storedCooldownEnd = () => Number(sessionStorage.getItem(COOLDOWN_KEY) || 0);
+const storedCooldownEnd = () => Number(readRaw(sessionStorage, COOLDOWN_KEY) || 0);
 
 // Seconds until another code can be requested. Kept in sessionStorage, so a reload keeps the countdown.
 export function useResendCooldown() {
@@ -20,7 +21,7 @@ export function useResendCooldown() {
       const remainingMs = endsAt - Date.now();
       if (remainingMs <= 0) {
         setRemainingSeconds(0);
-        if (endsAt) sessionStorage.removeItem(COOLDOWN_KEY);
+        if (endsAt) removeStored(sessionStorage, COOLDOWN_KEY);
         return false;
       }
       setRemainingSeconds(Math.ceil(remainingMs / 1000));
@@ -35,7 +36,7 @@ export function useResendCooldown() {
 
   const start = useCallback(() => {
     const next = Date.now() + RESEND_COOLDOWN_MS;
-    sessionStorage.setItem(COOLDOWN_KEY, String(next));
+    writeRaw(sessionStorage, COOLDOWN_KEY, String(next));
     setEndsAt(next);
   }, []);
 

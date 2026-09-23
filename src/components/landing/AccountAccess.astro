@@ -1,0 +1,28 @@
+---
+import { getTechnicalLandingCopy } from '@/i18n/technical-landing';
+const { account } = getTechnicalLandingCopy(Astro.currentLocale);
+---
+
+<section class="lp-section lp-account" id="account" aria-labelledby="lp-account-title">
+  <div class="lp-account-intro">
+    <img src="/brand/verifire-mark.png" width="32" height="32" alt="" />
+    <p class="lp-eyebrow">{account.eyebrow}</p>
+    <h2 id="lp-account-title" class="lp-section-title">{account.title}</h2>
+    <p>{account.lead}</p>
+  </div>
+  <div class="lp-account-options tw:grid tw:gap-5 tw:md:grid-cols-2">
+    <article class="lp-account-card">
+      <span class="lp-account-icon" aria-hidden="true"><i class="fa-solid fa-arrow-right-to-bracket"></i></span>
+      <h3>{account.loginTitle}</h3>
+      <p>{account.loginText}</p>
+      <a class="lp-button lp-button-outline" href="/login">{account.login}<i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
+    </article>
+    <article class="lp-account-card lp-account-register">
+      <span class="lp-account-icon" aria-hidden="true"><i class="fa-solid fa-user-plus"></i></span>
+      <h3>{account.registerTitle}</h3>
+      <p>{account.registerText}</p>
+      <a class="lp-button lp-button-solid" href="/login?modo=registro">{account.register}<i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
+    </article>
+  </div>
+  <p class="lp-account-note"><i class="fa-solid fa-qrcode" aria-hidden="true"></i>{account.publicNote} <a href="/verify">{account.verify}</a></p>
+</section>

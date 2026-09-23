@@ -22,6 +22,8 @@
   --vf-success-line: #b7dcc4;
   --vf-info: #1f4fb8;
   --vf-info-soft: #e8eefb;
+  --vf-warning: #9a5b00;
+  --vf-warning-soft: #fff3dc;
   --vf-font: var(--font-urbanist), 'Segoe UI', system-ui, -apple-system, Arial, sans-serif;
   --vf-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
@@ -48,10 +50,14 @@
   --vf-success-line: #245a3a;
   --vf-info: #9bb8ff;
   --vf-info-soft: #172240;
+  --vf-warning: #f3b24f;
+  --vf-warning-soft: #33260f;
 }
 
 /* Parts that are black in both modes keep the light-mode tokens inside them. */
 :root[data-theme='dark'] .lp-footer,
+:root[data-theme='dark'] .lp-band,
+:root[data-theme='dark'] .auth-visual,
 :root[data-theme='dark'] .scan-viewer {
   --vf-ink: #000000;
   --vf-text: #262626;

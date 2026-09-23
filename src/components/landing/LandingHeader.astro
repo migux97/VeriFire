@@ -1,36 +1,35 @@
 ---
-// Header of the landing page. Visitors get the login and registration links; a session opened in another tab gets its
-// profile and the way back to its panel (see the landing mode of SessionGate).
 import BrandLogo from '@/components/layout/BrandLogo.astro';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { ProfileMenu } from '@/components/warranties/ProfileMenu';
+import { getLandingMessages } from '@/i18n/landing';
+import { getTechnicalLandingCopy } from '@/i18n/technical-landing';
+import LanguageMenu from '@/components/ui/LanguageMenu.astro';
+const locale = Astro.currentLocale ?? 'es';
+const { nav: shared, profile } = getLandingMessages(locale);
+const { nav, account } = getTechnicalLandingCopy(locale);
 ---
 
-<header class="lp-header">
+<header class="lp-header lp-technical-header">
   <BrandLogo />
-
-  <a class="lp-button lp-button-outline lp-header-verify" href="/verify">
-    <i class="fa-solid fa-qrcode" aria-hidden="true"></i> Verificar producto
-  </a>
-
-  <nav class="lp-nav" aria-label="Secciones">
-    <a href="#history">Historial</a>
-    <a href="#how-it-works">Cómo funciona</a>
-    <a href="#brands">Para marcas</a>
-    <a href="#faq">Preguntas</a>
+  <nav class="lp-nav" aria-label={shared.sections}>
+    <a href="#technology">{nav.technology}</a>
+    <a href="#how-it-works">{nav.how}</a>
+    <a href="#history">{nav.cases}</a>
+    <a href="#docs-api">{nav.docs}</a>
   </nav>
-
-  <div class="lp-guest-actions">
-    <a class="lp-login" href="/login">
-      <i class="fa-regular fa-user" aria-hidden="true"></i>
-      <span>Ingresar</span>
-    </a>
-    <a class="lp-button lp-button-solid lp-header-cta" href="/login?modo=registro">Crear cuenta</a>
-  </div>
-
-  <div class="lp-session-actions">
-    <a class="lp-button lp-button-solid lp-header-cta" href="/app">
-      <i class="fa-solid fa-table-columns" aria-hidden="true"></i> Ir a mi panel
-    </a>
-    <ProfileMenu client:load />
+  <div class="lp-header-actions">
+    <LanguageMenu locale={locale} label={shared.language} />
+    <ThemeToggle client:load label={profile.dark} />
+    <a class="lp-button lp-button-solid lp-header-cta" href="/verify"><i class="fa-solid fa-qrcode" aria-hidden="true"></i>{nav.scan}</a>
+    {/* Visitors get the account links; a session opened in another tab gets its panel and its profile (SessionGate). */}
+    <div class="lp-header-account lp-guest-actions">
+      <a class="lp-header-login" href="/login">{account.login}</a>
+      <a class="lp-button lp-button-outline lp-header-register" href="/login?modo=registro">{account.register}</a>
+    </div>
+    <div class="lp-header-account lp-session-actions">
+      <a class="lp-button lp-button-outline lp-header-register" href="/app">{shared.dashboard}</a>
+      <ProfileMenu client:load labels={profile} />
+    </div>
   </div>
 </header>

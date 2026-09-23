@@ -1,26 +1,35 @@
 ---
 import AppTopbar from '@/components/layout/AppTopbar.astro';
 import SiteFooter from '@/components/layout/SiteFooter.astro';
+import LanguageMenu from '@/components/ui/LanguageMenu.astro';
 import { ProfileMenu } from '@/components/warranties/ProfileMenu';
 import { WarrantyDashboard } from '@/components/warranties/WarrantyDashboard';
 import BaseLayout from '@/layouts/BaseLayout.astro';
-import { config } from '@/lib/server/config';
+import { publicConfig } from '@/lib/server/config';
+import { getConsumerMessages } from '@/i18n/consumer';
+import { getLandingMessages } from '@/i18n/landing';
+import { DEFAULT_LOCALE, LOCALE_COOKIE, toLocale } from '@/lib/locale';
+import '@/styles/consumer.css';
+
+// The language chosen on the landing (see the locale middleware); this page has a single route.
+const locale = toLocale(Astro.cookies.get(LOCALE_COOKIE)?.value) ?? toLocale(Astro.currentLocale) ?? DEFAULT_LOCALE;
+const copy = getConsumerMessages(locale);
+const { profile, nav } = getLandingMessages(locale);
 ---
 
 <BaseLayout
-  title="Verifire | Mis garantías"
-  description="Escaneá el QR de tus productos para activar su garantía oficial y consultá tus certificados de autenticidad."
-  bodyClass="catalog-body"
+  title={copy.meta.title}
+  description={copy.meta.description}
+  bodyClass="catalog-body consumer-page"
   session="protected"
 >
   <AppTopbar>
-    <a class="wallet-button" href="/batches"><i class="fa-solid fa-boxes-stacked" aria-hidden="true"></i> Mis lotes</a>
-    <a class="wallet-button buy-button" href="/admin"><i class="fa-solid fa-plus" aria-hidden="true"></i> Comprar tokens</a>
-    <ProfileMenu client:load />
+    <LanguageMenu locale={locale} label={nav.language} mode="query" />
+    <ProfileMenu client:load labels={profile} />
   </AppTopbar>
 
   <main class="container dashboard">
-    <WarrantyDashboard client:load cavosAppId={config.cavosAppId} />
+    <WarrantyDashboard client:load cavosAppId={publicConfig.cavosAppId} locale={locale} />
   </main>
 
   <SiteFooter />

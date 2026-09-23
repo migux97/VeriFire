@@ -3,32 +3,37 @@
 import StandaloneHeader from '@/components/layout/StandaloneHeader.astro';
 import { DetailRows } from '@/components/verification/DetailRows';
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import { getVerifyMessages } from '@/i18n/verify';
 import { publicBaseUrl } from '@/lib/server/config';
+import { pageLocale } from '@/lib/server/page-locale';
 import { findBatch, publicBatchView } from '@/lib/server/purchases';
+
+const locale = pageLocale(Astro);
+const copy = getVerifyMessages(locale);
 
 const batchId = Astro.url.searchParams.get('batch');
 const found = batchId ? findBatch(batchId) : undefined;
 const batch = found ? publicBatchView(found, publicBaseUrl(Astro.url)) : null;
 const claimed = batch?.tokens.filter((token) => token.status === 'CLAIMED_IN_WARRANTY').length ?? 0;
 
-let title = 'Lote no disponible';
-let message = 'Escaneá el QR público del lote para ver sus productos.';
+let title = copy.batch.unavailableTitle;
+let message = copy.batch.lead;
 if (batch) {
-  title = 'Productos originales certificados';
-  message = `${claimed} de ${batch.quantity} productos con la garantía activada. Este QR no revela códigos secretos.`;
+  title = copy.batch.title;
+  message = copy.batch.summary.replace('{claimed}', String(claimed)).replace('{quantity}', String(batch.quantity));
 } else if (batchId) {
-  message = 'El lote no existe.';
+  message = copy.batch.notFound;
   Astro.response.status = 404;
 }
 ---
 
-<BaseLayout title="Verifire | Lote de productos" description="Verificación pública de un lote de productos Verifire." bodyClass="verify-page">
+<BaseLayout title={copy.meta.batchTitle} description={copy.meta.batchDescription} bodyClass="verify-page">
   <main class="verify-shell">
     <StandaloneHeader>
-      <span class="network-status"><span></span>Verificación pública</span>
+      <span class="network-status"><span></span>{copy.header.network}</span>
     </StandaloneHeader>
     <section class="verify-card" aria-labelledby="batch-title">
-      <span class="eyebrow">QR público del lote</span>
+      <span class="eyebrow">{copy.header.batchEyebrow}</span>
       <h1 id="batch-title">{title}</h1>
       <p class="verify-message">{message}</p>
       {
@@ -36,11 +41,11 @@ if (batch) {
           <DetailRows
             tone="available"
             rows={[
-              ['Modelo', batch.model],
-              ['Lote', batch.lot],
-              ['Destino', batch.destination],
-              ['Productos', batch.quantity],
-              ...batch.tokens.map((token): [string, string] => [token.token, token.status === 'SEALED' ? 'Sellado' : 'Garantía activa'])
+              [copy.batch.rows.model, batch.model],
+              [copy.batch.rows.lot, batch.lot],
+              [copy.batch.rows.destination, batch.destination],
+              [copy.batch.rows.products, batch.quantity],
+              ...batch.tokens.map((token): [string, string] => [token.token, token.status === 'SEALED' ? copy.batch.status.sealed : copy.batch.status.claimed])
             ]}
           />
         )

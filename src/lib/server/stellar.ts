@@ -6,11 +6,16 @@ import {
 } from '@stellar/stellar-sdk';
 import { ACTIVATION_DOMAIN } from '../activation.ts';
 import { HttpError } from './errors.ts';
+import { messages } from './messages.ts';
 
 export const networkPassphrase = Networks.TESTNET;
 const DEFAULT_RPC_URL = 'https://soroban-testnet.stellar.org';
 // Inclusion fee the issuing account pays per certification; the inner transaction's resource fee is added on top.
 const FEE_BUMP_BASE_FEE = '2000';
+// The issuing account pays every call a user signs, and a Soroban fee is mostly the resource fee written inside the
+// transaction. The signer could write any amount there, so a signed call may cost at most this many times what its
+// simulation says it needs; anything above that is a transaction built to drain the issuer, not to use the contract.
+const MAX_FEE_OVER_SIMULATION = 4n;
 
 export interface StellarConfig {
   contractId: string;
@@ -51,14 +56,14 @@ export const activationKeyFor = (secret: string): Buffer =>
   Buffer.from(Keypair.fromRawEd25519Seed(hash(Buffer.from(`${ACTIVATION_DOMAIN}:${secret}`, 'utf8'))).rawPublicKey());
 
 const contractMessages: [RegExp, string][] = [
-  [/product is already claimed/, 'Este producto ya fue reclamado en Stellar.'],
-  [/only the owner can transfer/, 'Solo el dueño actual puede transferir este producto.'],
-  [/no open transfer/, 'Este link de transferencia ya no está vigente: el dueño lo canceló, generó otro o el producto ya cambió de dueño.'],
-  [/already owns the product/, 'Este producto ya es tuyo.'],
-  [/transfer link expired/, 'Este link de transferencia venció. Pedile al dueño que genere uno nuevo.'],
-  [/wait before opening another transfer link/, 'Ya generaste un link hace poco. Esperá unos minutos para pedir otro.'],
-  [/product token does not exist|product code does not exist/, 'Este producto no está registrado en el contrato de Stellar.'],
-  [/ed25519|signature|crypto/i, 'La firma del QR no corresponde a este producto.']
+  [/product is already claimed/, messages.alreadyClaimedOnChain],
+  [/only the owner can transfer/, messages.notOwner],
+  [/no open transfer/, messages.linkClosed],
+  [/already owns the product/, messages.alreadyYours],
+  [/transfer link expired/, messages.linkExpired],
+  [/wait before opening another transfer link/, messages.linkTooSoon],
+  [/product token does not exist|product code does not exist/, messages.unknownProductOnChain],
+  [/ed25519|signature|crypto/i, messages.invalidSignature]
 ];
 
 // Known contract panics become messages safe to show to the client.
@@ -206,6 +211,12 @@ export const createStellarClient = ({ contractId, issuerSecret, rpcUrl = DEFAULT
     const authorizedBySource = (operation.auth ?? []).every(({ credentials }) => credentials.type === 'sorobanCredentialsSourceAccount');
     if (!matchesCall || !authorizedBySource) throw invalidSignedCall();
 
+    // What this call costs is decided by the network, not by whoever signed it.
+    const simulation = await rpcServer.simulateTransaction(tx);
+    if (rpc.Api.isSimulationError(simulation)) throw contractError(simulation.error);
+    const resourceFee = rpc.Api.isSimulationSuccess(simulation) ? BigInt(simulation.minResourceFee ?? '0') : 0n;
+    if (BigInt(tx.fee) > (resourceFee + BigInt(BASE_FEE)) * MAX_FEE_OVER_SIMULATION) throw invalidSignedCall();
+
     // A fee bump adds no operation and uses no sequence number of its own: it only changes who pays.
     const feeBump = TransactionBuilder.buildFeeBumpTransaction(issuerKeypair(), FEE_BUMP_BASE_FEE, tx, networkPassphrase);
     feeBump.sign(issuerKeypair());
@@ -215,6 +226,14 @@ export const createStellarClient = ({ contractId, issuerSecret, rpcUrl = DEFAULT
     }
     await waitForTransaction(sent.hash);
     return sent.hash;
+  };
+
+  // The contract answers a mint with the new token's id. Anything else (a dropped return value) would be stored as a
+  // token that does not exist, and every later call for that product would fail with no way back.
+  const tokenIdOf = (returnValue: unknown) => {
+    const tokenId = Number(returnValue);
+    if (!Number.isInteger(tokenId) || tokenId < 0) throw new Error('El contrato no devolvió el número de token del producto.');
+    return tokenId;
   };
 
   const address = (value: string) => Address.fromString(value).toScVal();
@@ -240,7 +259,7 @@ export const createStellarClient = ({ contractId, issuerSecret, rpcUrl = DEFAULT
         text(product.token), text(product.model), text(product.lot), text(product.destination),
         xdr.ScVal.scvBytes(activationKeyFor(product.secretCode))
       ));
-      return { tokenId: Number(returnValue), mintTx: txHash };
+      return { tokenId: tokenIdOf(returnValue), mintTx: txHash };
     },
 
     // Registers a product whose warranty is already active, with its current owner, in a new deployment of the contract.
@@ -250,7 +269,7 @@ export const createStellarClient = ({ contractId, issuerSecret, rpcUrl = DEFAULT
         text(product.token), text(product.model), text(product.lot), text(product.destination),
         xdr.ScVal.scvBytes(activationKeyFor(product.secretCode)), address(owner)
       ));
-      return { tokenId: Number(returnValue), mintTx: txHash };
+      return { tokenId: tokenIdOf(returnValue), mintTx: txHash };
     },
 
     // Bytes the activation key signs in the browser. They bind this contract, the token and the claimant.
@@ -259,7 +278,7 @@ export const createStellarClient = ({ contractId, issuerSecret, rpcUrl = DEFAULT
 
     buildActivation: async ({ tokenId, claimant, signature }: { tokenId: number; claimant: string; signature: Uint8Array }) => {
       if ((await readProduct(tokenId)).claimed) {
-        throw new HttpError(409, 'Este producto ya fue reclamado en Stellar.');
+        throw new HttpError(409, messages.alreadyClaimedOnChain);
       }
       return buildUserCall({
         method: 'activate_product',
@@ -315,7 +334,7 @@ export const createStellarClient = ({ contractId, issuerSecret, rpcUrl = DEFAULT
     buildTransferAccept: async ({ tokenId, recipient, signature }: { tokenId: number; recipient: string; signature: Uint8Array }) => {
       const product = await readProduct(tokenId);
       if (!product.transfer_key) throw new HttpError(409, 'Este link de transferencia ya no está vigente: el dueño lo canceló, generó otro o el producto ya cambió de dueño.');
-      if (product.owner === recipient) throw new HttpError(409, 'Este producto ya es tuyo.');
+      if (product.owner === recipient) throw new HttpError(409, messages.alreadyYours);
       try {
         return await buildUserCall({
           method: 'accept_transfer', source: recipient, args: [u64(tokenId), address(recipient), xdr.ScVal.scvBytes(Buffer.from(signature))]

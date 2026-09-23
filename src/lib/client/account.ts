@@ -10,11 +10,13 @@ export interface PasswordHash {
 export interface StoredUser {
   name: string;
   email: string;
+  accountType?: 'personal' | 'business';
+  companyName?: string;
   passwordHash?: PasswordHash | undefined;
   // Accounts created before hashing kept the password in plain text.
   password?: string;
   provider?: 'google';
-  // Saved when the Gmail is verified, so logins in the next 7 days only need the password.
+  // Saved when the email is verified, so logins in the next 7 days only need the password.
   walletAddress?: string;
   cavosUserId?: string;
   emailVerifiedAt?: number;

@@ -1,0 +1,61 @@
+import type { LandingMessages } from '@/i18n/landing';
+interface Props { kind: string; color: string; instance: string; labels: LandingMessages['artwork']; className?: string; }
+export function ProductIllustration({kind, color, instance, labels: copy, className = ''}: Props) {
+  const id = instance + '-' + kind;
+  return (<svg className={`product-svg ${className}`} viewBox="0 0 120 150" role="img" aria-hidden="true">
+  {kind === 'auriculares' && (
+    <g>
+      <path d="M28 85A32 35 0 0 1 92 85" fill="none" stroke="#222" strokeWidth="9" strokeLinecap="round" />
+      <path d="M32 78A28 30 0 0 1 88 78" fill="none" stroke={color} strokeWidth="2.5" opacity="0.9" />
+      <rect x="23" y="70" width="10" height="20" rx="3" fill="#111" /><rect x="87" y="70" width="10" height="20" rx="3" fill="#111" />
+      <rect x="18" y="80" width="20" height="38" rx="10" fill="#18191a" /><rect x="21" y="85" width="14" height="28" rx="7" fill="#2b2d30" />
+      <rect x="82" y="80" width="20" height="38" rx="10" fill="#18191a" /><rect x="85" y="85" width="14" height="28" rx="7" fill="#2b2d30" />
+      <image href="/brand/verifire-mark.png" x="23" y="94" width="10" height="10" /><image href="/brand/verifire-mark.png" x="87" y="94" width="10" height="10" />
+    </g>
+  )}
+  {kind === 'perfumes' && (
+    <g>
+      <defs><linearGradient id={id} x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="#111" /><stop offset="0.35" stopColor="#0e382b" /><stop offset="0.65" stopColor="#155d47" /><stop offset="1" stopColor="#111" /></linearGradient></defs>
+      <rect x="49" y="32" width="22" height="14" rx="2" fill="#111" /><rect x="54" y="46" width="12" height="6" fill="#888" />
+      <rect x="36" y="52" width="48" height="74" rx="8" fill={`url(#${id})`} /><rect x="42" y="58" width="36" height="62" rx="4" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="1.5" />
+      <line x1="60" y1="52" x2="60" y2="120" stroke="rgba(255,255,255,0.25)" strokeWidth="1.5" />
+      <rect x="43" y="78" width="34" height="25" rx="2" fill="#fff" /><image href="/brand/verifire.png" x="46" y="83" width="28" height="9" /><text x="60" y="99" textAnchor="middle" fontSize="4" fill="#222">{copy.original}</text>
+    </g>
+  )}
+  {kind === 'relojes' && (
+    <g>
+      <rect x="48" y="24" width="24" height="24" rx="2" fill="#1a1a1a" /><rect x="48" y="104" width="24" height="24" rx="2" fill="#1a1a1a" />
+      <circle cx="60" cy="76" r="33" fill="#18191a" /><circle cx="60" cy="76" r="28" fill="#0f1011" /><circle cx="60" cy="76" r="26" fill="none" stroke={color} strokeWidth="1.8" />
+      <rect x="92" y="73" width="4" height="6" rx="1" fill="#444" />
+      <circle cx="60" cy="54" r="1.5" fill="#fff" /><circle cx="60" cy="98" r="1.5" fill="#fff" /><circle cx="38" cy="76" r="1.5" fill="#fff" /><circle cx="82" cy="76" r="1.5" fill="#fff" />
+      <line x1="60" y1="76" x2="60" y2="60" stroke="#fff" strokeWidth="2" strokeLinecap="round" /><line x1="60" y1="76" x2="72" y2="76" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" /><circle cx="60" cy="76" r="2.5" fill={color} />
+      <image href="/brand/verifire-mark.png" x="55" y="82" width="10" height="10" />
+    </g>
+  )}
+  {kind === 'vinos' && (
+    <g>
+      <defs><linearGradient id={id} x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="#141517" /><stop offset="0.4" stopColor="#3b1132" /><stop offset="0.7" stopColor="#541646" /><stop offset="1" stopColor="#141517" /></linearGradient></defs>
+      <rect x="55" y="22" width="10" height="4" rx="1" fill="#111" /><path d="M56 26L64 26L63 46L57 46Z" fill="#222" />
+      <path d="M57 46Q44 56 44 72V125A4 4 0 0 0 48 129H72A4 4 0 0 0 76 125V72Q76 56 63 46Z" fill={`url(#${id})`} />
+      <rect x="47" y="78" width="26" height="34" rx="2" fill="#f4efe6" /><image href="/brand/verifire.png" x="49" y="84" width="22" height="7" /><text x="60" y="100" textAnchor="middle" fontSize="4" fill="#222">{copy.reserve}</text><text x="60" y="106" textAnchor="middle" fontSize="4" fill="#222">2022</text>
+    </g>
+  )}
+  {kind === 'repuestos' && (
+    <g transform="translate(60 76)">
+      {[0, 45, 90, 135, 180, 225, 270, 315].map((rotation) => <path key={rotation} d="M-8-38H8L6-30H-6Z" fill="#18191b" transform={`rotate(${rotation})`} />)}
+      <circle r="32" fill="#202225" /><circle r="23" fill="#8c5a27" /><circle r="21" fill="#a46d32" />
+      <circle cy="-13" r="3.5" fill="#202225" /><circle cy="13" r="3.5" fill="#202225" /><circle cx="-13" r="3.5" fill="#202225" /><circle cx="13" r="3.5" fill="#202225" />
+      <circle r="8" fill="#18191b" /><rect x="-2" y="-9" width="4" height="4" fill="#18191b" /><circle r="4.5" fill="#0f1011" />
+      <image href="/brand/verifire-mark.png" x="-5" y="-5" width="10" height="10" />
+    </g>
+  )}
+  {kind === 'cosmetica' && (
+    <g>
+      <defs><linearGradient id={id} x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="#111" /><stop offset="0.35" stopColor="#143438" /><stop offset="0.65" stopColor="#1b494f" /><stop offset="1" stopColor="#111" /></linearGradient></defs>
+      <path d="M52 26H68V34H52Z" fill="#111" /><path d="M44 28H54V32L44 30Z" fill="#111" /><rect x="56" y="34" width="8" height="10" fill="#777" /><rect x="52" y="44" width="16" height="5" fill="#111" />
+      <rect x="42" y="49" width="36" height="78" rx="10" fill={`url(#${id})`} /><rect x="47" y="55" width="26" height="66" rx="6" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="1.2" /><line x1="60" y1="49" x2="60" y2="120" stroke="rgba(255,255,255,0.2)" strokeWidth="1.2" />
+      <rect x="46" y="77" width="28" height="29" rx="2" fill="#fff" /><image href="/brand/verifire.png" x="49" y="82" width="22" height="7" /><text x="60" y="98" textAnchor="middle" fontSize="4" fill="#222">{copy.serum}</text>
+    </g>
+  )}
+</svg>);
+}

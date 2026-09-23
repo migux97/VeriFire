@@ -1,0 +1,120 @@
+/* Motion stays independent of the carousel's 4000 ms playback clock. */
+.landing-page { --lp-ease-out: cubic-bezier(.22, 1, .36, 1); }
+
+/* All five panels share one grid cell, reserving the tallest panel's height.
+   Crossfade the art and copy separately; only opacity/transform run per frame. */
+.lp-cases { --lp-product-ease: cubic-bezier(.16, 1, .3, 1); }
+.lp-case-slide {
+  opacity: 1;
+  transform: none;
+  visibility: hidden;
+  z-index: 0;
+  transition: visibility 0s linear 650ms;
+}
+.lp-case-slide.is-current {
+  visibility: visible;
+  z-index: 2;
+  transition-delay: 0s;
+}
+.lp-case-slide.is-leaving { z-index: 1; }
+.lp-case-art { opacity: 0; transition: opacity 600ms var(--lp-product-ease); }
+.lp-case-slide.is-current .lp-case-art { opacity: 1; }
+.lp-case-art .product-svg {
+  transform: translateY(6px) scale(1.05);
+  transition: transform 600ms var(--lp-product-ease);
+}
+.lp-case-slide.is-current .lp-case-art .product-svg { transform: translateY(0) scale(1); }
+.lp-case-slide.is-leaving .lp-case-art .product-svg { transform: translateY(-4px) scale(.95); }
+.lp-case-copy {
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 550ms var(--lp-product-ease), transform 550ms var(--lp-product-ease);
+}
+.lp-case-slide.is-current .lp-case-copy {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 75ms;
+}
+.lp-case-slide.is-leaving .lp-case-copy { transform: translateY(-4px); }
+
+/* Fixed indicator geometry avoids reflow and keeps the 4 s fill truly linear. */
+.lp-case-dot, .lp-case-dot.is-current { width: 44px; transition: transform 180ms var(--lp-ease-out); }
+.lp-case-dot-track, .lp-case-dot.is-current .lp-case-dot-track {
+  width: 32px;
+  height: 4px;
+  transition: background-color 200ms linear;
+}
+.lp-case-dot-track > span { visibility: visible; opacity: 0; transition: opacity 180ms linear; }
+.lp-case-dot.is-current .lp-case-dot-track > span { opacity: 1; }
+
+.landing-page :is(.lp-button, .lp-case-arrow, .lp-qr-badge) {
+  transition: transform 220ms var(--lp-ease-out), box-shadow 220ms ease,
+    background-color 180ms ease, border-color 180ms ease, color 180ms ease;
+}
+.landing-page :is(.lp-button, .lp-case-arrow, .lp-qr-badge):active {
+  transform: translateY(0) scale(.97);
+  box-shadow: none;
+  transition-duration: 100ms;
+}
+.lp-case-dot:active { transform: scale(.94); }
+.lp-button i, .lp-case-arrow i { transition: transform 220ms var(--lp-ease-out); }
+.lp-qr-badge[aria-pressed='true'] { box-shadow: 0 0 0 3px rgb(229 46 32 / 7%); }
+.lp-audit-connectors path { transition: stroke 320ms ease; }
+.lp-audit-connectors circle { transition: fill 320ms ease; }
+.lp-audit[data-factor='public'] [data-factor-line='public'] path,
+.lp-audit[data-factor='secret'] [data-factor-line='secret'] path { stroke: var(--vf-red); }
+.lp-audit[data-factor='public'] [data-factor-line='public'] circle,
+.lp-audit[data-factor='secret'] [data-factor-line='secret'] circle { fill: var(--vf-red); }
+.lp-audit-detail-text { display: block; animation: lp-detail-in 280ms var(--lp-ease-out) both; }
+
+.lp-technical-header .lp-nav a { position: relative; transition: color 180ms ease; }
+.lp-technical-header .lp-nav a::after {
+  content: ''; position: absolute; bottom: -6px; left: 0; right: 0;
+  height: 1px; background: var(--vf-red); transform: scaleX(0); transform-origin: left;
+  transition: transform 260ms var(--lp-ease-out);
+}
+.lp-technical-header .lp-nav a:focus-visible::after { transform: scaleX(1); }
+.lp-case-history summary { transition: color 180ms ease, background-color 180ms ease; }
+.lp-case-history summary i { transition: transform 280ms var(--lp-ease-out); }
+.lp-case-history[open] > div, .lp-question[open] > p { animation: lp-detail-in 320ms var(--lp-ease-out) both; }
+
+@keyframes lp-detail-in {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Avoid sticky hover transforms on touchscreens. */
+@media (hover: hover) and (pointer: fine) {
+  .landing-page :is(.lp-button, .lp-case-arrow, .lp-qr-badge):hover:not(:active) {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 14px rgb(0 0 0 / 9%);
+  }
+  .lp-button:hover .fa-arrow-right, .lp-case-arrow:hover .fa-arrow-right { transform: translateX(2px); }
+  .lp-case-arrow:hover .fa-arrow-left { transform: translateX(-2px); }
+  .lp-button:hover .fa-arrow-down { transform: translateY(2px); }
+  .lp-case-dot:hover .lp-case-dot-track { background-color: var(--vf-blush-line); }
+  .lp-technical-header .lp-nav a:hover::after { transform: scaleX(1); }
+  .lp-case-history summary:hover { color: var(--vf-red); background: var(--vf-mist); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-page *, .landing-page *::before, .landing-page *::after {
+    transition-delay: 0s !important;
+    animation-delay: 0s !important;
+  }
+  .lp-case-art .product-svg, .lp-case-copy,
+  .landing-page :is(.lp-button, .lp-case-arrow, .lp-qr-badge, .lp-case-dot),
+  .lp-button i, .lp-case-arrow i { transform: none !important; }
+
+  /* Windows can request reduced motion even when the user expects transitions.
+     Keep a gentle opacity-only crossfade instead of the global 0.01 ms cut.
+     Hold outgoing panels visible until that fade has actually finished. */
+  .lp-case-slide { transition: visibility 0s linear 350ms !important; }
+  .lp-case-slide.is-current { transition-delay: 0s !important; }
+  .lp-case-art, .lp-case-copy { transition: opacity 350ms ease-in-out !important; }
+  .lp-case-art .product-svg { transition: none !important; }
+  .lp-case-dot-track > span { transition: opacity 180ms linear !important; }
+  .landing-page :is(.lp-button, .lp-case-arrow, .lp-qr-badge) {
+    transition: color 160ms ease, background-color 160ms ease, border-color 160ms ease !important;
+  }
+}

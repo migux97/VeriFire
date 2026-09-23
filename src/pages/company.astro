@@ -1,0 +1,273 @@
+---
+import { BatchList } from '@/components/batches/BatchList';
+import { CompanyCatalogSummary } from '@/components/company/CompanyCatalogSummary';
+import { CompanyData } from '@/components/company/CompanyData';
+import { CompanyDemoBanner } from '@/components/company/CompanyDemoBanner';
+import { CompanyIdentity } from '@/components/company/CompanyIdentity';
+import { CompanyIssuance } from '@/components/company/CompanyIssuance';
+import { CompanyNotifications } from '@/components/company/CompanyNotifications';
+import { CompanyOperations } from '@/components/company/CompanyOperations';
+import { CompanySettings } from '@/components/company/CompanySettings';
+import { CompanyTeamManager } from '@/components/company/CompanyTeamManager';
+import BrandLogo from '@/components/layout/BrandLogo.astro';
+import { companyMessages } from '@/i18n/company';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { publicConfig } from '@/lib/server/config';
+import { countryOptions } from '@/lib/server/countries';
+import { pageLocale } from '@/lib/server/page-locale';
+import '@/styles/company.css';
+
+const locale = pageLocale(Astro);
+const t = companyMessages(locale);
+const views = t.views;
+---
+
+<BaseLayout title={t.meta.title} description={t.meta.description} bodyClass="company-page" session="protected">
+  <div class="company-shell" data-company-shell>
+    <aside class="company-sidebar" id="company-sidebar" aria-label={t.shell.navLabel}>
+      <div class="company-sidebar-top">
+        <BrandLogo href="/" />
+        <button class="company-icon-button company-menu-close" type="button" data-nav-close aria-label={t.shell.closeMenu}>
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
+      </div>
+
+      <CompanyIdentity client:load view="workspace" locale={locale} />
+
+      <nav class="company-nav">
+        <a href="#dashboard" data-company-tab="dashboard">
+          <i class="fa-solid fa-chart-line" aria-hidden="true"></i>
+          <span>{t.nav.dashboard}</span>
+        </a>
+
+        <div class="company-catalog-menu">
+          <div class="company-catalog-parent" data-company-tab="catalog">
+            <a href="#catalog" data-catalog-home>
+              <i class="fa-solid fa-boxes-stacked" aria-hidden="true"></i>
+              <span>{t.nav.catalog}</span>
+            </a>
+            <button
+              type="button"
+              data-catalog-toggle
+              aria-expanded="false"
+              aria-controls="company-catalog-submenu"
+              aria-label={t.shell.catalogOpen}
+              data-label-open={t.shell.catalogOpen}
+              data-label-close={t.shell.catalogClose}
+            >
+              <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+            </button>
+          </div>
+          <div class="company-sidebar-subnav" id="company-catalog-submenu" data-open="false">
+            <div>
+              <a href="#batches" data-catalog-tab="batches" tabindex="-1">{t.nav.batches}</a>
+              <a href="#products" data-catalog-tab="products" tabindex="-1">{t.nav.products}</a>
+              <a href="#generate" data-catalog-tab="generate" tabindex="-1">{t.nav.generate}</a>
+            </div>
+          </div>
+        </div>
+
+        <a href="#activity" data-company-tab="activity">
+          <i class="fa-solid fa-qrcode" aria-hidden="true"></i>
+          <span>{t.nav.activity}</span>
+        </a>
+        <a href="#team" data-company-tab="team">
+          <i class="fa-solid fa-users" aria-hidden="true"></i>
+          <span>{t.nav.team}</span>
+        </a>
+      </nav>
+
+      <div class="company-sidebar-bottom">
+        <a href="#settings" data-company-tab="settings">
+          <i class="fa-solid fa-gear" aria-hidden="true"></i>
+          <span>{t.nav.settings}</span>
+        </a>
+        <a href="/">
+          <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+          <span>{t.nav.back}</span>
+        </a>
+      </div>
+    </aside>
+    <div class="company-scrim" data-nav-close aria-hidden="true"></div>
+
+    <div class="company-main">
+      <header class="company-appbar">
+        <button
+          class="company-icon-button company-menu-open"
+          type="button"
+          data-nav-open
+          aria-label={t.shell.openMenu}
+          aria-controls="company-sidebar"
+          aria-expanded="false"
+        >
+          <i class="fa-solid fa-bars" aria-hidden="true"></i>
+        </button>
+        <span class="company-appbar-title" data-appbar-title>{views.dashboard.title}</span>
+        <div class="company-appbar-actions">
+          <CompanyNotifications client:load locale={locale} />
+          <CompanyIdentity client:load view="profile" locale={locale} />
+        </div>
+      </header>
+
+      <CompanyDemoBanner client:load locale={locale} />
+
+      <main class="company-content">
+        <section class="company-view" data-company-view="dashboard" aria-labelledby="view-dashboard">
+          <header class="company-view-header">
+            <span class="company-eyebrow">{views.dashboard.eyebrow}</span>
+            <h1 id="view-dashboard" tabindex="-1">{views.dashboard.title}</h1>
+            <p class="company-view-description">{views.dashboard.description}</p>
+          </header>
+          <CompanyData client:load view="dashboard" locale={locale} />
+        </section>
+
+        <section class="company-view" data-company-view="catalog" aria-labelledby="view-catalog" hidden>
+          <header class="company-view-header">
+            <span class="company-eyebrow">{views.catalog.eyebrow}</span>
+            <h1 id="view-catalog" tabindex="-1">{views.catalog.title}</h1>
+            <p class="company-view-description">{views.catalog.description}</p>
+          </header>
+          <div class="company-subview" data-catalog-view="catalog">
+            <CompanyCatalogSummary client:load locale={locale} />
+            <CompanyOperations client:load locale={locale} />
+          </div>
+          <div class="company-subview" data-catalog-view="batches" hidden>
+            <div class="company-catalog-heading">
+              <h2>{t.catalogHeading.batches}</h2>
+              <a class="company-button is-primary" href="#generate">
+                <i class="fa-solid fa-plus" aria-hidden="true"></i>
+                {t.catalogHeading.create}
+              </a>
+            </div>
+            <div class="company-card company-batches">
+              <BatchList client:load locale={locale} />
+            </div>
+          </div>
+          <div class="company-subview" data-catalog-view="products" hidden>
+            <CompanyData client:load view="products" locale={locale} />
+          </div>
+          <div class="company-subview" data-catalog-view="generate" hidden>
+            <CompanyIssuance client:load countries={countryOptions} pricePerToken={publicConfig.pricePerToken} locale={locale} />
+          </div>
+        </section>
+
+        <section class="company-view" data-company-view="activity" aria-labelledby="view-activity" hidden>
+          <header class="company-view-header">
+            <span class="company-eyebrow">{views.activity.eyebrow}</span>
+            <h1 id="view-activity" tabindex="-1">{views.activity.title}</h1>
+            <p class="company-view-description">{views.activity.description}</p>
+          </header>
+          <CompanyData client:load view="activity" locale={locale} />
+        </section>
+
+        <section class="company-view" data-company-view="team" aria-labelledby="view-team" hidden>
+          <header class="company-view-header">
+            <span class="company-eyebrow">{views.team.eyebrow}</span>
+            <h1 id="view-team" tabindex="-1">{views.team.title}</h1>
+            <p class="company-view-description">{views.team.description}</p>
+          </header>
+          <div class="company-card">
+            <CompanyTeamManager client:load locale={locale} />
+          </div>
+        </section>
+
+        <section class="company-view" data-company-view="settings" aria-labelledby="view-settings" hidden>
+          <header class="company-view-header">
+            <span class="company-eyebrow">{views.settings.eyebrow}</span>
+            <h1 id="view-settings" tabindex="-1">{views.settings.title}</h1>
+            <p class="company-view-description">{views.settings.description}</p>
+          </header>
+          <CompanySettings client:load locale={locale} />
+        </section>
+      </main>
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  import { ISSUANCE_MODE_EVENT } from '@/components/company/CompanyIssuance';
+  import { guardSession } from '@/lib/client/session';
+
+  guardSession();
+
+  const shell = document.querySelector<HTMLElement>('[data-company-shell]');
+  const views = [...document.querySelectorAll<HTMLElement>('[data-company-view]')];
+  const tabs = [...document.querySelectorAll<HTMLElement>('[data-company-tab]')];
+  const catalogViews = [...document.querySelectorAll<HTMLElement>('[data-catalog-view]')];
+  const catalogTabs = [...document.querySelectorAll<HTMLElement>('[data-catalog-tab]')];
+  const catalogToggle = document.querySelector<HTMLButtonElement>('[data-catalog-toggle]');
+  const catalogSubmenu = document.querySelector<HTMLElement>('#company-catalog-submenu');
+  const catalogHome = document.querySelector<HTMLElement>('[data-catalog-home]');
+  const appbarTitle = document.querySelector<HTMLElement>('[data-appbar-title]');
+  const menuOpen = document.querySelector<HTMLButtonElement>('[data-nav-open]');
+
+  // ---------- Mobile menu ----------
+  const setNavOpen = (open: boolean) => {
+    shell?.toggleAttribute('data-nav-open', open);
+    menuOpen?.setAttribute('aria-expanded', String(open));
+  };
+  menuOpen?.addEventListener('click', () => setNavOpen(true));
+  document.querySelectorAll('[data-nav-close]').forEach((element) => element.addEventListener('click', () => setNavOpen(false)));
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && shell?.hasAttribute('data-nav-open')) {
+      setNavOpen(false);
+      menuOpen?.focus();
+    }
+  });
+
+  // ---------- Catalog submenu ----------
+  const setCatalogExpanded = (expanded: boolean) => {
+    catalogSubmenu?.setAttribute('data-open', String(expanded));
+    catalogToggle?.setAttribute('aria-expanded', String(expanded));
+    catalogToggle?.setAttribute('aria-label', (expanded ? catalogToggle.dataset.labelClose : catalogToggle.dataset.labelOpen) ?? '');
+    catalogSubmenu?.querySelectorAll('a').forEach((link) => (link.tabIndex = expanded ? 0 : -1));
+  };
+  catalogToggle?.addEventListener('click', () => setCatalogExpanded(catalogToggle.getAttribute('aria-expanded') !== 'true'));
+
+  // Links that open "Generar tokens" in a given mode, like the overview's "Programar pago".
+  document.addEventListener('click', (event) => {
+    const link = (event.target as HTMLElement).closest<HTMLElement>('[data-issuance-mode]');
+    if (link) window.dispatchEvent(new CustomEvent(ISSUANCE_MODE_EVENT, { detail: link.dataset.issuanceMode }));
+  });
+
+  // ---------- Views ----------
+  const CATALOG = ['catalog', 'batches', 'products', 'generate'];
+
+  const updateCompanyView = () => {
+    const hash = window.location.hash.slice(1);
+    const requested = hash === 'operations' ? 'catalog' : hash;
+    const inCatalog = CATALOG.includes(requested);
+    const view = inCatalog ? 'catalog' : views.some((item) => item.dataset.companyView === requested) ? requested : 'dashboard';
+    setCatalogExpanded(inCatalog);
+    if (requested === 'catalog') catalogHome?.setAttribute('aria-current', 'page');
+    else catalogHome?.removeAttribute('aria-current');
+    catalogViews.forEach((item) => (item.hidden = item.dataset.catalogView !== (inCatalog ? requested : 'catalog')));
+    catalogTabs.forEach((tab) => {
+      const selected = tab.dataset.catalogTab === requested;
+      tab.classList.toggle('is-active', selected);
+      if (selected) tab.setAttribute('aria-current', 'page');
+      else tab.removeAttribute('aria-current');
+    });
+    views.forEach((item) => (item.hidden = item.dataset.companyView !== view));
+    tabs.forEach((tab) => {
+      const selected = tab.dataset.companyTab === view;
+      tab.classList.toggle('is-active', selected);
+      if (selected && tab.tagName === 'A') tab.setAttribute('aria-current', 'page');
+      else tab.removeAttribute('aria-current');
+    });
+    const title = views.find((item) => !item.hidden)?.querySelector('h1')?.textContent ?? '';
+    if (appbarTitle) appbarTitle.textContent = title;
+    document.title = `Verifire | ${title}`;
+  };
+
+  window.addEventListener('hashchange', () => {
+    updateCompanyView();
+    setNavOpen(false);
+    views
+      .find((item) => !item.hidden)
+      ?.querySelector<HTMLElement>('h1')
+      ?.focus({ preventScroll: true });
+    window.scrollTo({ top: 0 });
+  });
+  updateCompanyView();
+</script>

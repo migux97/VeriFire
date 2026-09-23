@@ -1,5 +1,6 @@
 import node from '@astrojs/node';
 import react from '@astrojs/react';
+import tailwindcss from '@tailwindcss/vite';
 import { defineConfig, envField, fontProviders } from 'astro/config';
 
 // Every variable is declared `secret`, even the ones that are not: only secret server variables are read at runtime
@@ -8,9 +9,21 @@ import { defineConfig, envField, fontProviders } from 'astro/config';
 const runtimeVar = () => envField.string({ context: 'server', access: 'secret', optional: true });
 
 export default defineConfig({
+  i18n: {
+    defaultLocale: 'es',
+    locales: ['es', 'en'],
+    routing: { prefixDefaultLocale: false }
+  },
   output: 'server',
   adapter: node({ mode: 'standalone' }),
   integrations: [react()],
+  vite: {
+    plugins: [tailwindcss()],
+    // Dependencies imported lazily (the wallet on login, QR codes and the camera scanner when first used) are prepared
+    // up front: discovered mid-session, Vite re-optimizes and reloads the page, cutting off whatever was running (such
+    // as turning on the company panel's demo mode).
+    optimizeDeps: { include: ['@cavos/kit', 'buffer', 'qrcode', 'jsqr', 'nanostores', '@nanostores/react'] }
+  },
   // Accounts and sessions live in each browser; the server keeps no per-user state.
   session: false,
   // Cavos keeps each wallet's signing key per site address, and existing accounts were created on this port.

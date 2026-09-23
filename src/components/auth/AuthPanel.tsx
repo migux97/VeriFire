@@ -1,4 +1,4 @@
-// Login, registration and the Gmail code. The account is kept in this browser; Cavos verifies the Gmail and holds the
+// Login, registration and the email code. The account is kept in this browser; Cavos verifies the email and holds the
 // Stellar wallet.
 import type { CavosAuth, Identity } from '@cavos/kit';
 import { useEffect, useRef, useState } from 'react';
@@ -9,6 +9,7 @@ import { hasPendingClaim } from '@/lib/client/qr';
 import { userSession, type SessionEndReason } from '@/lib/client/session';
 import { readStored, writeStored } from '@/lib/client/storage';
 import { connectCavosWallet, createCavosAuth, rememberDeviceCode, rememberWallet } from '@/lib/client/wallet';
+import { pendingCompanyInvitation } from '@/lib/client/workspace';
 import { errorMessage } from '@/lib/errors';
 import { isStellarAddress } from '@/lib/validation';
 import { EmailCodeForm, type VerificationKind } from './EmailCodeForm';
@@ -32,13 +33,13 @@ interface PendingVerification {
   mode: AuthMode;
   newDevice: boolean;
   deviceCode?: string;
-  // Set once the Gmail code was accepted: a wrong password is typed again without asking for another code.
+  // Set once the email code was accepted: a wrong password is typed again without asking for another code.
   identity?: Identity;
 }
 
-const GMAIL_PATTERN = /^[^\s@]+@gmail\.com$/i;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
 const PASSWORD_PATTERN = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d).{8,}$/;
-// The Gmail is confirmed with a code on registration and again on the first login after this long.
+// The email is confirmed with a code on registration and again on the first login after this long.
 const EMAIL_CHECK_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000;
 const PENDING_GOOGLE_KEY = 'verifirePendingCavosAuth';
 
@@ -55,7 +56,7 @@ const verificationKind = ({ newDevice, mode }: PendingVerification): Verificatio
 
 const googleUserFromIdentity = (identity: Identity): StoredUser => {
   const email = identity.email ?? '';
-  if (!GMAIL_PATTERN.test(email)) throw new Error('La cuenta de Google debe usar una dirección @gmail.com.');
+  if (!EMAIL_PATTERN.test(email)) throw new Error('La cuenta de Google debe incluir una dirección de correo válida.');
   const existingUser = storedUser();
   const sameAccount = existingUser?.email?.toLowerCase() === email.toLowerCase();
   return {
@@ -87,9 +88,9 @@ export function AuthPanel({ cavosAppId }: AuthPanelProps) {
   const showNotice = (text: string, tone: NoticeTone = 'info') => setNotice({ text, tone });
 
   const requestEmailCode = async (email: string) => {
-    if (!cavosAppId) throw new Error('Configurá CAVOS_APP_ID con el App ID real de Cavos antes de verificar el Gmail.');
+    if (!cavosAppId) throw new Error('Configurá CAVOS_APP_ID con el App ID real de Cavos antes de verificar el correo.');
     const auth = await createCavosAuth(cavosAppId);
-    showNotice('Enviando un código a tu Gmail...');
+    showNotice('Enviando un código a tu correo...');
     const nonce = await sendEmailCode(auth, email);
     return { auth, nonce };
   };
@@ -103,7 +104,7 @@ export function AuthPanel({ cavosAppId }: AuthPanelProps) {
   };
 
   // Opens the panel for a verified account. The wallet address and the verification date are saved in the account
-  // when the Gmail is verified, so logins in the next 7 days only need the password.
+  // when the email is verified, so logins in the next 7 days only need the password.
   const enterApp = (user: StoredUser, loginMode: AuthMode, warning = '') => {
     persistUser(user);
     rememberWallet(user.walletAddress);
@@ -111,7 +112,7 @@ export function AuthPanel({ cavosAppId }: AuthPanelProps) {
     // A warning (for example, a device that cannot sign yet) is readable before the panel opens.
     showNotice(warning || (loginMode === 'login' ? 'Sesión iniciada correctamente. Redirigiendo...' : 'Cuenta creada correctamente. Redirigiendo...'), warning ? 'info' : 'success');
     window.setTimeout(() => {
-      window.location.href = '/app';
+      window.location.href = pendingCompanyInvitation(user.email) ? '/choose-workspace' : user.accountType === 'business' ? '/company' : '/app';
     }, warning ? 3200 : 700);
   };
 
@@ -156,6 +157,8 @@ export function AuthPanel({ cavosAppId }: AuthPanelProps) {
     const passwordField = inputOf(form, 'password');
     const confirmField = formMode === 'register' ? inputOf(form, 'passwordConfirm') : null;
     const username = formMode === 'register' ? inputOf(form, 'username')?.value.trim() ?? '' : '';
+    const accountType = formMode === 'register' && inputOf(form, 'accountType')?.value === 'business' ? 'business' : 'personal';
+    const companyName = formMode === 'register' ? inputOf(form, 'companyName')?.value.trim() ?? '' : '';
     const identifier = identifierField?.value.trim() ?? '';
     const password = passwordField?.value.trim() ?? '';
 
@@ -163,8 +166,8 @@ export function AuthPanel({ cavosAppId }: AuthPanelProps) {
       showNotice('Completa tu nombre de usuario o correo y tu contraseña para continuar.', 'error');
       return;
     }
-    if (formMode === 'register' && !GMAIL_PATTERN.test(identifier)) {
-      showNotice('Usá una dirección de correo terminada en @gmail.com.', 'error');
+    if (formMode === 'register' && !EMAIL_PATTERN.test(identifier)) {
+      showNotice('Usá una dirección de correo válida.', 'error');
       identifierField?.focus();
       return;
     }
@@ -182,16 +185,21 @@ export function AuthPanel({ cavosAppId }: AuthPanelProps) {
       showNotice('Ingresa un nombre de usuario para crear tu cuenta.', 'error');
       return;
     }
+    if (formMode === 'register' && accountType === 'business' && !companyName) {
+      showNotice('Ingresá el nombre de la empresa para crear el panel empresarial.', 'error');
+      inputOf(form, 'companyName')?.focus();
+      return;
+    }
 
     const existingUser = storedUser();
-    // Accounts live in each browser. On a new device (a phone that scanned a QR) signing in with the Gmail and its
+    // Accounts live in each browser. On a new device (a phone that scanned a QR) signing in with the email and its
     // code rebuilds the account here, and Cavos returns the same wallet, so the warranties are the same ones.
-    const newDevice = formMode === 'login' && GMAIL_PATTERN.test(identifier)
+    const newDevice = formMode === 'login' && EMAIL_PATTERN.test(identifier)
       && existingUser?.email?.toLowerCase() !== identifier.toLowerCase();
 
     if (formMode === 'login' && !newDevice) {
       if (!existingUser) {
-        showNotice('En este navegador todavía no hay ninguna cuenta. Ingresá con tu Gmail y te enviamos un código para recuperarla, o creá una cuenta nueva.', 'error');
+        showNotice('En este navegador todavía no hay ninguna cuenta. Ingresá con tu correo y te enviamos un código para recuperarla, o creá una cuenta nueva.', 'error');
         return;
       }
       const matchesUsername = existingUser.name?.toLowerCase() === identifier.toLowerCase();
@@ -207,9 +215,9 @@ export function AuthPanel({ cavosAppId }: AuthPanelProps) {
     try {
       let user: StoredUser;
       if (formMode === 'register') {
-        user = { name: username, email: identifier, passwordHash: await hashPassword(password) };
+        user = { name: username, email: identifier, accountType, ...(accountType === 'business' ? { companyName } : {}), passwordHash: await hashPassword(password) };
       } else if (newDevice) {
-        // The code sent to the Gmail is what proves who this is; the password is only this device's local gate.
+        // The code sent to the email is what proves who this is; the password is only this device's local gate.
         user = { name: identifier.split('@')[0] ?? identifier, email: identifier, passwordHash: await hashPassword(password) };
       } else {
         if (!existingUser || !(await verifyPassword(existingUser, password))) {
@@ -222,7 +230,7 @@ export function AuthPanel({ cavosAppId }: AuthPanelProps) {
           user = { ...account, passwordHash: await hashPassword(password) };
           persistUser(user);
         }
-        // The Gmail is confirmed with a code when the account is created and again every 7 days; in between, logging
+        // The email is confirmed with a code when the account is created and again every 7 days; in between, logging
         // in only needs the password.
         const emailRecentlyVerified = Date.now() - Number(user.emailVerifiedAt || 0) < EMAIL_CHECK_INTERVAL_MS;
         // An account created before the multi-device factor existed is asked for the code once, so entering it is
@@ -237,7 +245,7 @@ export function AuthPanel({ cavosAppId }: AuthPanelProps) {
       }
 
       const deviceCode = await deviceCodeFor(user.email, password);
-      // The Gmail was already confirmed and only the password was wrong: this one is tried with the same code.
+      // The email was already confirmed and only the password was wrong: this one is tried with the same code.
       const confirmed = pending.current?.email === user.email ? pending.current.identity : undefined;
       if (confirmed && pending.current) {
         pending.current = { ...pending.current, user, mode: formMode, newDevice, deviceCode };

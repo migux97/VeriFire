@@ -2,18 +2,30 @@ import { useEffect, useRef, useState } from 'react';
 import { Icon } from '@/components/ui/Icon';
 import { storedUser, type StoredUser } from '@/lib/client/account';
 import { leaveSession } from '@/lib/client/session';
-import { currentTheme, setTheme } from '@/lib/client/theme';
+import { currentTheme, setTheme, THEME_EVENT } from '@/lib/client/theme';
+import { companyMemberships } from '@/lib/client/workspace';
+import { getLandingMessages, type LandingMessages } from '@/i18n/landing';
 
-export function ProfileMenu() {
+export function ProfileMenu({ labels = getLandingMessages().profile }: { labels?: LandingMessages['profile'] } = {}) {
   const [open, setOpen] = useState(false);
   const [user, setUser] = useState<StoredUser | null>(null);
+  const [companyAccess, setCompanyAccess] = useState(false);
   const [dark, setDark] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    setUser(storedUser());
+    const currentUser = storedUser();
+    setUser(currentUser);
+    setCompanyAccess(Boolean(currentUser && (currentUser.accountType === 'business' || companyMemberships(currentUser.email).length)));
     setDark(currentTheme() === 'dark');
+  }, []);
+
+  // The header has a switch too: both show the same state.
+  useEffect(() => {
+    const follow = () => setDark(currentTheme() === 'dark');
+    window.addEventListener(THEME_EVENT, follow);
+    return () => window.removeEventListener(THEME_EVENT, follow);
   }, []);
 
   const toggleTheme = () => {
@@ -45,7 +57,7 @@ export function ProfileMenu() {
         ref={buttonRef}
         className="icon-button"
         type="button"
-        aria-label="Mi perfil"
+        aria-label={labels.title}
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-controls="profile-popover"
@@ -53,20 +65,23 @@ export function ProfileMenu() {
       >
         <Icon name="fa-regular fa-user" />
       </button>
-      <div id="profile-popover" className="profile-popover" role="dialog" aria-label="Mi perfil" hidden={!open}>
+      <div id="profile-popover" className="profile-popover" role="dialog" aria-label={labels.title} hidden={!open}>
         <div className="profile-popover-header">
           <span className="profile-avatar" aria-hidden="true">{(user?.name || 'V').charAt(0).toUpperCase()}</span>
           <div className="profile-popover-copy">
-            <strong>{user?.name || 'Usuario Verifire'}</strong>
-            <span>{user?.email || 'Correo no disponible'}</span>
+            <strong>{user?.name || labels.user}</strong>
+            <span>{user?.email || labels.noEmail}</span>
           </div>
         </div>
         <button className="profile-action" type="button" role="switch" aria-checked={dark} onClick={toggleTheme}>
-          <Icon name={`fa-solid ${dark ? 'fa-moon' : 'fa-sun'}`} /> Modo oscuro
+          <Icon name={`fa-solid ${dark ? 'fa-moon' : 'fa-sun'}`} /> {labels.dark}
           <span className="theme-switch" aria-hidden="true"><span /></span>
         </button>
+        {companyAccess && <button className="profile-action" type="button" onClick={() => { window.location.href = '/company'; }}>
+          <Icon name="fa-solid fa-building" /> {labels.company}
+        </button>}
         <button className="profile-action" type="button" onClick={() => leaveSession('cerrada')}>
-          <Icon name="fa-solid fa-arrow-right-from-bracket" /> Cerrar sesión
+          <Icon name="fa-solid fa-arrow-right-from-bracket" /> {labels.logout}
         </button>
       </div>
     </div>

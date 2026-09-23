@@ -19,24 +19,34 @@ export function usePagination<T>(items: readonly T[], pageSize: number) {
   };
 }
 
+export interface PaginationText {
+  previous: string;
+  next: string;
+  page: (page: number, pages: number) => string;
+}
+
+const spanish: PaginationText = { previous: 'Anterior', next: 'Siguiente', page: (page, pages) => `Página ${page} de ${pages}` };
+
 interface PaginationProps {
   page: number;
   pages: number;
   onPage: (page: number) => void;
   label: string;
+  // The buttons and the "page x of y" line, in the page's language. Spanish by default.
+  text?: PaginationText;
 }
 
 // Hidden while everything fits in one page.
-export function Pagination({ page, pages, onPage, label }: PaginationProps) {
+export function Pagination({ page, pages, onPage, label, text = spanish }: PaginationProps) {
   if (pages <= 1) return null;
   return (
     <nav className="pagination" aria-label={label}>
       <button className="button button-secondary" type="button" disabled={page <= 1} onClick={() => onPage(page - 1)}>
-        <Icon name="fa-solid fa-chevron-left" /> Anterior
+        <Icon name="fa-solid fa-chevron-left" /> {text.previous}
       </button>
-      <span aria-live="polite">Página {page} de {pages}</span>
+      <span aria-live="polite">{text.page(page, pages)}</span>
       <button className="button button-secondary" type="button" disabled={page >= pages} onClick={() => onPage(page + 1)}>
-        Siguiente <Icon name="fa-solid fa-chevron-right" />
+        {text.next} <Icon name="fa-solid fa-chevron-right" />
       </button>
     </nav>
   );

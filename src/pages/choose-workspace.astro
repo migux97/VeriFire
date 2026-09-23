@@ -1,0 +1,25 @@
+---
+import { WorkspaceChooser } from '@/components/company/WorkspaceChooser';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import '@/styles/auth.css';
+---
+
+<BaseLayout
+  title="Verifire | Elegir espacio"
+  description="Elegí entre tu cuenta personal y el espacio empresarial al que fuiste invitado."
+  bodyClass="workspace-page"
+  session="protected"
+>
+  <script>
+    import { guardSession } from '@/lib/client/session';
+
+    // Without this the page only hides itself behind SessionGate and never leaves for the login.
+    guardSession();
+  </script>
+  <main class="workspace-shell">
+    <a class="workspace-brand" href="/">
+      <span>V</span> verifire
+    </a>
+    <WorkspaceChooser client:load />
+  </main>
+</BaseLayout>

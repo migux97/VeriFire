@@ -1,0 +1,17 @@
+---
+import { getLandingContent } from '@/i18n/landing-content';
+import { getLandingMessages } from '@/i18n/landing';
+const locale = Astro.currentLocale ?? 'es';
+const { hero } = getLandingMessages(locale);
+const { heroSlides } = getLandingContent(locale);
+const counterNumber = new Intl.NumberFormat(locale, { minimumIntegerDigits: 2, useGrouping: false });
+---
+
+<section class="lp-journey" aria-labelledby="lp-journey-title">
+  <div class="lp-journey-heading"><p class="lp-eyebrow">{hero.journeyLabel}</p><h2 id="lp-journey-title">{hero.journey}</h2></div>
+  <ol class="lp-journey-steps">
+    {heroSlides.map((slide, index) => (
+      <li><span class="lp-journey-number" aria-hidden="true">{counterNumber.format(index + 1)}</span><h3>{slide.title}</h3><p>{slide.text}</p></li>
+    ))}
+  </ol>
+</section>

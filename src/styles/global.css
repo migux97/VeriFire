@@ -946,11 +946,6 @@ a.network-status:hover {
   background: var(--vf-info-soft);
 }
 
-.verify-details.is-claimed {
-  border-left-color: var(--vf-red);
-  background: var(--vf-blush);
-}
-
 /* Public verification form */
 
 .verify-scan {
@@ -1026,17 +1021,9 @@ a.network-status:hover {
   margin-top: 20px;
 }
 
-.admin-section-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px 16px;
-}
 
-.admin-section-head .eyebrow {
-  margin-bottom: 6px;
-}
+
+
 
 .form-actions {
   display: flex;
@@ -1231,59 +1218,21 @@ a.network-status:hover {
   margin: 12px 0;
 }
 
-.batch-public {
-  margin-bottom: 12px;
-  overflow: hidden;
-  border: 1px solid var(--vf-line);
-  background: var(--vf-paper);
-}
 
-.batch-public summary {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-  font-size: 0.9375rem;
-  font-weight: 800;
-  list-style: none;
-  cursor: pointer;
-}
 
-.batch-public summary::-webkit-details-marker {
-  display: none;
-}
 
-.batch-public summary::after {
-  content: "";
-  width: 8px;
-  height: 8px;
-  border-right: 2px solid var(--vf-ink);
-  border-bottom: 2px solid var(--vf-ink);
-  transform: rotate(45deg);
-  transition: transform 0.15s ease;
-}
 
-.batch-public[open] summary {
-  border-bottom: 1px solid var(--vf-line);
-}
 
-.batch-public[open] summary::after {
-  transform: rotate(-135deg);
-}
 
-.batch-public img {
-  display: block;
-  margin: 14px auto 6px;
-}
 
-.batch-public span {
-  display: block;
-  padding: 0 16px 14px;
-  color: var(--vf-muted);
-  font-size: 0.875rem;
-  text-align: center;
-  overflow-wrap: anywhere;
-}
+
+
+
+
+
+
+
+
 
 .label-sheet {
   display: grid;
@@ -1992,4 +1941,214 @@ a.network-status:hover {
   margin: 0;
   color: var(--vf-text);
   font-weight: 600;
+}
+
+.label-branding { display: grid; gap: 4px; padding: 8px; text-align: center; }
+.label-branding span, .label-branding small { overflow-wrap: anywhere; }
+.label-compact .label-code img { width: 96px; height: 96px; }
+.label-compact { padding: 8px; }
+/* ---------- Confirmation dialog ---------- */
+
+.confirm-dialog {
+  /* A <dialog> only centres itself with these: the browser's default box sits at the top of the page. */
+  margin: auto;
+  width: min(460px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  padding: 0;
+  border: 1px solid var(--vf-line);
+  border-radius: 10px;
+  background: var(--vf-paper);
+  color: var(--vf-text);
+  box-shadow: 0 24px 60px rgb(0 0 0 / 28%);
+}
+
+.confirm-dialog::backdrop {
+  background: rgb(0 0 0 / 55%);
+}
+
+.confirm-dialog:not([open]) {
+  display: none;
+}
+
+.confirm-dialog-body {
+  display: flex;
+  gap: 16px;
+  padding: 24px 24px 8px;
+}
+
+.confirm-dialog-icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--vf-mist);
+  color: var(--vf-ink);
+}
+
+.confirm-dialog-icon.is-danger {
+  background: var(--vf-blush);
+  color: var(--vf-red);
+}
+
+.confirm-dialog h2 {
+  margin: 0 0 6px;
+  font-size: 1.125rem;
+  font-weight: 800;
+}
+
+.confirm-dialog p {
+  margin: 0;
+  color: var(--vf-muted);
+  font-size: 0.9375rem;
+  line-height: 1.55;
+}
+
+.confirm-dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 20px 24px 24px;
+}
+
+@media (max-width: 480px) {
+  .confirm-dialog-actions .button {
+    flex: 1 1 140px;
+  }
+}
+
+/* ---------- Language menu and theme switch ---------- */
+
+/* Language menu: the current language is the button, the rest are inside. */
+.lp-language-menu {
+  position: relative;
+  flex: none;
+}
+
+.lp-language-menu > summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--vf-line-strong);
+  border-radius: 6px;
+  color: var(--vf-ink);
+  font-size: 0.8125rem;
+  font-weight: 800;
+  list-style: none;
+  cursor: pointer;
+}
+
+.lp-language-menu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.lp-language-menu > summary:hover,
+.lp-language-menu[open] > summary {
+  border-color: var(--vf-ink);
+}
+
+.lp-language-caret {
+  font-size: 0.625rem;
+  color: var(--vf-muted);
+  transition: transform 0.15s ease;
+}
+
+.lp-language-menu[open] .lp-language-caret {
+  transform: rotate(180deg);
+}
+
+.lp-language-menu > ul {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 70;
+  display: grid;
+  width: 180px;
+  padding: 6px;
+  border: 1px solid var(--vf-line);
+  border-radius: 8px;
+  background: var(--vf-paper);
+  box-shadow: 0 16px 40px rgb(0 0 0 / 18%);
+  list-style: none;
+}
+
+.lp-language-menu a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 38px;
+  padding: 0 10px;
+  border-radius: 6px;
+  color: var(--vf-ink);
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.lp-language-menu a:hover {
+  background: var(--vf-mist);
+}
+
+.lp-language-menu a[aria-current] {
+  color: var(--vf-red);
+}
+
+/* Light or dark, next to the language menu. */
+.lp-theme-toggle {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--vf-line-strong);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--vf-ink);
+  cursor: pointer;
+}
+
+.lp-theme-toggle:hover {
+  border-color: var(--vf-ink);
+  background: var(--vf-mist);
+}
+
+.lp-login {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--vf-ink);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.lp-login:hover {
+  color: var(--vf-red);
+}
+
+/* Visitors see the login links; a session opened in another tab sees its profile and the way to its panel. */
+.lp-guest-actions,
+.lp-session-actions {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.lp-session-actions,
+.has-session .lp-guest-actions {
+  display: none;
+}
+
+.has-session .lp-session-actions {
+  display: flex;
+}
+
+.lp-header-cta {
+  min-height: 40px;
+  padding-inline: 16px;
+  white-space: nowrap;
 }
