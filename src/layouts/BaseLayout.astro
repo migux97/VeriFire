@@ -4,7 +4,7 @@ import '@/styles/brand.css';
 import '@/styles/global.css';
 import { Font } from 'astro:assets';
 import SessionGate from '@/components/layout/SessionGate.astro';
-import { THEME_KEY } from '@/lib/client/theme';
+import { MOTION_KEY, THEME_KEY } from '@/lib/client/theme';
 import { pageLocale } from '@/lib/server/page-locale';
 
 interface Props {
@@ -24,11 +24,14 @@ const { title, description, bodyClass, session = 'public' } = Astro.props;
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
     <title>{title}</title>
-    <script is:inline define:vars={{ THEME_KEY }}>
+    <script is:inline define:vars={{ THEME_KEY, MOTION_KEY }}>
       try {
-        if (localStorage.getItem(THEME_KEY) === 'dark') document.documentElement.dataset.theme = 'dark';
+        const theme = localStorage.getItem(THEME_KEY);
+        if (theme === 'dark' || (theme === 'system' && matchMedia('(prefers-color-scheme: dark)').matches))
+          document.documentElement.dataset.theme = 'dark';
+        if (localStorage.getItem(MOTION_KEY) === 'off') document.documentElement.dataset.motion = 'off';
       } catch {
-        // Without storage the page stays light.
+        // Without storage the page stays light and animated.
       }
     </script>
     {session !== 'public' && <SessionGate mode={session} />}

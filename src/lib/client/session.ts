@@ -51,8 +51,16 @@ export const userSession = {
   }
 };
 
+// TEMPORARY demo mode (see src/lib/client/demo.ts): while it is on, every account key gets this suffix, so the sample
+// data lives beside the real data and never mixes with it. Kept here so that nothing below depends on demo.ts.
+const DEMO_FLAG_PREFIX = 'verifire:demo-mode';
+export const DEMO_SUFFIX = ':demo';
+export const demoFlagKey = () => `${DEMO_FLAG_PREFIX}:${userSession.email().toLowerCase()}`;
+export const demoModeActive = () => Boolean(userSession.email()) && readRaw(localStorage, demoFlagKey()) === '1';
+
 // Key of one kind of data for the account signed in now. Data saved before this existed is carried over once.
 export const accountKey = (name: string, legacyKey?: string) => {
+  if (demoModeActive()) return `${ACCOUNT_PREFIX}:${name}:${userSession.email().toLowerCase()}${DEMO_SUFFIX}`;
   const key = `${ACCOUNT_PREFIX}:${name}:${userSession.email().toLowerCase()}`;
   const legacy = legacyKey ? readRaw(localStorage, legacyKey) : null;
   if (legacy !== null && readRaw(localStorage, key) === null) {
@@ -60,6 +68,12 @@ export const accountKey = (name: string, legacyKey?: string) => {
     removeStored(localStorage, legacyKey as string);
   }
   return key;
+};
+
+// Every key of the signed-in account's demo data, to wipe it when demo mode is turned off.
+export const demoAccountKeys = () => {
+  const suffix = `:${userSession.email().toLowerCase()}${DEMO_SUFFIX}`;
+  return storedKeys(localStorage).filter((key) => key.startsWith(`${ACCOUNT_PREFIX}:`) && key.endsWith(suffix));
 };
 
 export const leaveSession = (reason: SessionEndReason) => {

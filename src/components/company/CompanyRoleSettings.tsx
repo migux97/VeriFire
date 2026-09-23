@@ -9,19 +9,14 @@ import {
   type CompanyRole,
   type CompanyRolePermissions
 } from '@/lib/client/workspace';
-
-const labels: Record<CompanyPermission, string> = {
-  viewProducts: 'Ver productos',
-  viewBatches: 'Ver lotes',
-  viewSensitive: 'Ver información importante',
-  scheduleBatches: 'Programar lotes y pagos',
-  manageTeam: 'Gestionar equipo',
-  manageSettings: 'Gestionar configuración'
-};
+import { useCompanyText } from './CompanyText';
 
 const roles: CompanyRole[] = ['admin', 'operator', 'auditor', 'viewer'];
 
+// Rendered inside the settings island, which provides the texts.
 export function CompanyRoleSettings() {
+  const t = useCompanyText();
+  const text = t.rolesSettings;
   const [permissions, setPermissions] = useState<CompanyRolePermissions>(defaultCompanyRolePermissions);
   const [editable, setEditable] = useState(false);
   const [notice, setNotice] = useState('');
@@ -37,50 +32,50 @@ export function CompanyRoleSettings() {
     const current = permissions[role];
     const next = current.includes(permission) ? current.filter((item) => item !== permission) : [...current, permission];
     setPermissions({ ...permissions, [role]: next });
+    setNotice('');
   };
 
   const save = () => {
     saveCompanyRolePermissions(permissions);
-    setNotice('Permisos guardados para este navegador.');
+    setNotice(text.saved);
   };
 
   return (
-    <section className="company-role-settings" id="settings" aria-labelledby="role-settings-title">
-      <div className="company-panel-heading">
+    <section className="company-card settings-card company-role-settings" aria-labelledby="role-settings-title">
+      <div className="settings-card-heading">
+        <span className="settings-icon" aria-hidden="true">
+          <i className="fa-solid fa-user-shield" />
+        </span>
         <div>
-          <span className="company-eyebrow">Administración</span>
-          <h2 id="role-settings-title">Permisos por rol</h2>
+          <h2 id="role-settings-title">{text.title}</h2>
+          <p>{text.intro}</p>
         </div>
-        <span className="company-settings-note">Configuración local</span>
+        <span className="company-badge">{text.badge}</span>
       </div>
-      <p className="company-settings-intro">Define qué puede consultar o programar cada rol dentro de la empresa.</p>
       <div className="company-role-grid">
         {roles.map((role) => (
           <fieldset key={role}>
-            <legend>{role === 'admin' ? 'Administrador' : role === 'operator' ? 'Operador' : role === 'auditor' ? 'Auditor' : 'Solo lectura'}</legend>
-            {(Object.keys(labels) as CompanyPermission[]).map((permission) => (
+            <legend>{t.roles[role]}</legend>
+            {(Object.keys(text.permissions) as CompanyPermission[]).map((permission) => (
               <label key={permission}>
-                <input
-                  type="checkbox"
-                  checked={permissions[role].includes(permission)}
-                  disabled={!editable || role === 'admin'}
-                  onChange={() => toggle(role, permission)}
-                />
-                <span>{labels[permission]}</span>
+                <input type="checkbox" checked={permissions[role].includes(permission)} disabled={!editable || role === 'admin'} onChange={() => toggle(role, permission)} />
+                <span>{text.permissions[permission]}</span>
               </label>
             ))}
           </fieldset>
         ))}
       </div>
       {editable && (
-        <button className="company-settings-save" type="button" onClick={save}>
-          <i className="fa-solid fa-check" /> Guardar permisos
-        </button>
-      )}
-      {notice && (
-        <span className="company-settings-success" role="status">
-          {notice}
-        </span>
+        <div className="settings-actions">
+          <button className="company-button is-primary" type="button" onClick={save}>
+            <i className="fa-solid fa-check" aria-hidden="true" /> {text.save}
+          </button>
+          {notice && (
+            <span className="settings-success" role="status">
+              {notice}
+            </span>
+          )}
+        </div>
       )}
     </section>
   );

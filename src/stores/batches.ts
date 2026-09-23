@@ -12,6 +12,9 @@ export const $purchaseIds = atom<string[]>([]);
 
 export const $summaries = atom<Record<string, SummaryEntry>>({});
 
+// True once the list of batches answered its first round, so the company overview can tell "loading" from "empty".
+export const $summariesReady = atom(false);
+
 export const setSummary = (purchaseId: string, entry: SummaryEntry | undefined) => {
   const next = { ...$summaries.get() };
   if (entry) next[purchaseId] = entry;

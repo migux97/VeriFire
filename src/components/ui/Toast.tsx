@@ -14,10 +14,11 @@ const ICONS: Record<MessageTone, string> = {
 interface ToastProps {
   message: Message | null;
   onClose: () => void;
+  closeLabel?: string;
 }
 
 // A page's status, floating in a corner instead of pushing the page down.
-export function Toast({ message, onClose }: ToastProps) {
+export function Toast({ message, onClose, closeLabel = 'Cerrar aviso' }: ToastProps) {
   useEffect(() => {
     const delay = message?.text ? HIDE_AFTER_MS[message.tone] : undefined;
     if (!delay) return undefined;
@@ -32,7 +33,7 @@ export function Toast({ message, onClose }: ToastProps) {
         <div className={`toast is-${message.tone}`}>
           <Icon name={ICONS[message.tone]} />
           <p>{message.text}</p>
-          <button className="toast-close" type="button" aria-label="Cerrar aviso" onClick={onClose}>
+          <button className="toast-close" type="button" aria-label={closeLabel} onClick={onClose}>
             <Icon name="fa-solid fa-xmark" />
           </button>
         </div>

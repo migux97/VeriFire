@@ -19,8 +19,10 @@ export default defineConfig({
   integrations: [react()],
   vite: {
     plugins: [tailwindcss()],
-    // Prepare the lazy wallet dependency before the first authentication request.
-    optimizeDeps: { include: ['@cavos/kit', 'buffer'] }
+    // Dependencies imported lazily (the wallet on login, QR codes and the camera scanner when first used) are prepared
+    // up front: discovered mid-session, Vite re-optimizes and reloads the page, cutting off whatever was running (such
+    // as turning on the company panel's demo mode).
+    optimizeDeps: { include: ['@cavos/kit', 'buffer', 'qrcode', 'jsqr', 'nanostores', '@nanostores/react'] }
   },
   // Accounts and sessions live in each browser; the server keeps no per-user state.
   session: false,

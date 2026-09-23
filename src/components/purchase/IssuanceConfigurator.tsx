@@ -1,3 +1,4 @@
+import { useCompanyText } from '@/components/company/CompanyText';
 import { storedUser } from '@/lib/client/account';
 import { companyMemberships } from '@/lib/client/workspace';
 import { useEffect, useState, type SubmitEvent } from 'react';
@@ -19,7 +20,6 @@ interface Saved {
   draft: Draft;
 }
 const blank: Draft = { model: '', lot: '', country: '', quantity: 3, brand: '', labelText: '', labelStyle: 'standard' };
-const steps = ['Producto', 'Lote y unidades', 'Etiquetas', 'Revisar'];
 export function IssuanceConfigurator({
   countries,
   submitting,
@@ -31,6 +31,7 @@ export function IssuanceConfigurator({
   submitting: boolean;
   onSubmit: (event: SubmitEvent<HTMLFormElement>) => void;
 }) {
+  const t = useCompanyText().configurator;
   const [draft, setDraft] = useState<Draft>(blank);
   const [step, setStep] = useState(0);
   const [companyName, setCompanyName] = useState('');
@@ -60,13 +61,13 @@ export function IssuanceConfigurator({
       setSaved(read(templatesKey()));
       setProducts(read(productsKey()));
     } catch {
-      setNotice('No se pudieron leer las configuraciones guardadas.');
+      setNotice(t.readFailed);
     }
   }, []);
   const persist = (product: boolean) => {
     const title = (product ? draft.model : name).trim();
     if (!title) {
-      setNotice(product ? 'Ingresá un modelo para guardar el producto.' : 'Ingresá un nombre para la plantilla.');
+      setNotice(product ? t.needModelToSave : t.needTemplateName);
       return;
     }
     const list = product ? products : saved;
@@ -74,15 +75,15 @@ export function IssuanceConfigurator({
     try {
       if (!writeStored(localStorage, product ? productsKey() : templatesKey(), next)) throw new Error('storage');
       (product ? setProducts : setSaved)(next);
-      setNotice('Guardado en este navegador.');
+      setNotice(t.saved);
     } catch {
-      setNotice('No se pudo guardar la configuración.');
+      setNotice(t.saveFailed);
     }
   };
   const validate = () => {
     if (!draft.model.trim() || draft.model.length > 120) {
       setStep(0);
-      setNotice('Completá el modelo del producto.');
+      setNotice(t.needModel);
       return false;
     }
     if (
@@ -94,7 +95,7 @@ export function IssuanceConfigurator({
       draft.quantity > 500
     ) {
       setStep(1);
-      setNotice('Revisá la referencia, el destino y la cantidad (1–500).');
+      setNotice(t.checkLot);
       return false;
     }
     return true;
@@ -105,7 +106,7 @@ export function IssuanceConfigurator({
       <input value={draft[key]} maxLength={maxLength} onChange={(event) => update(key, event.target.value)} />
     </label>
   );
-  const destination = countries.find((item) => item.code === draft.country)?.name ?? 'Destino pendiente';
+  const destination = countries.find((item) => item.code === draft.country)?.name ?? t.destinationPending;
   return (
     <form
       className="issuance-configurator"
@@ -122,15 +123,15 @@ export function IssuanceConfigurator({
       <input type="hidden" name="country" value={draft.country} />
       <input type="hidden" name="quantity" value={draft.quantity} />
       <input type="hidden" name="configuration" value={JSON.stringify({ brand: draft.brand, labelText: draft.labelText, labelStyle: draft.labelStyle })} />
-      <nav className="config-steps" aria-label="Pasos de emisión">
-        {steps.map((label, index) => (
+      <nav className="config-steps" aria-label={t.stepsLabel}>
+        {t.steps.map((label, index) => (
           <button key={label} type="button" aria-current={step === index ? 'step' : undefined} onClick={() => setStep(index)}>
             {index + 1}. {label}
           </button>
         ))}
       </nav>
       <label>
-        Usar plantilla guardada
+        {t.template}
         <select
           defaultValue=""
           onChange={(event) => {
@@ -141,7 +142,7 @@ export function IssuanceConfigurator({
             }
           }}
         >
-          <option value="">Seleccionar plantilla</option>
+          <option value="">{t.templatePick}</option>
           {saved.map((item, index) => (
             <option key={item.name} value={index}>
               {item.name}
@@ -151,9 +152,9 @@ export function IssuanceConfigurator({
       </label>
       {step === 0 && (
         <fieldset>
-          <legend>Identidad del producto</legend>
+          <legend>{t.productLegend}</legend>
           <label>
-            Producto guardado
+            {t.savedProduct}
             <select
               defaultValue=""
               onChange={(event) => {
@@ -161,7 +162,7 @@ export function IssuanceConfigurator({
                 if (event.target.value !== '' && item) setDraft((old) => ({ ...old, model: item.draft.model, brand: companyName || item.draft.brand }));
               }}
             >
-              <option value="">Nuevo producto</option>
+              <option value="">{t.newProduct}</option>
               {products.map((item, index) => (
                 <option key={item.name} value={index}>
                   {item.name}
@@ -169,35 +170,35 @@ export function IssuanceConfigurator({
               ))}
             </select>
           </label>
-          {field('model', 'Modelo del producto *', 120)}
+          {field('model', t.model, 120)}
           <label>
-            Marca
+            {t.brand}
             <input value={draft.brand} readOnly={Boolean(companyName)} maxLength={80} onChange={(event) => update('brand', event.target.value)} />
             <small className="field-hint">
-              {companyName ? 'Se completa con el nombre de tu empresa.' : 'Completá el nombre de tu empresa para identificar las etiquetas.'}
+              {companyName ? t.brandFromCompany : t.brandHint}
             </small>
           </label>
           <button type="button" className="button button-secondary" onClick={() => persist(true)}>
-            Guardar producto
+            {t.saveProduct}
           </button>
         </fieldset>
       )}
       {step === 1 && (
         <fieldset>
-          <legend>Lote y unidades</legend>
-          {field('lot', 'Referencia del lote *', 60)}
+          <legend>{t.lotLegend}</legend>
+          {field('lot', t.lot, 60)}
           <button
             type="button"
             className="button button-secondary"
             onClick={() => update('lot', `VF-${new Date().getFullYear()}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`)}
           >
-            Asignar referencia automática
+            {t.autoLot}
           </button>
-          <p className="field-hint">Podés editar la referencia. Los identificadores de cada token se asignan al emitir.</p>
+          <p className="field-hint">{t.lotHint}</p>
           <label>
-            País de destino *
+            {t.country}
             <select value={draft.country} onChange={(event) => update('country', event.target.value)}>
-              <option value="">Elegí un país</option>
+              <option value="">{t.countryPick}</option>
               {countries.map((item) => (
                 <option key={item.code} value={item.code}>
                   {item.name}
@@ -206,75 +207,75 @@ export function IssuanceConfigurator({
             </select>
           </label>
           <label>
-            Cantidad de tokens *
+            {t.quantity}
             <input type="number" min={1} max={500} value={draft.quantity} onChange={(event) => update('quantity', Number(event.target.value))} />
           </label>
         </fieldset>
       )}
       {step === 2 && (
         <fieldset>
-          <legend>Personalización de etiquetas</legend>
+          <legend>{t.labelLegend}</legend>
           <label>
-            Formato
+            {t.format}
             <select value={draft.labelStyle} onChange={(event) => update('labelStyle', event.target.value as Draft['labelStyle'])}>
-              <option value="standard">Estándar</option>
-              <option value="compact">Compacto</option>
+              <option value="standard">{t.standard}</option>
+              <option value="compact">{t.compact}</option>
             </select>
           </label>
-          {field('labelText', 'Texto adicional en la etiqueta', 160)}
+          {field('labelText', t.labelText, 160)}
           <div className={`config-label-preview ${draft.labelStyle}`}>
-            <strong>{draft.brand || 'Tu marca'}</strong>
-            <span>{draft.model || 'Modelo'}</span>
-            <span>Lote {draft.lot || 'Pendiente'}</span>
+            <strong>{draft.brand || t.yourBrand}</strong>
+            <span>{draft.model || t.modelPlaceholder}</span>
+            <span>{t.lotPreview(draft.lot)}</span>
             <div className="config-qr-placeholders">
-              <span>QR público</span>
-              <span>QR secreto · interior</span>
+              <span>{t.publicQr}</span>
+              <span>{t.secretQr}</span>
             </div>
             <small>{draft.labelText}</small>
-            <small>Vista previa de distribución. Los QR reales se generan después del pago.</small>
+            <small>{t.previewNote}</small>
           </div>
         </fieldset>
       )}
       {step === 3 && (
         <fieldset>
-          <legend>Revisar emisión</legend>
+          <legend>{t.reviewLegend}</legend>
           <dl className="company-emission-values">
             <div>
-              <dt>Producto</dt>
+              <dt>{t.review.product}</dt>
               <dd>
                 {draft.brand} {draft.model}
               </dd>
             </div>
             <div>
-              <dt>Lote</dt>
-              <dd>{draft.lot || 'Pendiente'}</dd>
+              <dt>{t.review.lot}</dt>
+              <dd>{draft.lot || '—'}</dd>
             </div>
             <div>
-              <dt>Destino</dt>
+              <dt>{t.review.destination}</dt>
               <dd>{destination}</dd>
             </div>
             <div>
-              <dt>Tokens</dt>
+              <dt>{t.review.tokens}</dt>
               <dd>{draft.quantity}</dd>
             </div>
             <div>
-              <dt>Importe estimado</dt>
-              <dd>{pricePerToken ? `${(Number(pricePerToken) * draft.quantity).toFixed(2)} XLM` : 'Se calcula al continuar'}</dd>
+              <dt>{t.review.amount}</dt>
+              <dd>{pricePerToken ? `${(Number(pricePerToken) * draft.quantity).toFixed(2)} XLM` : t.amountLater}</dd>
             </div>
             <div>
-              <dt>Etiqueta</dt>
-              <dd>{draft.labelStyle === 'compact' ? 'Compacta' : 'Estándar'}</dd>
+              <dt>{t.review.label}</dt>
+              <dd>{draft.labelStyle === 'compact' ? t.compactLabel : t.standard}</dd>
             </div>
           </dl>
-          <p className="field-hint">Al continuar se calcula el importe y se crea la solicitud de pago. No se debita automáticamente.</p>
+          <p className="field-hint">{t.reviewHint}</p>
           <label>
-            Guardar como plantilla
-            <input maxLength={80} value={name} placeholder="Ej. Calzado Argentina" onChange={(event) => setName(event.target.value)} />
+            {t.saveTemplate}
+            <input maxLength={80} value={name} placeholder={t.templatePlaceholder} onChange={(event) => setName(event.target.value)} />
           </label>
           <button type="button" className="button button-secondary" onClick={() => persist(false)}>
-            Guardar plantilla
+            {t.saveTemplateButton}
           </button>
-          <p className="field-hint">Productos y plantillas se guardan en este navegador. La configuración emitida se conserva con la compra.</p>
+          <p className="field-hint">{t.storageHint}</p>
         </fieldset>
       )}
       {notice && (
@@ -285,7 +286,7 @@ export function IssuanceConfigurator({
       <div className="config-actions">
         {step > 0 && (
           <button type="button" className="button button-secondary" onClick={() => setStep(step - 1)}>
-            Anterior
+            {t.previous}
           </button>
         )}
         {step < 3 ? (
@@ -294,7 +295,7 @@ export function IssuanceConfigurator({
             className="button button-primary"
             onClick={() => {
               if (step === 0 && !draft.model.trim()) {
-                setNotice('Ingresá un modelo.');
+                setNotice(t.enterModel);
                 return;
               }
               if (step === 1 && !validate()) return;
@@ -302,11 +303,11 @@ export function IssuanceConfigurator({
               setStep(step + 1);
             }}
           >
-            Siguiente
+            {t.next}
           </button>
         ) : (
           <button type="submit" className="button button-primary" disabled={submitting}>
-            {submitting ? 'Preparando pago…' : 'Confirmar y obtener pago'}
+            {submitting ? t.preparing : t.confirm}
           </button>
         )}
       </div>

@@ -3,19 +3,28 @@
 import { useStore } from '@nanostores/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
+import { CompanyTextProvider, useCompanyText } from '@/components/company/CompanyText';
 import { ConfirmDialog, type Confirmation } from '@/components/ui/ConfirmDialog';
 import { Icon } from '@/components/ui/Icon';
 import { Pagination, usePagination } from '@/components/ui/Pagination';
 import type { Message } from '@/components/ui/StatusMessage';
 import { Toast } from '@/components/ui/Toast';
-import { ApiError, postJson } from '@/lib/client/api';
+import { ApiError } from '@/lib/client/api';
 import { downloadBatchCsv, downloadDataUrl } from '@/lib/client/download';
-import { fetchPurchase, fetchPurchaseDetail, forgetPurchase, migrateLegacyPurchase, savedPurchaseIds } from '@/lib/client/purchases';
+import {
+  fetchPurchase,
+  fetchPurchaseDetail,
+  forgetPurchase,
+  migrateLegacyPurchase,
+  PURCHASES_CHANGED_EVENT,
+  savedPurchaseIds,
+  shipPurchase
+} from '@/lib/client/purchases';
 import { userSession } from '@/lib/client/session';
 import { errorMessage } from '@/lib/errors';
-import { plural } from '@/lib/format';
-import type { CompanyBatch, PurchaseSummary } from '@/lib/types';
-import { $purchaseIds, $summaries, isSummary, setSummary, type SummaryEntry } from '@/stores/batches';
+import type { Locale } from '@/lib/locale';
+import type { CompanyBatch } from '@/lib/types';
+import { $purchaseIds, $summaries, $summariesReady, isSummary, setSummary, type SummaryEntry } from '@/stores/batches';
 import { BatchItem, type BatchAction } from './BatchItem';
 import { LabelSheet, type QrKind } from './LabelSheet';
 import { PaymentDetail } from './PaymentDetail';
@@ -46,14 +55,7 @@ const sorters = {
   'quantity-asc': (first: SummaryEntry | undefined, second: SummaryEntry | undefined) => quantity(first) - quantity(second)
 };
 
-const SORT_OPTIONS: [SortKey, string][] = [
-  ['recent', 'Fecha: más nuevos primero'],
-  ['oldest', 'Fecha: más antiguos primero'],
-  ['claimed-desc', 'Activaciones: de mayor a menor'],
-  ['claimed-asc', 'Activaciones: de menor a mayor'],
-  ['quantity-desc', 'Tokens: de mayor a menor'],
-  ['quantity-asc', 'Tokens: de menor a mayor']
-];
+const SORT_KEYS = Object.keys(sorters) as SortKey[];
 
 // Searches the labels of a batch: what the company knows it by.
 const matchesSearch = (summary: SummaryEntry | undefined, query: string) => {
@@ -65,7 +67,16 @@ const matchesSearch = (summary: SummaryEntry | undefined, query: string) => {
 
 const needsPolling = (summary: SummaryEntry | undefined) => isSummary(summary) && (!summary.batchId || summary.pendingOnChain > 0);
 
-export function BatchList() {
+export function BatchList({ locale }: { locale?: Locale | undefined }) {
+  return (
+    <CompanyTextProvider locale={locale}>
+      <Batches />
+    </CompanyTextProvider>
+  );
+}
+
+function Batches() {
+  const t = useCompanyText();
   const purchaseIds = useStore($purchaseIds);
   const summaries = useStore($summaries);
   const [loaded, setLoaded] = useState(false);
@@ -107,7 +118,7 @@ export function BatchList() {
     if (inFlightRequest) return inFlightRequest;
     const request = (async () => {
       const data = await fetchPurchaseDetail(purchaseId);
-      if (!data.succeeded || !data.batch) throw new Error('Este lote todavía no está listo: falta confirmar el pago.');
+      if (!data.succeeded || !data.batch) throw new Error(t.batches.notReady);
       fullBatches.current.set(purchaseId, data.batch);
       setSummary(purchaseId, data.purchase);
       return data.batch;
@@ -123,7 +134,7 @@ export function BatchList() {
       setSummary(purchaseId, purchase);
     } catch (error) {
       // A network hiccup keeps what was already shown; a purchase the server no longer has is marked.
-      if (error instanceof ApiError && error.status === 404) setSummary(purchaseId, { error: 'Esta compra ya no existe en el servidor.' });
+      if (error instanceof ApiError && error.status === 404) setSummary(purchaseId, { error: t.batches.gone });
       else if (!isSummary(previous)) setSummary(purchaseId, { error: errorMessage(error) });
     }
   };
@@ -143,15 +154,30 @@ export function BatchList() {
   };
 
   useEffect(() => {
-    if (!userSession.isActive()) return undefined;
+    if (!userSession.isActive()) {
+      $summariesReady.set(true);
+      return undefined;
+    }
     migrateLegacyPurchase();
     const ids = savedPurchaseIds();
     $purchaseIds.set(ids);
     setLoaded(true);
-    void Promise.all(ids.map(refreshSummary)).then(schedulePolling);
+    void Promise.all(ids.map(refreshSummary)).then(() => {
+      $summariesReady.set(true);
+      schedulePolling();
+    });
+    // A purchase created in this page (Generar tokens) joins the list and its polling right away.
+    const syncIds = () => {
+      const next = savedPurchaseIds();
+      const added = next.filter((purchaseId) => !$purchaseIds.get().includes(purchaseId));
+      $purchaseIds.set(next);
+      if (added.length) void Promise.all(added.map(refreshSummary)).then(schedulePolling);
+    };
+    window.addEventListener(PURCHASES_CHANGED_EVENT, syncIds);
     return () => {
       stopped.current = true;
       window.clearTimeout(pollTimer.current);
+      window.removeEventListener(PURCHASES_CHANGED_EVENT, syncIds);
     };
     // Runs once per page load; polling reads the stores directly.
   }, []);
@@ -233,10 +259,10 @@ export function BatchList() {
         return;
       case 'forget':
         setConfirmation({
-          title: '¿Quitar esta compra de tu lista?',
-          message: 'Si ya la pagaste, el lote se genera igual, pero no lo vas a ver en este panel.',
-          confirmLabel: 'Quitar de la lista',
-          cancelLabel: 'Volver',
+          title: t.batches.forgetTitle,
+          message: t.batches.forgetMessage,
+          confirmLabel: t.batches.forgetConfirmLabel,
+          cancelLabel: t.batches.back,
           danger: true,
           onConfirm: () => {
             setConfirmation(null);
@@ -261,15 +287,15 @@ export function BatchList() {
         return;
       case 'ship':
         setConfirmation({
-          title: '¿Marcar el lote como despachado?',
-          message: 'Queda registrado en el historial de cada producto de este lote, y no se puede deshacer.',
-          confirmLabel: 'Marcar como despachado',
-          cancelLabel: 'Volver',
+          title: t.batches.shipTitle,
+          message: t.batches.shipMessage,
+          confirmLabel: t.batches.shipConfirmLabel,
+          cancelLabel: t.batches.back,
           danger: true,
           onConfirm: () => {
             setConfirmation(null);
             void runBusy(`${purchaseId}:ship`, async () => {
-              const { purchase } = await postJson<{ purchase: PurchaseSummary }>(`/api/purchases/${encodeURIComponent(purchaseId)}/ship`, {}, 'No se pudo marcar el lote como despachado.');
+              const { purchase } = await shipPurchase(purchaseId, t.batches.shipFailed);
               setSummary(purchaseId, purchase);
             });
           }
@@ -278,7 +304,7 @@ export function BatchList() {
       case 'lot-qr':
         await runBusy(`${purchaseId}:lot-qr`, async () => {
           const batch = await loadFullBatch(purchaseId);
-          await downloadDataUrl(batch.publicQr, `${batch.batchId}-qr-publico-del-lote.svg`);
+          await downloadDataUrl(batch.publicQr, t.batches.lotQrFile(batch.batchId));
         });
         return;
     }
@@ -287,7 +313,7 @@ export function BatchList() {
   const downloadQr = (purchaseId: string, token: string, kind: QrKind) =>
     runBusy(`${purchaseId}:${token}:${kind}`, async () => {
       const label = (await loadFullBatch(purchaseId)).tokens.find((candidate) => candidate.token === token);
-      if (label) await downloadDataUrl(kind === 'secret' ? label.secretQr : label.publicQr, `${label.token}-qr-${kind === 'secret' ? 'secreto' : 'publico'}.svg`);
+      if (label) await downloadDataUrl(kind === 'secret' ? label.secretQr : label.publicQr, t.batches.qrFile(label.token, kind === 'secret'));
     });
 
   const detailFor = (purchaseId: string, summary: SummaryEntry | undefined) => {
@@ -304,7 +330,7 @@ export function BatchList() {
       );
     }
     if (open.state === 'error') return <p className="batch-item-note is-error">{open.message}</p>;
-    return <p className="batch-item-note">Cargando etiquetas...</p>;
+    return <p className="batch-item-note">{t.batches.loadingLabels}</p>;
   };
 
   const total = purchaseIds.length;
@@ -312,30 +338,30 @@ export function BatchList() {
   return (
     <section className="vault" aria-labelledby="batch-list-title">
       <div className="vault-header">
-        <h2 id="batch-list-title">Lotes</h2>
-        <span className="vault-count">{total ? `${visibleIds.length} de ${total} ${plural(total, 'lote', 'lotes')}` : ''}</span>
+        <h2 id="batch-list-title">{t.batches.title}</h2>
+        <span className="vault-count">{total ? t.batches.count(visibleIds.length, total) : ''}</span>
       </div>
 
       <div className="batch-filters">
         <div className="batch-search">
           <Icon name="fa-solid fa-magnifying-glass" />
-          <label className="visually-hidden" htmlFor="batch-search">Buscar lote</label>
+          <label className="visually-hidden" htmlFor="batch-search">{t.batches.search}</label>
           <input
             id="batch-search"
             type="search"
-            placeholder="Buscar por modelo, lote, destino o número de lote"
+            placeholder={t.batches.searchPlaceholder}
             autoComplete="off"
             value={query}
             onChange={(event) => setQuery(event.currentTarget.value)}
           />
         </div>
-        <label className="visually-hidden" htmlFor="batch-sort">Ordenar lotes</label>
+        <label className="visually-hidden" htmlFor="batch-sort">{t.batches.sort}</label>
         <select id="batch-sort" value={sort} onChange={(event) => setSort(event.currentTarget.value as SortKey)}>
-          {SORT_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+          {SORT_KEYS.map((value) => <option key={value} value={value}>{t.batches.sortOptions[value]}</option>)}
         </select>
       </div>
 
-      <Toast message={status} onClose={() => setStatus(null)} />
+      <Toast message={status} onClose={() => setStatus(null)} closeLabel={t.notifications.close} />
       <div className="batch-list">
         {batchPage.items.map((purchaseId) => (
           <BatchItem
@@ -353,14 +379,10 @@ export function BatchList() {
           />
         ))}
       </div>
-      <Pagination page={batchPage.page} pages={batchPage.pages} onPage={batchPage.setPage} label="Páginas de lotes" />
+      <Pagination page={batchPage.page} pages={batchPage.pages} onPage={batchPage.setPage} label={t.batches.pages} text={t.pagination} />
       <ConfirmDialog confirmation={confirmation} onCancel={() => setConfirmation(null)} />
       <div className="vault-empty" hidden={!loaded || visibleIds.length > 0}>
-        <p>
-          {total
-            ? 'Ningún lote coincide con la búsqueda. Probá con otro modelo, lote o destino.'
-            : 'Todavía no emitiste lotes. Comprá tokens para generar tus primeras etiquetas.'}
-        </p>
+        <p>{total ? t.batches.noMatch : t.batches.empty}</p>
       </div>
     </section>
   );

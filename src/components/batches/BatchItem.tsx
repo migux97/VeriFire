@@ -1,7 +1,8 @@
 import type { ReactNode, Ref } from 'react';
+import { useCompanyText } from '@/components/company/CompanyText';
 import { Icon } from '@/components/ui/Icon';
 import { LedgerLink } from '@/components/ui/LedgerLink';
-import { plural, shortDate } from '@/lib/format';
+import type { CompanyMessages } from '@/i18n/company';
 import type { PurchaseSummary } from '@/lib/types';
 import type { SummaryEntry } from '@/stores/batches';
 
@@ -18,24 +19,25 @@ interface BatchItemProps {
   onAction: (action: BatchAction) => void;
 }
 
-const batchState = (summary: PurchaseSummary) => {
-  if (!summary.batchId) return { label: 'Esperando pago', tone: 'pending', icon: 'fa-clock' };
-  if (summary.pendingOnChain > 0) return { label: 'Registrando en Stellar', tone: 'pending', icon: 'fa-arrows-rotate' };
-  if (summary.registeredOnChain > 0 && summary.registeredOnChain === summary.quantity) return { label: 'Listo · en Stellar', tone: 'ready', icon: 'fa-circle-check' };
-  return { label: 'Listo', tone: 'ready', icon: 'fa-circle-check' };
+const batchState = (summary: PurchaseSummary, text: CompanyMessages['batches']['item']) => {
+  if (!summary.batchId) return { label: text.waiting, tone: 'pending', icon: 'fa-clock' };
+  if (summary.pendingOnChain > 0) return { label: text.registering, tone: 'pending', icon: 'fa-arrows-rotate' };
+  if (summary.registeredOnChain > 0 && summary.registeredOnChain === summary.quantity) return { label: text.readyChain, tone: 'ready', icon: 'fa-circle-check' };
+  return { label: text.ready, tone: 'ready', icon: 'fa-circle-check' };
 };
 
 // Connects the factory's work with the customers who scan the box: how many products of the batch are activated.
 function ActivationProgress({ summary }: { summary: PurchaseSummary }) {
+  const text = useCompanyText().batches.item;
   const total = Number(summary.quantity) || 0;
   const percent = total ? Math.round((summary.claimed / total) * 100) : 0;
   return (
     <div className="batch-progress">
       <div className="batch-progress-head">
-        <span>{summary.claimed} / {total} {plural(total, 'activado', 'activados')} por clientes</span>
+        <span>{text.progress(summary.claimed, total)}</span>
         <span className="batch-progress-percent">{percent}%</span>
       </div>
-      <div className="batch-progress-track" role="img" aria-label={`${summary.claimed} de ${total} productos con la garantía activada`}>
+      <div className="batch-progress-track" role="img" aria-label={text.progressLabel(summary.claimed, total)}>
         <span className="batch-progress-bar" style={{ width: `${percent}%` }} />
       </div>
     </div>
@@ -43,6 +45,9 @@ function ActivationProgress({ summary }: { summary: PurchaseSummary }) {
 }
 
 export function BatchItem({ purchaseId, summary, open, detail, itemRef, isBusy, onAction }: BatchItemProps) {
+  const t = useCompanyText();
+  const text = t.batches.item;
+  const shortDate = new Intl.DateTimeFormat(t.intl, { day: 'numeric', month: 'short', year: 'numeric' });
   const button = (action: BatchAction, label: string, icon: string, variant: 'primary' | 'secondary' = 'secondary') => (
     <button
       key={action}
@@ -57,30 +62,30 @@ export function BatchItem({ purchaseId, summary, open, detail, itemRef, isBusy, 
   );
 
   const content = () => {
-    if (!summary) return <p className="batch-item-note">Cargando lote...</p>;
+    if (!summary) return <p className="batch-item-note">{text.loading}</p>;
     if ('error' in summary) {
       return (
         <>
           <div className="batch-item-head">
             <div className="batch-item-title">
               <span className="batch-id">{purchaseId}</span>
-              <h3>Compra no disponible</h3>
+              <h3>{text.unavailable}</h3>
               <p className="batch-meta">{summary.error}</p>
             </div>
           </div>
           <div className="batch-toolbar">
-            {button('retry', 'Reintentar', 'fa-rotate-right')}
-            {button('forget', 'Quitar de la lista', 'fa-xmark')}
+            {button('retry', text.retry, 'fa-rotate-right')}
+            {button('forget', text.forget, 'fa-xmark')}
           </div>
         </>
       );
     }
 
-    const state = batchState(summary);
+    const state = batchState(summary, text);
     const meta = [
-      `Lote ${summary.lot}`,
-      `Destino ${summary.destination}`,
-      `${summary.quantity} ${plural(summary.quantity, 'token', 'tokens')}`,
+      text.lot(summary.lot),
+      text.destination(summary.destination),
+      text.tokens(summary.quantity),
       `${summary.amount} ${summary.asset}`,
       summary.createdAt ? shortDate.format(new Date(summary.createdAt)) : ''
     ].filter(Boolean).join(' · ');
@@ -89,7 +94,7 @@ export function BatchItem({ purchaseId, summary, open, detail, itemRef, isBusy, 
       <>
         <div className="batch-item-head">
           <div className="batch-item-title">
-            <span className="batch-id">{summary.batchId ?? 'Pago pendiente'}</span>
+            <span className="batch-id">{summary.batchId ?? text.paymentPending}</span>
             <h3>{summary.model}</h3>
             <p className="batch-meta">{meta}</p>
           </div>
@@ -97,23 +102,23 @@ export function BatchItem({ purchaseId, summary, open, detail, itemRef, isBusy, 
         </div>
         {summary.batchId && <ActivationProgress summary={summary} />}
         {summary.shippedAt && (
-          <p className="batch-shipped"><Icon name="fa-solid fa-truck" /> Despachado a {summary.destination} el {shortDate.format(new Date(summary.shippedAt))}</p>
+          <p className="batch-shipped"><Icon name="fa-solid fa-truck" /> {text.shipped(summary.destination, shortDate.format(new Date(summary.shippedAt)))}</p>
         )}
         <div className="batch-toolbar">
           {summary.batchId
             ? [
-              button('toggle', open ? 'Ocultar etiquetas' : 'Ver etiquetas', open ? 'fa-eye-slash' : 'fa-eye', 'primary'),
-              button('print', 'Imprimir', 'fa-print'),
-              button('csv', 'Descargar CSV', 'fa-file-csv'),
-              button('lot-qr', 'QR del lote', 'fa-qrcode'),
-              ...(summary.shippedAt ? [] : [button('ship', 'Marcar como despachado', 'fa-truck')])
+              button('toggle', open ? text.hideLabels : text.showLabels, open ? 'fa-eye-slash' : 'fa-eye', 'primary'),
+              button('print', text.print, 'fa-print'),
+              button('csv', text.csv, 'fa-file-csv'),
+              button('lot-qr', text.lotQr, 'fa-qrcode'),
+              ...(summary.shippedAt ? [] : [button('ship', text.ship, 'fa-truck')])
             ]
             : [
-              button('toggle', open ? 'Ocultar QR de pago' : 'Ver QR de pago', 'fa-qrcode', 'primary'),
-              button('forget', 'Quitar de la lista', 'fa-xmark')
+              button('toggle', open ? text.hidePayment : text.showPayment, 'fa-qrcode', 'primary'),
+              button('forget', text.forget, 'fa-xmark')
             ]}
         </div>
-        {summary.issuanceTxUrl && <LedgerLink href={summary.issuanceTxUrl}>Ver pago de emisión en Stellar</LedgerLink>}
+        {summary.issuanceTxUrl && <LedgerLink href={summary.issuanceTxUrl}>{text.ledger}</LedgerLink>}
       </>
     );
   };

@@ -1,228 +1,268 @@
 ---
+import { BatchList } from '@/components/batches/BatchList';
+import { CompanyCatalogSummary } from '@/components/company/CompanyCatalogSummary';
+import { CompanyData } from '@/components/company/CompanyData';
+import { CompanyDemoBanner } from '@/components/company/CompanyDemoBanner';
+import { CompanyIdentity } from '@/components/company/CompanyIdentity';
 import { CompanyIssuance } from '@/components/company/CompanyIssuance';
+import { CompanyNotifications } from '@/components/company/CompanyNotifications';
+import { CompanyOperations } from '@/components/company/CompanyOperations';
+import { CompanySettings } from '@/components/company/CompanySettings';
+import { CompanyTeamManager } from '@/components/company/CompanyTeamManager';
+import BrandLogo from '@/components/layout/BrandLogo.astro';
+import { companyMessages } from '@/i18n/company';
+import BaseLayout from '@/layouts/BaseLayout.astro';
 import { publicConfig } from '@/lib/server/config';
 import { countryOptions } from '@/lib/server/countries';
-import { CompanyCatalogSummary } from '@/components/company/CompanyCatalogSummary';
-import { BatchList } from '@/components/batches/BatchList';
-import BaseLayout from '@/layouts/BaseLayout.astro';
+import { pageLocale } from '@/lib/server/page-locale';
 import '@/styles/company.css';
-import { CompanyData } from '@/components/company/CompanyData';
-import { CompanyIdentity } from '@/components/company/CompanyIdentity';
-import { CompanyOperations } from '@/components/company/CompanyOperations';
-import { CompanyRoleSettings } from '@/components/company/CompanyRoleSettings';
-import { CompanyTeamManager } from '@/components/company/CompanyTeamManager';
+
+const locale = pageLocale(Astro);
+const t = companyMessages(locale);
+const views = t.views;
 ---
 
-<BaseLayout
-  title="Verifire | Panel empresa"
-  description="Panel operativo para gestionar productos, lotes y verificaciones de Verifire."
-  bodyClass="company-page"
-  session="protected"
->
-  <main class="company-shell">
-    <aside class="company-sidebar" aria-label="Navegación de empresa">
-      <a class="company-brand" href="/">
-        <span class="company-brand-mark">V</span>
-        <span>verifire</span>
-      </a>
+<BaseLayout title={t.meta.title} description={t.meta.description} bodyClass="company-page" session="protected">
+  <div class="company-shell" data-company-shell>
+    <aside class="company-sidebar" id="company-sidebar" aria-label={t.shell.navLabel}>
+      <div class="company-sidebar-top">
+        <BrandLogo href="/" />
+        <button class="company-icon-button company-menu-close" type="button" data-nav-close aria-label={t.shell.closeMenu}>
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
+      </div>
 
-      <CompanyIdentity client:load view="workspace" />
+      <CompanyIdentity client:load view="workspace" locale={locale} />
 
       <nav class="company-nav">
-        <a class="is-active" href="#dashboard" data-company-tab="dashboard">
-          <i class="fa-solid fa-chart-line"></i>
-          <span>Resumen</span>
+        <a href="#dashboard" data-company-tab="dashboard">
+          <i class="fa-solid fa-chart-line" aria-hidden="true"></i>
+          <span>{t.nav.dashboard}</span>
         </a>
 
         <div class="company-catalog-menu">
           <div class="company-catalog-parent" data-company-tab="catalog">
             <a href="#catalog" data-catalog-home>
               <i class="fa-solid fa-boxes-stacked" aria-hidden="true"></i>
-              <span>Productos y lotes</span>
+              <span>{t.nav.catalog}</span>
             </a>
             <button
               type="button"
               data-catalog-toggle
               aria-expanded="false"
               aria-controls="company-catalog-submenu"
-              aria-label="Desplegar opciones de Productos y lotes"
+              aria-label={t.shell.catalogOpen}
+              data-label-open={t.shell.catalogOpen}
+              data-label-close={t.shell.catalogClose}
             >
               <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
             </button>
           </div>
-          <div class="company-sidebar-subnav" id="company-catalog-submenu" hidden>
-            <a href="#batches" data-catalog-tab="batches">
-              Mis lotes
-            </a>
-            <a href="#products" data-catalog-tab="products">
-              Mis productos
-            </a>
-            <a href="#generate" data-catalog-tab="generate">
-              Generar tokens
-            </a>
+          <div class="company-sidebar-subnav" id="company-catalog-submenu" data-open="false">
+            <div>
+              <a href="#batches" data-catalog-tab="batches" tabindex="-1">{t.nav.batches}</a>
+              <a href="#products" data-catalog-tab="products" tabindex="-1">{t.nav.products}</a>
+              <a href="#generate" data-catalog-tab="generate" tabindex="-1">{t.nav.generate}</a>
+            </div>
           </div>
         </div>
 
         <a href="#activity" data-company-tab="activity">
-          <i class="fa-solid fa-qrcode"></i>
-          <span>Verificaciones</span>
+          <i class="fa-solid fa-qrcode" aria-hidden="true"></i>
+          <span>{t.nav.activity}</span>
         </a>
         <a href="#team" data-company-tab="team">
-          <i class="fa-solid fa-users"></i>
-          <span>Equipo</span>
+          <i class="fa-solid fa-users" aria-hidden="true"></i>
+          <span>{t.nav.team}</span>
         </a>
       </nav>
 
       <div class="company-sidebar-bottom">
         <a href="#settings" data-company-tab="settings">
-          <i class="fa-solid fa-gear"></i>
-          <span>Configuración</span>
+          <i class="fa-solid fa-gear" aria-hidden="true"></i>
+          <span>{t.nav.settings}</span>
         </a>
         <a href="/">
-          <i class="fa-solid fa-arrow-left"></i>
-          <span>Volver al sitio</span>
+          <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+          <span>{t.nav.back}</span>
         </a>
       </div>
     </aside>
+    <div class="company-scrim" data-nav-close aria-hidden="true"></div>
 
-    <section class="company-content">
-      <div data-company-view="dashboard">
-        <header class="company-topbar">
-          <div>
-            <span class="company-eyebrow">Panel empresa</span>
-            <h1 tabindex="-1">Resumen operativo</h1>
-          </div>
-          <div class="company-top-actions">
-            <button class="company-icon-button" type="button" aria-label="Notificaciones">
-              <i class="fa-regular fa-bell"></i>
-              <span></span>
-            </button>
-            <CompanyIdentity client:load view="profile" />
-          </div>
-        </header>
+    <div class="company-main">
+      <header class="company-appbar">
+        <button
+          class="company-icon-button company-menu-open"
+          type="button"
+          data-nav-open
+          aria-label={t.shell.openMenu}
+          aria-controls="company-sidebar"
+          aria-expanded="false"
+        >
+          <i class="fa-solid fa-bars" aria-hidden="true"></i>
+        </button>
+        <span class="company-appbar-title" data-appbar-title>{views.dashboard.title}</span>
+        <div class="company-appbar-actions">
+          <CompanyNotifications client:load locale={locale} />
+          <CompanyIdentity client:load view="profile" locale={locale} />
+        </div>
+      </header>
 
-        <p class="company-view-description">Indicadores de las compras y lotes disponibles en tu cuenta.</p>
-        <CompanyData client:load view="dashboard" />
-      </div>
+      <CompanyDemoBanner client:load locale={locale} />
 
-      <div data-company-view="catalog" hidden>
-        <header class="company-topbar">
-          <div>
-            <span class="company-eyebrow">Inventario y producción</span>
-            <h1 tabindex="-1">Productos y lotes</h1>
-          </div>
-        </header>
-        <p class="company-view-description">Administrá tus productos, emití tokens y consultá los pagos y etiquetas de cada lote.</p>
-        <section data-catalog-view="catalog">
-          <CompanyCatalogSummary client:load />
-          <CompanyOperations client:load />
+      <main class="company-content">
+        <section class="company-view" data-company-view="dashboard" aria-labelledby="view-dashboard">
+          <header class="company-view-header">
+            <span class="company-eyebrow">{views.dashboard.eyebrow}</span>
+            <h1 id="view-dashboard" tabindex="-1">{views.dashboard.title}</h1>
+            <p class="company-view-description">{views.dashboard.description}</p>
+          </header>
+          <CompanyData client:load view="dashboard" locale={locale} />
         </section>
-        <section data-catalog-view="batches" hidden>
-          <div class="company-catalog-heading">
-            <h2>Mis lotes</h2>
-            <a class="company-create-link" href="#generate">
-              <i class="fa-solid fa-plus" aria-hidden="true"></i> Generar tokens
-            </a>
+
+        <section class="company-view" data-company-view="catalog" aria-labelledby="view-catalog" hidden>
+          <header class="company-view-header">
+            <span class="company-eyebrow">{views.catalog.eyebrow}</span>
+            <h1 id="view-catalog" tabindex="-1">{views.catalog.title}</h1>
+            <p class="company-view-description">{views.catalog.description}</p>
+          </header>
+          <div class="company-subview" data-catalog-view="catalog">
+            <CompanyCatalogSummary client:load locale={locale} />
+            <CompanyOperations client:load locale={locale} />
           </div>
-          <BatchList client:load />
+          <div class="company-subview" data-catalog-view="batches" hidden>
+            <div class="company-catalog-heading">
+              <h2>{t.catalogHeading.batches}</h2>
+              <a class="company-button is-primary" href="#generate">
+                <i class="fa-solid fa-plus" aria-hidden="true"></i>
+                {t.catalogHeading.create}
+              </a>
+            </div>
+            <div class="company-card company-batches">
+              <BatchList client:load locale={locale} />
+            </div>
+          </div>
+          <div class="company-subview" data-catalog-view="products" hidden>
+            <CompanyData client:load view="products" locale={locale} />
+          </div>
+          <div class="company-subview" data-catalog-view="generate" hidden>
+            <CompanyIssuance client:load countries={countryOptions} pricePerToken={publicConfig.pricePerToken} locale={locale} />
+          </div>
         </section>
-        <section data-catalog-view="products" hidden>
-          <CompanyData client:load view="products" />
+
+        <section class="company-view" data-company-view="activity" aria-labelledby="view-activity" hidden>
+          <header class="company-view-header">
+            <span class="company-eyebrow">{views.activity.eyebrow}</span>
+            <h1 id="view-activity" tabindex="-1">{views.activity.title}</h1>
+            <p class="company-view-description">{views.activity.description}</p>
+          </header>
+          <CompanyData client:load view="activity" locale={locale} />
         </section>
-        <section data-catalog-view="generate" hidden>
-          <CompanyIssuance client:load countries={countryOptions} pricePerToken={publicConfig.pricePerToken} />
+
+        <section class="company-view" data-company-view="team" aria-labelledby="view-team" hidden>
+          <header class="company-view-header">
+            <span class="company-eyebrow">{views.team.eyebrow}</span>
+            <h1 id="view-team" tabindex="-1">{views.team.title}</h1>
+            <p class="company-view-description">{views.team.description}</p>
+          </header>
+          <div class="company-card">
+            <CompanyTeamManager client:load locale={locale} />
+          </div>
         </section>
-      </div>
-      <div data-company-view="activity" hidden>
-        <header class="company-topbar">
-          <div>
-            <span class="company-eyebrow">Trazabilidad</span>
-            <h1 tabindex="-1">Verificaciones</h1>
-          </div>
-        </header>
-        <p class="company-view-description">
-          Consultá el estado de activación de los productos y abrí su verificación pública. No hay estadísticas de escaneos disponibles.
-        </p>
-        <CompanyData client:load view="activity" />
-      </div>
-      <div data-company-view="team" hidden>
-        <header class="company-topbar">
-          <div>
-            <span class="company-eyebrow">Accesos</span>
-            <h1 tabindex="-1">Equipo</h1>
-          </div>
-        </header>
-        <p class="company-view-description">Administrá los integrantes y sus permisos.</p>
-        <article class="company-panel company-section-panel">
-          <CompanyTeamManager client:load />
-        </article>
-      </div>
-      <div data-company-view="settings" hidden>
-        <header class="company-topbar company-settings-topbar">
-          <div>
-            <span class="company-eyebrow">Administración</span>
-            <h1 tabindex="-1">Configuración</h1>
-          </div>
-          <a class="company-action" href="#dashboard" data-company-tab="dashboard">
-            <i class="fa-solid fa-arrow-left"></i> Volver al resumen
-          </a>
-        </header>
-        <CompanyRoleSettings client:load />
-      </div>
-    </section>
-  </main>
+
+        <section class="company-view" data-company-view="settings" aria-labelledby="view-settings" hidden>
+          <header class="company-view-header">
+            <span class="company-eyebrow">{views.settings.eyebrow}</span>
+            <h1 id="view-settings" tabindex="-1">{views.settings.title}</h1>
+            <p class="company-view-description">{views.settings.description}</p>
+          </header>
+          <CompanySettings client:load locale={locale} />
+        </section>
+      </main>
+    </div>
+  </div>
 </BaseLayout>
 
 <script>
+  import { ISSUANCE_MODE_EVENT } from '@/components/company/CompanyIssuance';
   import { guardSession } from '@/lib/client/session';
 
   guardSession();
 
+  const shell = document.querySelector<HTMLElement>('[data-company-shell]');
   const views = [...document.querySelectorAll<HTMLElement>('[data-company-view]')];
   const tabs = [...document.querySelectorAll<HTMLElement>('[data-company-tab]')];
+  const catalogViews = [...document.querySelectorAll<HTMLElement>('[data-catalog-view]')];
+  const catalogTabs = [...document.querySelectorAll<HTMLElement>('[data-catalog-tab]')];
   const catalogToggle = document.querySelector<HTMLButtonElement>('[data-catalog-toggle]');
   const catalogSubmenu = document.querySelector<HTMLElement>('#company-catalog-submenu');
+  const catalogHome = document.querySelector<HTMLElement>('[data-catalog-home]');
+  const appbarTitle = document.querySelector<HTMLElement>('[data-appbar-title]');
+  const menuOpen = document.querySelector<HTMLButtonElement>('[data-nav-open]');
+
+  // ---------- Mobile menu ----------
+  const setNavOpen = (open: boolean) => {
+    shell?.toggleAttribute('data-nav-open', open);
+    menuOpen?.setAttribute('aria-expanded', String(open));
+  };
+  menuOpen?.addEventListener('click', () => setNavOpen(true));
+  document.querySelectorAll('[data-nav-close]').forEach((element) => element.addEventListener('click', () => setNavOpen(false)));
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && shell?.hasAttribute('data-nav-open')) {
+      setNavOpen(false);
+      menuOpen?.focus();
+    }
+  });
+
+  // ---------- Catalog submenu ----------
   const setCatalogExpanded = (expanded: boolean) => {
-    if (catalogSubmenu) catalogSubmenu.hidden = !expanded;
+    catalogSubmenu?.setAttribute('data-open', String(expanded));
     catalogToggle?.setAttribute('aria-expanded', String(expanded));
-    catalogToggle?.setAttribute('aria-label', `${expanded ? 'Cerrar' : 'Desplegar'} opciones de Productos y lotes`);
+    catalogToggle?.setAttribute('aria-label', (expanded ? catalogToggle.dataset.labelClose : catalogToggle.dataset.labelOpen) ?? '');
+    catalogSubmenu?.querySelectorAll('a').forEach((link) => (link.tabIndex = expanded ? 0 : -1));
   };
   catalogToggle?.addEventListener('click', () => setCatalogExpanded(catalogToggle.getAttribute('aria-expanded') !== 'true'));
-  document.querySelector('[data-catalog-home]')?.addEventListener('click', () => setCatalogExpanded(true));
+
+  // Links that open "Generar tokens" in a given mode, like the overview's "Programar pago".
+  document.addEventListener('click', (event) => {
+    const link = (event.target as HTMLElement).closest<HTMLElement>('[data-issuance-mode]');
+    if (link) window.dispatchEvent(new CustomEvent(ISSUANCE_MODE_EVENT, { detail: link.dataset.issuanceMode }));
+  });
+
+  // ---------- Views ----------
+  const CATALOG = ['catalog', 'batches', 'products', 'generate'];
+
   const updateCompanyView = () => {
     const hash = window.location.hash.slice(1);
     const requested = hash === 'operations' ? 'catalog' : hash;
-    const catalogViews = [...document.querySelectorAll<HTMLElement>('[data-catalog-view]')];
-    const catalogTabs = [...document.querySelectorAll<HTMLElement>('[data-catalog-tab]')];
-    const catalog = ['catalog', 'batches', 'products', 'generate'].includes(requested);
-    const subview = requested;
-    setCatalogExpanded(catalog);
-    const catalogHome = document.querySelector('[data-catalog-home]');
+    const inCatalog = CATALOG.includes(requested);
+    const view = inCatalog ? 'catalog' : views.some((item) => item.dataset.companyView === requested) ? requested : 'dashboard';
+    setCatalogExpanded(inCatalog);
     if (requested === 'catalog') catalogHome?.setAttribute('aria-current', 'page');
     else catalogHome?.removeAttribute('aria-current');
-    const view = catalog ? 'catalog' : views.some((item) => item.dataset.companyView === requested) ? requested : 'dashboard';
-    catalogViews.forEach((item) => {
-      item.hidden = item.dataset.catalogView !== subview;
-    });
+    catalogViews.forEach((item) => (item.hidden = item.dataset.catalogView !== (inCatalog ? requested : 'catalog')));
     catalogTabs.forEach((tab) => {
-      const selected = tab.dataset.catalogTab === subview;
+      const selected = tab.dataset.catalogTab === requested;
       tab.classList.toggle('is-active', selected);
       if (selected) tab.setAttribute('aria-current', 'page');
       else tab.removeAttribute('aria-current');
     });
-    views.forEach((item) => {
-      item.hidden = item.dataset.companyView !== view;
-    });
+    views.forEach((item) => (item.hidden = item.dataset.companyView !== view));
     tabs.forEach((tab) => {
       const selected = tab.dataset.companyTab === view;
       tab.classList.toggle('is-active', selected);
       if (selected && tab.tagName === 'A') tab.setAttribute('aria-current', 'page');
       else tab.removeAttribute('aria-current');
     });
-    document.title = `Verifire | ${views.find((item) => !item.hidden)?.querySelector('h1')?.textContent ?? 'Panel empresa'}`;
+    const title = views.find((item) => !item.hidden)?.querySelector('h1')?.textContent ?? '';
+    if (appbarTitle) appbarTitle.textContent = title;
+    document.title = `Verifire | ${title}`;
   };
+
   window.addEventListener('hashchange', () => {
     updateCompanyView();
+    setNavOpen(false);
     views
       .find((item) => !item.hidden)
       ?.querySelector<HTMLElement>('h1')
@@ -231,1531 +271,3 @@ import { CompanyTeamManager } from '@/components/company/CompanyTeamManager';
   });
   updateCompanyView();
 </script>
-
-<style>
-  .company-page {
-    background: var(--vf-mist);
-  }
-  .company-shell {
-    display: grid;
-    grid-template-columns: 240px minmax(0, 1fr);
-    min-height: 100vh;
-    color: var(--vf-text);
-  }
-  .company-sidebar {
-    display: flex;
-    flex-direction: column;
-    padding: 28px 18px 22px;
-    border-right: 1px solid var(--vf-line);
-    background: var(--vf-paper);
-  }
-  .company-brand {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    color: var(--vf-ink);
-    font-size: 1.35rem;
-    font-weight: 900;
-    letter-spacing: -0.06em;
-  }
-  .company-brand-mark {
-    display: grid;
-    place-items: center;
-    width: 28px;
-    height: 28px;
-    background: var(--vf-red);
-    color: var(--vf-on-red);
-    font-size: 1rem;
-    letter-spacing: 0;
-  }
-  .company-workspace {
-    display: grid;
-    gap: 3px;
-    margin: 48px 8px 28px;
-    padding: 14px 12px;
-    border: 1px solid var(--vf-line);
-    border-radius: 4px;
-    background: var(--vf-mist);
-  }
-  .company-workspace-label,
-  .company-workspace-meta,
-  .company-eyebrow {
-    color: var(--vf-muted);
-    font-size: 0.68rem;
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-  .company-workspace strong {
-    color: var(--vf-ink);
-    font-size: 0.88rem;
-  }
-  .company-workspace-meta {
-    font-size: 0.7rem;
-    font-weight: 500;
-    letter-spacing: 0;
-    text-transform: none;
-  }
-  .company-nav,
-  .company-sidebar-bottom {
-    display: grid;
-    gap: 4px;
-  }
-  .company-nav a,
-  .company-sidebar-bottom a {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    min-height: 42px;
-    padding: 0 12px;
-    border-radius: 3px;
-    color: var(--vf-muted);
-    font-size: 0.86rem;
-    font-weight: 700;
-  }
-  .company-nav a:hover,
-  .company-sidebar-bottom a:hover {
-    background: var(--vf-mist);
-    color: var(--vf-ink);
-  }
-  .company-nav a.is-active {
-    background: var(--vf-red);
-    color: var(--vf-on-red);
-  }
-  .company-sidebar-bottom a.is-active {
-    background: var(--vf-red);
-    color: var(--vf-on-red);
-  }
-  .company-nav a i,
-  .company-sidebar-bottom a i {
-    width: 16px;
-    text-align: center;
-  }
-  .company-nav b {
-    margin-left: auto;
-    font-size: 0.68rem;
-    font-weight: 800;
-  }
-  .company-nav .is-alert {
-    color: var(--vf-red);
-  }
-  .company-nav .is-active .is-alert {
-    color: var(--vf-on-red);
-  }
-  .company-sidebar-bottom {
-    gap: 2px;
-    margin-top: auto;
-    border-top: 1px solid var(--vf-line);
-    padding-top: 18px;
-  }
-  .company-content {
-    min-width: 0;
-    padding: 34px clamp(24px, 4vw, 58px) 52px;
-  }
-  .company-topbar,
-  .company-toolbar,
-  .company-panel-heading {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 18px;
-  }
-  .company-topbar h1 {
-    margin-top: 4px;
-    font-size: clamp(1.75rem, 3vw, 2.45rem);
-  }
-  .company-top-actions {
-    display: flex;
-    align-items: center;
-    gap: 18px;
-  }
-  .company-icon-button,
-  .panel-icon-action {
-    position: relative;
-    display: grid;
-    place-items: center;
-    width: 38px;
-    height: 38px;
-    border: 1px solid var(--vf-line-strong);
-    border-radius: 4px;
-    background: var(--vf-paper);
-    color: var(--vf-ink);
-    cursor: pointer;
-  }
-  .company-icon-button span {
-    position: absolute;
-    top: 7px;
-    right: 7px;
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    background: var(--vf-red);
-  }
-  .company-profile {
-    display: flex;
-    align-items: center;
-    gap: 9px;
-    border: 0;
-    background: transparent;
-    color: var(--vf-ink);
-    text-align: left;
-    cursor: pointer;
-  }
-  .company-profile strong,
-  .company-profile small,
-  .team-list strong,
-  .team-list small {
-    display: block;
-  }
-  .company-profile strong {
-    font-size: 0.8rem;
-  }
-  .company-profile small {
-    color: var(--vf-muted);
-    font-size: 0.7rem;
-  }
-  .company-profile > i {
-    margin-left: 5px;
-    color: var(--vf-muted);
-    font-size: 0.7rem;
-  }
-  .company-avatar,
-  .team-avatar {
-    display: grid;
-    place-items: center;
-    width: 34px;
-    height: 34px;
-    border-radius: 50%;
-    background: var(--vf-red);
-    color: var(--vf-on-red);
-    font-size: 0.65rem;
-    font-weight: 900;
-  }
-  .company-toolbar {
-    margin-top: 34px;
-    padding-bottom: 14px;
-    border-bottom: 1px solid var(--vf-line);
-    color: var(--vf-muted);
-    font-size: 0.78rem;
-  }
-  .company-toolbar span {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-  }
-  .company-action {
-    min-height: 36px;
-    padding: 0 13px;
-    border: 1px solid var(--vf-line-strong);
-    border-radius: 3px;
-    background: var(--vf-paper);
-    color: var(--vf-ink);
-    font-size: 0.76rem;
-    font-weight: 800;
-    cursor: pointer;
-  }
-  .company-action i {
-    margin-right: 6px;
-    color: var(--vf-red);
-  }
-  .company-metrics {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 14px;
-    margin-top: 20px;
-  }
-  .company-metric {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    padding: 18px;
-    border: 1px solid var(--vf-line);
-    border-radius: 4px;
-    background: var(--vf-paper);
-  }
-  .metric-icon {
-    display: grid;
-    flex: none;
-    place-items: center;
-    width: 34px;
-    height: 34px;
-    border-radius: 3px;
-    font-size: 0.84rem;
-  }
-  .metric-blue {
-    background: #e8eefb;
-    color: #1f4fb8;
-  }
-  .metric-green {
-    background: #e6f4eb;
-    color: #0f6b35;
-  }
-  .metric-amber {
-    background: #fff2d7;
-    color: #a56b00;
-  }
-  .metric-red {
-    background: var(--vf-blush);
-    color: var(--vf-red);
-  }
-  .company-metric small,
-  .company-metric strong,
-  .company-metric em {
-    display: block;
-  }
-  .company-metric small {
-    color: var(--vf-muted);
-    font-size: 0.7rem;
-  }
-  .company-metric strong {
-    margin-top: 4px;
-    color: var(--vf-ink);
-    font-size: 1.35rem;
-    line-height: 1;
-  }
-  .company-metric em {
-    margin-top: 7px;
-    color: var(--vf-muted);
-    font-size: 0.68rem;
-    font-style: normal;
-  }
-  .metric-positive {
-    color: var(--vf-success) !important;
-  }
-  .metric-positive span {
-    color: var(--vf-muted);
-  }
-  .products-operations {
-    margin-top: 22px;
-    padding-top: 20px;
-    border-top: 1px solid var(--vf-line);
-  }
-  .operations-status {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    color: var(--vf-success);
-    font-size: 0.66rem;
-    font-weight: 800;
-  }
-  .operations-status i {
-    font-size: 0.42rem;
-  }
-  .operations-actions {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
-    margin-top: 16px;
-  }
-  .operation-action {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-width: 0;
-    padding: 11px;
-    border: 1px solid var(--vf-line);
-    border-radius: 3px;
-    background: var(--vf-paper);
-    color: var(--vf-ink);
-    text-align: left;
-    cursor: pointer;
-  }
-  .operation-action:hover {
-    border-color: var(--vf-red);
-  }
-  .operation-action > i:first-child {
-    flex: none;
-    color: var(--vf-red);
-    font-size: 0.82rem;
-  }
-  .operation-action > i:last-child {
-    margin-left: auto;
-    color: var(--vf-muted);
-    font-size: 0.6rem;
-  }
-  .operation-action span {
-    min-width: 0;
-  }
-  .operation-action strong,
-  .operation-action small {
-    display: block;
-  }
-  .operation-action strong {
-    font-size: 0.68rem;
-  }
-  .operation-action small {
-    margin-top: 3px;
-    color: var(--vf-muted);
-    font-size: 0.59rem;
-  }
-  .operation-action-primary {
-    border-color: var(--vf-red);
-    background: var(--vf-red);
-    color: var(--vf-on-red);
-  }
-  .operation-action-primary > i:first-child,
-  .operation-action-primary > i:last-child,
-  .operation-action-primary small {
-    color: inherit;
-  }
-  .operations-form {
-    display: grid;
-    grid-template-columns: 1.35fr 1fr;
-    align-items: end;
-    gap: 9px;
-    margin-top: 12px;
-    padding: 12px;
-    border: 1px solid var(--vf-line);
-    border-radius: 3px;
-    background: var(--vf-mist);
-  }
-  .operations-form-heading {
-    display: flex;
-    grid-column: 1 / -1;
-    justify-content: space-between;
-    align-items: center;
-    color: var(--vf-ink);
-    font-size: 0.7rem;
-  }
-  .operations-form-heading button {
-    border: 0;
-    background: transparent;
-    color: var(--vf-muted);
-    cursor: pointer;
-  }
-  .operations-form label {
-    display: grid;
-    gap: 5px;
-    color: var(--vf-muted);
-    font-size: 0.62rem;
-    font-weight: 800;
-  }
-  .operations-form input {
-    min-height: 31px;
-    width: 100%;
-    padding: 0 7px;
-    border: 1px solid var(--vf-line-strong);
-    border-radius: 3px;
-    background: var(--vf-paper);
-    color: var(--vf-ink);
-    font-size: 0.66rem;
-  }
-  .operations-form-actions {
-    display: flex;
-    grid-column: 1 / -1;
-    justify-content: flex-end;
-    gap: 6px;
-  }
-  .operations-submit,
-  .operations-cancel {
-    min-height: 31px;
-    padding: 0 9px;
-    border: 1px solid var(--vf-line-strong);
-    border-radius: 3px;
-    background: var(--vf-paper);
-    color: var(--vf-ink);
-    font-size: 0.63rem;
-    font-weight: 800;
-    cursor: pointer;
-    white-space: nowrap;
-  }
-  .operations-submit {
-    border-color: var(--vf-red);
-    background: var(--vf-red);
-    color: var(--vf-on-red);
-  }
-  .operations-submit i {
-    margin-right: 5px;
-  }
-  .operations-schedule-heading {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 17px;
-    color: var(--vf-ink);
-    font-size: 0.7rem;
-    font-weight: 800;
-  }
-  .operations-schedule-heading small {
-    color: var(--vf-muted);
-    font-size: 0.6rem;
-    font-weight: 500;
-  }
-  .operations-schedule {
-    display: grid;
-    gap: 6px;
-    margin-top: 8px;
-  }
-  .operations-item {
-    display: grid;
-    grid-template-columns: 28px minmax(0, 1fr) auto;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 0;
-    border-top: 1px solid var(--vf-line);
-  }
-  .operations-item-icon {
-    display: grid;
-    place-items: center;
-    width: 27px;
-    height: 27px;
-    border-radius: 3px;
-    background: #e8eefb;
-    color: #1f4fb8;
-    font-size: 0.64rem;
-  }
-  .operations-item-icon.is-payment {
-    background: #fff2d7;
-    color: #a56b00;
-  }
-  .operations-item strong,
-  .operations-item small {
-    display: block;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .operations-item strong {
-    color: var(--vf-ink);
-    font-size: 0.65rem;
-  }
-  .operations-item small,
-  .operations-item time {
-    color: var(--vf-muted);
-    font-size: 0.58rem;
-  }
-  .operations-item-status {
-    display: none;
-  }
-  .operations-notice {
-    margin: 8px 0 0;
-    color: var(--vf-success);
-    font-size: 0.62rem;
-  }
-  .company-grid-main,
-  .company-grid-bottom {
-    display: grid;
-    grid-template-columns: minmax(0, 1.55fr) minmax(280px, 0.85fr);
-    gap: 14px;
-    margin-top: 14px;
-  }
-  .company-grid-bottom {
-    grid-template-columns: minmax(0, 1.55fr) minmax(280px, 0.85fr);
-  }
-  .company-panel {
-    min-width: 0;
-    padding: 22px;
-    border: 1px solid var(--vf-line);
-    border-radius: 4px;
-    background: var(--vf-paper);
-  }
-  .company-panel h2 {
-    margin-top: 4px;
-    font-size: 1.12rem;
-  }
-  .company-panel-heading > a,
-  .panel-link {
-    color: var(--vf-red);
-    font-size: 0.75rem;
-    font-weight: 800;
-  }
-  .company-panel-heading > a i,
-  .panel-link i {
-    margin-left: 5px;
-    font-size: 0.65rem;
-  }
-  .company-table-wrap {
-    margin-top: 18px;
-    overflow-x: auto;
-  }
-  .company-table {
-    width: 100%;
-    min-width: 600px;
-    border-collapse: collapse;
-    font-size: 0.75rem;
-  }
-  .company-table th {
-    padding: 0 12px 11px;
-    border-bottom: 1px solid var(--vf-line);
-    color: var(--vf-muted);
-    font-size: 0.65rem;
-    font-weight: 800;
-    text-align: left;
-    text-transform: uppercase;
-  }
-  .company-table td {
-    padding: 12px;
-    border-bottom: 1px solid var(--vf-line);
-    color: var(--vf-text);
-    white-space: nowrap;
-  }
-  .company-table tr:last-child td {
-    border-bottom: 0;
-  }
-  .company-table td:first-child {
-    display: grid;
-    grid-template-columns: 8px auto;
-    column-gap: 8px;
-    align-items: center;
-  }
-  .company-table td:first-child small {
-    grid-column: 2;
-    color: var(--vf-muted);
-    font-size: 0.65rem;
-  }
-  .product-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--product-color);
-  }
-  .status-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    color: var(--vf-success);
-    font-size: 0.68rem;
-    font-weight: 800;
-  }
-  .status-pill i {
-    font-size: 0.42rem;
-  }
-  .status-warning {
-    color: #b87700;
-  }
-  .table-date {
-    color: var(--vf-muted) !important;
-  }
-  .alert-count {
-    padding: 4px 7px;
-    border-radius: 3px;
-    background: var(--vf-blush);
-    color: var(--vf-red);
-    font-size: 0.65rem;
-    font-weight: 800;
-  }
-  .alert-list {
-    display: grid;
-    gap: 18px;
-    margin-top: 22px;
-    list-style: none;
-  }
-  .alert-list li {
-    display: flex;
-    gap: 11px;
-  }
-  .alert-symbol {
-    display: grid;
-    flex: none;
-    place-items: center;
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    font-size: 0.7rem;
-  }
-  .alert-symbol-red {
-    background: var(--vf-blush);
-    color: var(--vf-red);
-  }
-  .alert-symbol-amber {
-    background: #fff2d7;
-    color: #a56b00;
-  }
-  .alert-symbol-gray {
-    background: var(--vf-mist);
-    color: var(--vf-muted);
-  }
-  .alert-list strong {
-    color: var(--vf-ink);
-    font-size: 0.76rem;
-  }
-  .alert-list p,
-  .alert-list small {
-    display: block;
-    color: var(--vf-muted);
-    font-size: 0.68rem;
-  }
-  .alert-list small {
-    margin-top: 3px;
-    font-size: 0.62rem;
-  }
-  .panel-link {
-    display: inline-block;
-    margin-top: 22px;
-  }
-  .company-activity {
-    min-height: 285px;
-  }
-  .company-activity select {
-    border: 1px solid var(--vf-line-strong);
-    border-radius: 3px;
-    background: var(--vf-paper);
-    color: var(--vf-ink);
-    font-size: 0.72rem;
-    padding: 7px 9px;
-  }
-  .activity-chart {
-    display: flex;
-    height: 185px;
-    margin-top: 18px;
-  }
-  .chart-y {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    padding-bottom: 20px;
-    color: var(--vf-muted);
-    font-size: 0.62rem;
-  }
-  .chart-area {
-    position: relative;
-    flex: 1;
-    margin-left: 12px;
-  }
-  .chart-grid-lines {
-    position: absolute;
-    inset: 0 0 20px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-  }
-  .chart-grid-lines i {
-    display: block;
-    border-top: 1px dashed var(--vf-line);
-  }
-  .chart-area svg {
-    position: absolute;
-    inset: 0 0 20px;
-    width: 100%;
-    height: calc(100% - 20px);
-    overflow: visible;
-  }
-  .chart-x {
-    position: absolute;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    display: flex;
-    justify-content: space-between;
-    color: var(--vf-muted);
-    font-size: 0.62rem;
-  }
-  .team-list {
-    display: grid;
-    gap: 15px;
-    margin-top: 22px;
-  }
-  .team-list > div {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  .team-avatar {
-    background: #1f4fb8;
-  }
-  .team-avatar-alt {
-    background: #0f6b35;
-  }
-  .team-avatar-muted {
-    background: var(--vf-line-strong);
-    color: var(--vf-ink);
-  }
-  .team-list strong {
-    color: var(--vf-ink);
-    font-size: 0.75rem;
-  }
-  .team-list small {
-    color: var(--vf-muted);
-    font-size: 0.66rem;
-  }
-  .team-list > div > i {
-    margin-left: auto;
-    font-size: 0.45rem;
-  }
-  .team-online {
-    color: var(--vf-success);
-  }
-  .team-offline {
-    color: var(--vf-muted);
-  }
-  .team-invite {
-    width: 100%;
-    min-height: 36px;
-    margin-top: 20px;
-    border: 1px dashed var(--vf-line-strong);
-    border-radius: 3px;
-    background: transparent;
-    color: var(--vf-red);
-    font-size: 0.72rem;
-    font-weight: 800;
-    cursor: pointer;
-  }
-  .team-invite i {
-    margin-right: 6px;
-  }
-  :global(.team-manager-list) {
-    display: grid;
-    gap: 12px;
-    margin-top: 20px;
-  }
-  :global(.team-manager-member) {
-    display: grid;
-    grid-template-columns: 34px minmax(0, 1fr) auto;
-    align-items: center;
-    gap: 9px;
-    padding-block: 4px;
-  }
-  :global(.team-manager-identity) {
-    min-width: 0;
-  }
-  :global(.team-manager-identity strong),
-  :global(.team-manager-identity small) {
-    display: block;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  :global(.team-manager-identity strong) {
-    color: var(--vf-ink);
-    font-size: 0.74rem;
-  }
-  :global(.team-manager-identity small) {
-    color: var(--vf-muted);
-    font-size: 0.62rem;
-  }
-  :global(.team-manager-member select),
-  :global(.team-manager-form select),
-  :global(.team-manager-form input) {
-    min-height: 32px;
-    padding: 0 7px;
-    border: 1px solid var(--vf-line-strong);
-    border-radius: 3px;
-    background: var(--vf-paper);
-    color: var(--vf-ink);
-    font-size: 0.65rem;
-  }
-  :global(.team-manager-member select) {
-    max-width: 112px;
-  }
-  :global(.team-manager-member select:disabled) {
-    opacity: 0.7;
-  }
-  :global(.team-manager-status) {
-    grid-column: 2;
-    color: var(--vf-success);
-    font-size: 0.6rem;
-    font-weight: 800;
-  }
-  :global(.team-manager-status.is-pending) {
-    color: #b87700;
-  }
-  :global(.team-manager-remove) {
-    grid-column: 3;
-    grid-row: 1 / span 2;
-    display: grid;
-    place-items: center;
-    width: 26px;
-    height: 26px;
-    border: 1px solid var(--vf-line);
-    border-radius: 50%;
-    background: transparent;
-    color: var(--vf-muted);
-    cursor: pointer;
-  }
-  :global(.team-manager-remove:hover) {
-    border-color: var(--vf-red);
-    color: var(--vf-red);
-  }
-  :global(.team-manager-form) {
-    display: grid;
-    gap: 10px;
-    margin-top: 16px;
-    padding: 13px;
-    border: 1px solid var(--vf-line);
-    border-radius: 3px;
-    background: var(--vf-mist);
-  }
-  :global(.team-manager-form label) {
-    display: grid;
-    gap: 5px;
-    color: var(--vf-muted);
-    font-size: 0.65rem;
-    font-weight: 800;
-  }
-  :global(.team-manager-form small) {
-    color: var(--vf-muted);
-    font-size: 0.61rem;
-    font-weight: 500;
-  }
-  :global(.team-manager-form-actions) {
-    display: flex;
-    justify-content: flex-end;
-    gap: 7px;
-    margin-top: 3px;
-  }
-  :global(.team-manager-cancel),
-  :global(.team-manager-submit) {
-    min-height: 31px;
-    padding: 0 9px;
-    border: 1px solid var(--vf-line-strong);
-    border-radius: 3px;
-    background: var(--vf-paper);
-    color: var(--vf-ink);
-    font-size: 0.65rem;
-    font-weight: 800;
-    cursor: pointer;
-  }
-  :global(.team-manager-submit) {
-    border-color: var(--vf-red);
-    background: var(--vf-red);
-    color: var(--vf-on-red);
-  }
-  :global(.team-manager-footer) {
-    display: grid;
-    gap: 7px;
-  }
-  :global(.team-manager .team-invite) {
-    width: 100%;
-    min-height: 36px;
-    margin-top: 20px;
-    border: 1px dashed var(--vf-line-strong);
-    border-radius: 3px;
-    background: transparent;
-    color: var(--vf-red);
-    font-size: 0.72rem;
-    font-weight: 800;
-    cursor: pointer;
-  }
-  :global(.team-manager .team-invite i) {
-    margin-right: 6px;
-  }
-  :global(.team-manager-notice) {
-    color: var(--vf-success);
-    font-size: 0.64rem;
-  }
-  @media (max-width: 1100px) {
-    .company-metrics {
-      grid-template-columns: repeat(2, 1fr);
-    }
-    .company-grid-main,
-    .company-grid-bottom {
-      grid-template-columns: 1fr;
-    }
-  }
-  @media (max-width: 760px) {
-    .company-shell {
-      grid-template-columns: 1fr;
-    }
-    .company-sidebar {
-      position: static;
-      padding: 16px 20px;
-      border-right: 0;
-      border-bottom: 1px solid var(--vf-line);
-    }
-    .company-workspace {
-      margin: 20px 0 12px;
-    }
-    .company-nav {
-      display: flex;
-      overflow-x: auto;
-      margin-inline: -8px;
-      padding-inline: 8px;
-    }
-    .company-nav a {
-      min-width: max-content;
-    }
-    .company-nav a b {
-      display: none;
-    }
-    .company-sidebar-bottom {
-      display: none;
-    }
-    .company-content {
-      padding: 24px 16px 40px;
-    }
-    .company-topbar {
-      align-items: flex-start;
-    }
-    .company-profile strong,
-    .company-profile small,
-    .company-profile > i {
-      display: none;
-    }
-    .company-metrics {
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-    }
-    .company-metric {
-      padding: 12px;
-    }
-    .company-metric strong {
-      font-size: 1.1rem;
-    }
-    .company-panel {
-      padding: 16px;
-    }
-    .company-toolbar {
-      align-items: flex-start;
-      flex-direction: column;
-      gap: 12px;
-    }
-    .operations-form {
-      grid-template-columns: 1fr 1fr;
-    }
-    .operations-item {
-      grid-template-columns: 28px minmax(0, 1fr);
-    }
-    .operations-item time {
-      grid-column: 2;
-    }
-    .operations-form-actions {
-      grid-column: 1 / -1;
-    }
-  }
-  @media (max-width: 430px) {
-    .company-metrics {
-      grid-template-columns: 1fr;
-    }
-    .company-top-actions {
-      gap: 8px;
-    }
-  }
-</style>
-
-<style is:global>
-  .company-identity-root {
-    display: contents;
-  }
-  .company-workspace {
-    display: grid;
-    gap: 3px;
-    margin: 48px 8px 28px;
-    padding: 14px 12px;
-    border: 1px solid var(--vf-line);
-    border-radius: 4px;
-    background: var(--vf-mist);
-  }
-  .company-workspace-label,
-  .company-workspace-meta {
-    color: var(--vf-muted);
-    font-size: 0.68rem;
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-  .company-workspace strong {
-    color: var(--vf-ink);
-    font-size: 0.88rem;
-  }
-  .company-workspace-meta {
-    font-size: 0.7rem;
-    font-weight: 500;
-    letter-spacing: 0;
-    text-transform: none;
-  }
-  .company-profile-identity {
-    display: flex;
-    align-items: center;
-    gap: 9px;
-    color: var(--vf-ink);
-    text-align: left;
-  }
-  .company-profile-identity strong,
-  .company-profile-identity small {
-    display: block;
-  }
-  .company-profile-identity strong {
-    font-size: 0.8rem;
-  }
-  .company-profile-identity small {
-    color: var(--vf-muted);
-    font-size: 0.7rem;
-  }
-  .company-profile-role {
-    margin-left: 5px;
-    color: var(--vf-muted);
-    font-size: 0.7rem;
-  }
-  .company-settings-topbar {
-    margin-bottom: 14px;
-  }
-  .company-role-settings {
-    margin-top: 14px;
-    padding: 22px;
-    border: 1px solid var(--vf-line);
-    border-radius: 4px;
-    background: var(--vf-paper);
-  }
-  .company-settings-note {
-    color: var(--vf-muted);
-    font-size: 0.66rem;
-    font-weight: 700;
-  }
-  .company-settings-intro {
-    margin-top: 8px;
-    color: var(--vf-muted);
-    font-size: 0.74rem;
-  }
-  .company-role-grid {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 10px;
-    margin-top: 18px;
-  }
-  .company-role-grid fieldset {
-    min-width: 0;
-    padding: 13px;
-    border: 1px solid var(--vf-line);
-    border-radius: 3px;
-  }
-  .company-role-grid legend {
-    padding: 0 5px;
-    color: var(--vf-ink);
-    font-size: 0.7rem;
-    font-weight: 800;
-  }
-  .company-role-grid label {
-    display: flex;
-    align-items: flex-start;
-    gap: 7px;
-    margin-top: 10px;
-    color: var(--vf-text);
-    font-size: 0.63rem;
-    line-height: 1.25;
-  }
-  .company-role-grid input {
-    flex: none;
-    accent-color: var(--vf-red);
-  }
-  .company-settings-save {
-    min-height: 33px;
-    margin-top: 15px;
-    padding: 0 11px;
-    border: 1px solid var(--vf-red);
-    border-radius: 3px;
-    background: var(--vf-red);
-    color: var(--vf-on-red);
-    font-size: 0.67rem;
-    font-weight: 800;
-    cursor: pointer;
-  }
-  .company-settings-save i {
-    margin-right: 5px;
-  }
-  .company-settings-success {
-    margin-left: 9px;
-    color: var(--vf-success);
-    font-size: 0.64rem;
-  }
-  .company-metrics {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 14px;
-    margin-top: 20px;
-  }
-  .company-metric {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    padding: 18px;
-    border: 1px solid var(--vf-line);
-    border-radius: 4px;
-    background: var(--vf-paper);
-  }
-  .company-metric small,
-  .company-metric strong,
-  .company-metric em {
-    display: block;
-  }
-  .company-metric small {
-    color: var(--vf-muted);
-    font-size: 0.7rem;
-  }
-  .company-metric strong {
-    margin-top: 4px;
-    color: var(--vf-ink);
-    font-size: 1.35rem;
-    line-height: 1;
-  }
-  .company-metric em {
-    margin-top: 7px;
-    color: var(--vf-muted);
-    font-size: 0.68rem;
-    font-style: normal;
-  }
-  .metric-icon {
-    display: grid;
-    flex: none;
-    place-items: center;
-    width: 34px;
-    height: 34px;
-    border-radius: 3px;
-    font-size: 0.84rem;
-  }
-  .metric-blue {
-    background: #e8eefb;
-    color: #1f4fb8;
-  }
-  .metric-green {
-    background: #e6f4eb;
-    color: #0f6b35;
-  }
-  .metric-amber {
-    background: #fff2d7;
-    color: #a56b00;
-  }
-  .metric-red {
-    background: var(--vf-blush);
-    color: var(--vf-red);
-  }
-  .company-real-products {
-    margin-top: 14px;
-  }
-  .company-real-products h2 {
-    margin-top: 4px;
-    color: var(--vf-ink);
-    font-size: 1.12rem;
-  }
-  .company-real-products .company-panel-heading > a {
-    color: var(--vf-red);
-    font-size: 0.75rem;
-    font-weight: 800;
-  }
-  .company-data-empty {
-    margin-top: 20px;
-    padding: 18px;
-    border: 1px dashed var(--vf-line-strong);
-    color: var(--vf-muted);
-    font-size: 0.76rem;
-  }
-  .company-real-products .company-table-wrap {
-    margin-top: 18px;
-    overflow-x: auto;
-  }
-  .company-real-products .company-table {
-    width: 100%;
-    min-width: 600px;
-    border-collapse: collapse;
-    font-size: 0.75rem;
-  }
-  .company-real-products .company-table th {
-    padding: 0 12px 11px;
-    border-bottom: 1px solid var(--vf-line);
-    color: var(--vf-muted);
-    font-size: 0.65rem;
-    font-weight: 800;
-    text-align: left;
-    text-transform: uppercase;
-  }
-  .company-real-products .company-table td {
-    padding: 12px;
-    border-bottom: 1px solid var(--vf-line);
-    color: var(--vf-text);
-    white-space: nowrap;
-  }
-  .company-real-products .company-table td:first-child strong,
-  .company-real-products .company-table td:first-child small {
-    display: block;
-  }
-  .company-real-products .company-table td:first-child small {
-    margin-top: 3px;
-    color: var(--vf-muted);
-    font-size: 0.65rem;
-  }
-  .company-real-products .company-table tr:last-child td {
-    border-bottom: 0;
-  }
-  .company-real-products .status-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    color: var(--vf-success);
-    font-size: 0.68rem;
-    font-weight: 800;
-  }
-  .company-real-products .status-pill i {
-    font-size: 0.42rem;
-  }
-  .company-real-products .status-warning {
-    color: #b87700;
-  }
-  .company-real-products .table-date {
-    color: var(--vf-muted) !important;
-  }
-  .products-operations {
-    margin-top: 22px;
-    padding-top: 20px;
-    border-top: 1px solid var(--vf-line);
-  }
-  .products-operations .company-panel-heading {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 18px;
-  }
-  .products-operations h2 {
-    margin-top: 4px;
-    color: var(--vf-ink);
-    font-size: 1.02rem;
-  }
-  .operations-status {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    color: var(--vf-success);
-    font-size: 0.66rem;
-    font-weight: 800;
-    white-space: nowrap;
-  }
-  .operations-status i {
-    font-size: 0.42rem;
-  }
-  .operations-actions {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 9px;
-    margin-top: 16px;
-  }
-  .operation-action {
-    display: flex;
-    align-items: center;
-    gap: 9px;
-    min-width: 0;
-    min-height: 58px;
-    padding: 10px 11px;
-    border: 1px solid var(--vf-line);
-    border-radius: 4px;
-    background: var(--vf-paper);
-    color: var(--vf-ink);
-    text-align: left;
-    text-decoration: none;
-    cursor: pointer;
-    font: inherit;
-  }
-  .operation-action:hover {
-    border-color: var(--vf-red);
-    background: var(--vf-mist);
-  }
-  .operation-action > i:first-child {
-    flex: none;
-    color: var(--vf-red);
-    font-size: 0.84rem;
-  }
-  .operation-action > i:last-child {
-    margin-left: auto;
-    color: var(--vf-muted);
-    font-size: 0.6rem;
-  }
-  .operation-action span {
-    min-width: 0;
-  }
-  .operation-action strong,
-  .operation-action small {
-    display: block;
-  }
-  .operation-action strong {
-    color: var(--vf-ink);
-    font-size: 0.68rem;
-  }
-  .operation-action small {
-    margin-top: 4px;
-    color: var(--vf-muted);
-    font-size: 0.59rem;
-  }
-  .operation-action-primary {
-    border-color: var(--vf-red);
-    background: var(--vf-red);
-    color: var(--vf-on-red);
-  }
-  .operation-action-primary:hover {
-    background: var(--vf-red);
-  }
-  .operation-action-primary > i:first-child,
-  .operation-action-primary > i:last-child,
-  .operation-action-primary strong,
-  .operation-action-primary small {
-    color: var(--vf-on-red);
-  }
-  .operations-form {
-    display: grid;
-    grid-template-columns: 1.35fr 1fr;
-    align-items: end;
-    gap: 9px;
-    margin-top: 12px;
-    padding: 12px;
-    border: 1px solid var(--vf-line);
-    border-radius: 4px;
-    background: var(--vf-mist);
-  }
-  .operations-form-heading {
-    display: flex;
-    grid-column: 1 / -1;
-    align-items: center;
-    justify-content: space-between;
-    color: var(--vf-ink);
-    font-size: 0.7rem;
-  }
-  .operations-form-heading button {
-    border: 0;
-    background: transparent;
-    color: var(--vf-muted);
-    cursor: pointer;
-  }
-  .operations-form label {
-    display: grid;
-    gap: 5px;
-    color: var(--vf-muted);
-    font-size: 0.62rem;
-    font-weight: 800;
-  }
-  .operations-form input {
-    box-sizing: border-box;
-    min-height: 32px;
-    width: 100%;
-    padding: 0 8px;
-    border: 1px solid var(--vf-line-strong);
-    border-radius: 3px;
-    background: var(--vf-paper);
-    color: var(--vf-ink);
-    font: inherit;
-    font-size: 0.66rem;
-  }
-  .operations-form-actions {
-    display: flex;
-    grid-column: 1 / -1;
-    justify-content: flex-end;
-    gap: 7px;
-  }
-  .operations-submit,
-  .operations-cancel {
-    min-height: 32px;
-    padding: 0 10px;
-    border: 1px solid var(--vf-line-strong);
-    border-radius: 3px;
-    background: var(--vf-paper);
-    color: var(--vf-ink);
-    font-size: 0.64rem;
-    font-weight: 800;
-    cursor: pointer;
-  }
-  .operations-submit {
-    border-color: var(--vf-red);
-    background: var(--vf-red);
-    color: var(--vf-on-red);
-  }
-  .operations-submit i {
-    margin-right: 5px;
-  }
-  .operations-schedule-heading {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 18px;
-    color: var(--vf-ink);
-    font-size: 0.7rem;
-    font-weight: 800;
-  }
-  .operations-schedule-heading small {
-    color: var(--vf-muted);
-    font-size: 0.6rem;
-    font-weight: 500;
-  }
-  .operations-schedule {
-    display: grid;
-    gap: 7px;
-    margin-top: 8px;
-  }
-  .operations-item {
-    display: grid;
-    grid-template-columns: 28px minmax(0, 1fr) auto;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 0;
-    border-top: 1px solid var(--vf-line);
-  }
-  .operations-item-icon {
-    display: grid;
-    place-items: center;
-    width: 27px;
-    height: 27px;
-    border-radius: 3px;
-    background: #e8eefb;
-    color: #1f4fb8;
-    font-size: 0.64rem;
-  }
-  .operations-item-icon.is-payment {
-    background: #fff2d7;
-    color: #a56b00;
-  }
-  .operations-item strong,
-  .operations-item small {
-    display: block;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .operations-item strong {
-    color: var(--vf-ink);
-    font-size: 0.65rem;
-  }
-  .operations-item small,
-  .operations-item time {
-    color: var(--vf-muted);
-    font-size: 0.58rem;
-  }
-  .operations-notice {
-    margin: 8px 0 0;
-    color: var(--vf-success);
-    font-size: 0.62rem;
-  }
-  @media (max-width: 760px) {
-    .company-profile-identity > span:not(.company-avatar) {
-      display: none;
-    }
-    .company-metrics {
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-    }
-    .company-metric {
-      padding: 12px;
-    }
-    .company-metric strong {
-      font-size: 1.1rem;
-    }
-    .company-real-products {
-      padding: 16px;
-    }
-    .company-role-settings {
-      padding: 16px;
-    }
-    .company-role-grid {
-      grid-template-columns: 1fr 1fr;
-    }
-    .products-operations .company-panel-heading {
-      align-items: flex-start;
-      flex-direction: column;
-      gap: 7px;
-    }
-    .operations-form {
-      grid-template-columns: 1fr;
-    }
-    .operations-form-actions {
-      justify-content: stretch;
-    }
-    .operations-form-actions button {
-      flex: 1;
-    }
-    .operations-item {
-      grid-template-columns: 28px minmax(0, 1fr);
-    }
-    .operations-item time {
-      grid-column: 2;
-    }
-  }
-  @media (max-width: 430px) {
-    .company-metrics {
-      grid-template-columns: 1fr;
-    }
-    .company-role-grid {
-      grid-template-columns: 1fr;
-    }
-  }
-</style>

@@ -1,10 +1,27 @@
 import { useStore } from '@nanostores/react';
-import { $purchaseIds, $summaries, isSummary } from '@/stores/batches';
+import { formatNumber } from '@/lib/format';
+import type { Locale } from '@/lib/locale';
 import type { PurchaseSummary } from '@/lib/types';
-import { formatNumber as number } from '@/lib/format';
-export function CompanyCatalogSummary() {
-  const ids = useStore($purchaseIds);
+import { $purchaseIds, $summaries, isSummary } from '@/stores/batches';
+import { CompanyTextProvider, useCompanyText, useHydrated } from './CompanyText';
+
+export function CompanyCatalogSummary({ locale }: { locale?: Locale | undefined }) {
+  return (
+    <CompanyTextProvider locale={locale}>
+      <Summary />
+    </CompanyTextProvider>
+  );
+}
+
+function Summary() {
+  const t = useCompanyText();
+  const text = t.catalog;
+  const number = (value: number) => formatNumber(value, 2, t.intl);
+  // The stores may already hold the batches when this island hydrates; the first render must match the server's.
+  const hydrated = useHydrated();
+  const storedIds = useStore($purchaseIds);
   const summaries = useStore($summaries);
+  const ids = hydrated ? storedIds : [];
   const records = ids.map((id) => summaries[id]).filter((entry): entry is PurchaseSummary => isSummary(entry));
   const incomplete = records.length !== ids.length;
   const issued = records.filter((record) => record.batchId);
@@ -12,21 +29,25 @@ export function CompanyCatalogSummary() {
   const claimed = issued.reduce((sum, record) => sum + record.claimed, 0);
   const pending = records.filter((record) => !record.batchId);
   const recent = [...issued].sort((a, b) => (Date.parse(b.createdAt ?? '') || 0) - (Date.parse(a.createdAt ?? '') || 0)).slice(0, 5);
+  const metrics: [string, string, string][] = [
+    [text.metrics.batches, number(issued.length), 'layer-group'],
+    [text.metrics.tokens, number(units), 'cubes-stacked'],
+    [text.metrics.claimed, number(claimed), 'circle-check'],
+    [text.metrics.percent, units ? `${number((claimed / units) * 100)}%` : '—', 'chart-pie']
+  ];
   return (
     <>
       {incomplete && (
         <p className="company-data-empty" role="status">
-          Algunos datos todavía no están disponibles. El resumen muestra las compras cargadas.
+          {text.incomplete}
         </p>
       )}
-      <section className="company-metrics" aria-label="Resumen de lotes">
-        {[
-          ['Lotes generados', number(issued.length)],
-          ['Tokens en lotes', number(units)],
-          ['Tokens activados', number(claimed)],
-          ['Porcentaje activado', units ? `${number((claimed / units) * 100)}%` : '—']
-        ].map(([label, value]) => (
+      <section className="company-metrics" aria-label={text.metricsLabel}>
+        {metrics.map(([label, value, icon]) => (
           <article className="company-metric" key={label}>
+            <span className="metric-icon metric-red">
+              <i className={`fa-solid fa-${icon}`} aria-hidden="true" />
+            </span>
             <div>
               <small>{label}</small>
               <strong>{value}</strong>
@@ -35,49 +56,49 @@ export function CompanyCatalogSummary() {
         ))}
       </section>
       <div className="company-emission-summary">
-        <section className="company-real-products">
-          <h2>Estado de emisión</h2>
+        <section className="company-card">
+          <h2>{text.emission.title}</h2>
           <dl className="company-emission-values">
             <div>
-              <dt>Compras sin lote generado</dt>
+              <dt>{text.emission.pendingPurchases}</dt>
               <dd>{number(pending.length)}</dd>
             </div>
             <div>
-              <dt>Tokens solicitados sin lote</dt>
+              <dt>{text.emission.pendingTokens}</dt>
               <dd>{number(pending.reduce((sum, record) => sum + record.quantity, 0))}</dd>
             </div>
             <div>
-              <dt>Importe de compras sin lote</dt>
+              <dt>{text.emission.pendingAmount}</dt>
               <dd>{number(pending.reduce((sum, record) => sum + Number(record.amount), 0))} XLM</dd>
             </div>
             <div>
-              <dt>Inversión en lotes generados</dt>
+              <dt>{text.emission.investment}</dt>
               <dd>{number(issued.reduce((sum, record) => sum + Number(record.amount), 0))} XLM</dd>
             </div>
             <div>
-              <dt>Tokens registrados en cadena</dt>
+              <dt>{text.emission.onChain}</dt>
               <dd>{number(records.reduce((sum, record) => sum + record.registeredOnChain, 0))}</dd>
             </div>
             <div>
-              <dt>Tokens pendientes en cadena</dt>
+              <dt>{text.emission.pendingOnChain}</dt>
               <dd>{number(records.reduce((sum, record) => sum + record.pendingOnChain, 0))}</dd>
             </div>
           </dl>
         </section>
-        <section className="company-real-products">
-          <h2>Últimos lotes generados</h2>
+        <section className="company-card">
+          <h2>{text.recent.title}</h2>
           {!recent.length ? (
-            <p className="company-data-empty">Todavía no hay lotes generados disponibles.</p>
+            <p className="company-data-empty">{text.recent.empty}</p>
           ) : (
             <div className="company-table-wrap">
               <table className="company-table">
                 <thead>
                   <tr>
-                    <th>Lote / modelo</th>
-                    <th>Destino</th>
-                    <th>Tokens</th>
-                    <th>Activados</th>
-                    <th>Fecha de compra</th>
+                    <th scope="col">{text.recent.lot}</th>
+                    <th scope="col">{text.recent.destination}</th>
+                    <th scope="col">{text.recent.tokens}</th>
+                    <th scope="col">{text.recent.claimed}</th>
+                    <th scope="col">{text.recent.date}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -90,7 +111,7 @@ export function CompanyCatalogSummary() {
                       <td>{record.destination}</td>
                       <td>{number(record.quantity)}</td>
                       <td>{number(record.claimed)}</td>
-                      <td>{record.createdAt ? new Date(record.createdAt).toLocaleDateString('es-AR') : '—'}</td>
+                      <td className="table-date">{record.createdAt ? new Date(record.createdAt).toLocaleDateString(t.intl) : '—'}</td>
                     </tr>
                   ))}
                 </tbody>

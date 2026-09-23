@@ -1,66 +1,103 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { PurchaseForm } from '@/components/purchase/PurchaseForm';
-import { CompanyOperations } from './CompanyOperations';
+import type { Locale } from '@/lib/locale';
 import type { CountryOption } from '@/lib/types';
-const modes = [
-  { id: 'now', title: 'Emitir ahora', detail: 'Crear el lote y continuar al pago', icon: 'fa-bolt' },
-  { id: 'batch', title: 'Programar lote', detail: 'Organizar la próxima producción', icon: 'fa-calendar-plus' },
-  { id: 'payment', title: 'Programar pago', detail: 'Agendar un importe y vencimiento', icon: 'fa-coins' }
-] as const;
-export function CompanyIssuance({ countries, pricePerToken }: { countries: CountryOption[]; pricePerToken: string }) {
-  const [mode, setMode] = useState<'now' | 'batch' | 'payment'>('now');
+import { Operations } from './CompanyOperations';
+import { CompanyTextProvider, useCompanyText } from './CompanyText';
+
+type Mode = 'now' | 'batch' | 'payment';
+
+const modes: { id: Mode; icon: string }[] = [
+  { id: 'now', icon: 'fa-bolt' },
+  { id: 'batch', icon: 'fa-calendar-plus' },
+  { id: 'payment', icon: 'fa-coins' }
+];
+
+// Other parts of the panel ask for a mode (the overview's "Programar pago") with this event before opening #generate.
+export const ISSUANCE_MODE_EVENT = 'verifire:issuance-mode';
+
+interface CompanyIssuanceProps {
+  countries: CountryOption[];
+  pricePerToken: string;
+  locale?: Locale | undefined;
+}
+
+export function CompanyIssuance({ locale, ...props }: CompanyIssuanceProps) {
+  return (
+    <CompanyTextProvider locale={locale}>
+      <Issuance {...props} />
+    </CompanyTextProvider>
+  );
+}
+
+function Issuance({ countries, pricePerToken }: Omit<CompanyIssuanceProps, 'locale'>) {
+  const t = useCompanyText();
+  const text = t.issuance;
+  const [mode, setMode] = useState<Mode>('now');
+
+  useEffect(() => {
+    const choose = (event: Event) => {
+      const requested = (event as CustomEvent<Mode>).detail;
+      if (modes.some((item) => item.id === requested)) setMode(requested);
+    };
+    window.addEventListener(ISSUANCE_MODE_EVENT, choose);
+    return () => window.removeEventListener(ISSUANCE_MODE_EVENT, choose);
+  }, []);
+
   return (
     <div className="company-issuance">
       <header className="issuance-heading">
-        <span className="company-eyebrow">Producción y pagos</span>
-        <h2>Planificá tu próxima emisión</h2>
-        <p>Emití tokens ahora o prepará la agenda de lotes y pagos desde este espacio.</p>
+        <span className="company-eyebrow">{text.eyebrow}</span>
+        <h2>{text.title}</h2>
+        <p>{text.lead}</p>
       </header>
-      <div className="issuance-modes" role="group" aria-label="Tipo de operación">
+      <div className="issuance-modes" role="group" aria-label={text.modesLabel}>
         {modes.map((item) => (
           <button key={item.id} type="button" aria-pressed={mode === item.id} onClick={() => setMode(item.id)}>
-            <i className={`fa-solid ${item.icon}`} aria-hidden="true" />
+            <span className="issuance-mode-icon" aria-hidden="true">
+              <i className={`fa-solid ${item.icon}`} />
+            </span>
             <span>
-              <strong>{item.title}</strong>
-              <small>{item.detail}</small>
+              <strong>{text.modes[item.id].title}</strong>
+              <small>{text.modes[item.id].detail}</small>
             </span>
           </button>
         ))}
       </div>
       <div hidden={mode !== 'now'} className="issuance-immediate">
-        <article className="company-real-products company-generation-form">
+        <article className="company-card company-generation-form">
           <div className="issuance-section-title">
             <span>01</span>
             <div>
-              <h2>Datos del lote</h2>
-              <p>Un producto, una referencia y un destino por emisión.</p>
+              <h2>{text.batchData}</h2>
+              <p>{text.batchDataLead}</p>
             </div>
           </div>
           <PurchaseForm pricePerToken={pricePerToken} countries={countries} batchesHref="#batches" embedded />
         </article>
-        <aside className="company-real-products issuance-payment-info">
-          <span className="company-eyebrow">Emisión inmediata</span>
-          <h3>Pago y disponibilidad</h3>
+        <aside className="company-card issuance-payment-info">
+          <span className="company-eyebrow">{text.infoEyebrow}</span>
+          <h3>{text.infoTitle}</h3>
           <dl>
             <div>
-              <dt>Cantidad permitida</dt>
-              <dd>1–500 tokens</dd>
+              <dt>{text.allowed}</dt>
+              <dd>{text.allowedValue}</dd>
             </div>
             <div>
-              <dt>Moneda</dt>
+              <dt>{text.currency}</dt>
               <dd>XLM</dd>
             </div>
             <div>
-              <dt>Medio de pago</dt>
+              <dt>{text.method}</dt>
               <dd>Cosmos Pay</dd>
             </div>
           </dl>
-          <p>El importe exacto y el QR aparecen al continuar. El lote se genera después de confirmar el pago.</p>
-          <p>Podés consultar el estado del pago y descargar las etiquetas desde Mis lotes.</p>
+          <p>{text.infoAmount}</p>
+          <p>{text.infoBatches}</p>
         </aside>
       </div>
       <div hidden={mode === 'now'}>
-        <CompanyOperations mode={mode === 'payment' ? 'payment' : 'batch'} />
+        <Operations mode={mode === 'payment' ? 'payment' : 'batch'} />
       </div>
     </div>
   );
