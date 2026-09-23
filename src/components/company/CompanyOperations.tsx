@@ -3,17 +3,9 @@ import { useEffect, useState, type SubmitEvent } from 'react';
 import { relativeTime } from '@/i18n/company';
 import { downloadBlob } from '@/lib/client/download';
 import { readSchedules, SCHEDULES_CHANGED_EVENT, writeSchedules, type ScheduleItem, type ScheduleType } from '@/lib/client/schedules';
-import type { Locale } from '@/lib/locale';
-import { CompanyTextProvider, useCompanyText } from './CompanyText';
+import { useCompanyText } from './CompanyText';
 
-export function CompanyOperations({ mode, locale }: { mode?: ScheduleType; locale?: Locale | undefined }) {
-  return (
-    <CompanyTextProvider locale={locale}>
-      <Operations mode={mode} />
-    </CompanyTextProvider>
-  );
-}
-
+// The agenda of scheduled batches and payments, inside Generar tokens (which provides the texts).
 export function Operations({ mode }: { mode?: ScheduleType | undefined }) {
   const t = useCompanyText();
   const text = t.operations;

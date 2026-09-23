@@ -224,7 +224,36 @@ const es = {
     role: 'Rol y permisos',
     create: 'Crear invitación',
     invite: 'Invitar integrante',
-    closeInvite: 'Cerrar invitación'
+    closeInvite: 'Cerrar invitación',
+    modeLabel: 'Cómo querés invitar',
+    modes: { email: 'Por correo', link: 'Link o QR' },
+    modeHelp: {
+      email: 'Le llega a su panel de Verifire, en notificaciones. Además te damos un link y un QR para compartir.',
+      link: 'Cualquiera que abra el link o escanee el QR puede sumarse con el rol que elijas.'
+    },
+    creating: 'Creando…',
+    shareTitle: 'Invitación lista',
+    shareTo: (email: string) => `Le avisamos a ${email} en su panel. También podés compartirle el link o el QR.`,
+    shareOpen: 'Compartí el link o el QR con quien quieras sumar.',
+    expiresIn: 'Vence en',
+    expiryOptions: { 1: '1 hora', 24: '24 horas', 72: '3 días', 168: '7 días' } as Record<1 | 24 | 72 | 168, string>,
+    countdown: (left: string) => `Vence en ${left}`,
+    expiredQr: 'Este QR venció',
+    expiredHelp: 'El link y el QR ya no sirven. Generá uno nuevo para seguir invitando.',
+    regenerate: 'Generar uno nuevo',
+    copy: 'Copiar link',
+    copied: 'Link copiado',
+    share: 'Compartir',
+    shareText: (company: string) => `Te invito a sumarte al equipo de ${company} en Verifire.`,
+    downloadQr: 'Descargar QR',
+    qrAlt: 'QR de la invitación',
+    qrFile: 'verifire-invitacion.png',
+    done: 'Listo',
+    shareAgain: (who: string) => `Compartir invitación de ${who}`,
+    linkMember: 'Invitación por link',
+    declined: 'Rechazada',
+    expired: 'Vencida',
+    revokeFailed: 'No se pudo cancelar la invitación en el servidor. Se quitó de tu lista.'
   },
   rolesSettings: {
     eyebrow: 'Administración',
@@ -353,6 +382,7 @@ const es = {
     clear: 'Vaciar',
     empty: 'No tenés notificaciones. Te avisamos cuando se confirme un pago, se cree un lote o se acerque una fecha de tu agenda.',
     close: 'Cerrar aviso',
+    closePanel: 'Cerrar notificaciones',
     settings: 'Configurar',
     kinds: {
       paymentSucceeded: {
@@ -378,6 +408,18 @@ const es = {
       batchDue: {
         title: 'Llegó la fecha de un lote programado',
         body: (p: Record<string, string>) => `${p['title'] ?? ''} estaba programado para ${p['when'] ?? ''}. Emitilo desde Generar tokens.`
+      },
+      teamInvite: {
+        title: 'Te invitaron a un equipo',
+        body: (p: Record<string, string>) => `${p['inviter'] ?? ''} te invitó a ${p['company'] ?? ''} como ${p['roleLabel'] ?? ''}. Tocá para responder.`
+      },
+      inviteAccepted: {
+        title: 'Invitación aceptada',
+        body: (p: Record<string, string>) => `${p['who'] ?? ''} se sumó a ${p['company'] ?? ''} como ${p['roleLabel'] ?? ''}.`
+      },
+      inviteDeclined: {
+        title: 'Invitación rechazada',
+        body: (p: Record<string, string>) => `${p['who'] ?? ''} rechazó la invitación a ${p['company'] ?? ''}.`
       },
       demo: { title: 'Modo demo activado', body: () => 'Estás viendo datos de ejemplo. Podés desactivarlo desde Configuración.' },
       test: { title: 'Notificación de prueba', body: () => 'Así vas a ver los avisos de pagos, lotes y vencimientos.' }
@@ -766,7 +808,36 @@ const en: CompanyMessages = {
     role: 'Role and permissions',
     create: 'Create invitation',
     invite: 'Invite member',
-    closeInvite: 'Close invitation'
+    closeInvite: 'Close invitation',
+    modeLabel: 'How do you want to invite',
+    modes: { email: 'By email', link: 'Link or QR' },
+    modeHelp: {
+      email: 'It reaches their Verifire dashboard, under notifications. You also get a link and a QR to share.',
+      link: 'Anyone who opens the link or scans the QR can join with the role you choose.'
+    },
+    creating: 'Creating…',
+    shareTitle: 'Invitation ready',
+    shareTo: (email: string) => `We let ${email} know in their dashboard. You can also share the link or the QR.`,
+    shareOpen: 'Share the link or the QR with whoever you want to add.',
+    expiresIn: 'Expires in',
+    expiryOptions: { 1: '1 hour', 24: '24 hours', 72: '3 days', 168: '7 days' },
+    countdown: (left: string) => `Expires in ${left}`,
+    expiredQr: 'This QR expired',
+    expiredHelp: 'The link and the QR no longer work. Create a new one to keep inviting.',
+    regenerate: 'Create a new one',
+    copy: 'Copy link',
+    copied: 'Link copied',
+    share: 'Share',
+    shareText: (company: string) => `Join the ${company} team on Verifire.`,
+    downloadQr: 'Download QR',
+    qrAlt: 'Invitation QR',
+    qrFile: 'verifire-invitation.png',
+    done: 'Done',
+    shareAgain: (who: string) => `Share the invitation for ${who}`,
+    linkMember: 'Invitation by link',
+    declined: 'Declined',
+    expired: 'Expired',
+    revokeFailed: 'The invitation could not be cancelled on the server. It was removed from your list.'
   },
   rolesSettings: {
     eyebrow: 'Administration',
@@ -895,6 +966,7 @@ const en: CompanyMessages = {
     clear: 'Clear',
     empty: 'You have no notifications. We will let you know when a payment is confirmed, a batch is created or a date in your agenda is near.',
     close: 'Dismiss notice',
+    closePanel: 'Close notifications',
     settings: 'Settings',
     kinds: {
       paymentSucceeded: {
@@ -920,6 +992,18 @@ const en: CompanyMessages = {
       batchDue: {
         title: 'A scheduled batch is due',
         body: (p: Record<string, string>) => `${p['title'] ?? ''} was scheduled for ${p['when'] ?? ''}. Issue it from Issue tokens.`
+      },
+      teamInvite: {
+        title: 'You were invited to a team',
+        body: (p: Record<string, string>) => `${p['inviter'] ?? ''} invited you to ${p['company'] ?? ''} as ${p['roleLabel'] ?? ''}. Tap to answer.`
+      },
+      inviteAccepted: {
+        title: 'Invitation accepted',
+        body: (p: Record<string, string>) => `${p['who'] ?? ''} joined ${p['company'] ?? ''} as ${p['roleLabel'] ?? ''}.`
+      },
+      inviteDeclined: {
+        title: 'Invitation declined',
+        body: (p: Record<string, string>) => `${p['who'] ?? ''} declined the invitation to ${p['company'] ?? ''}.`
       },
       demo: { title: 'Demo mode on', body: () => 'You are looking at sample data. You can turn it off in Settings.' },
       test: { title: 'Test notification', body: () => 'This is how payment, batch and due date notices look.' }

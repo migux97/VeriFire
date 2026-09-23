@@ -5,6 +5,7 @@ import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from '
 import { dirname } from 'node:path';
 import { config } from './config';
 import { singleton } from './singleton';
+import type { TeamRole } from '../types';
 
 export interface ProductFields {
   configuration?: IssuanceOptions;
@@ -80,6 +81,24 @@ export interface Workspace {
   updatedAt: string;
 }
 
+// An invitation to a company's team (see invitations.ts). The token is the secret carried by the link and the QR.
+export interface Invitation {
+  id: string;
+  token: string;
+  companyName: string;
+  inviterName: string;
+  inviterEmail: string;
+  // Lower case. Empty for an open link, which whoever opens it can accept.
+  email: string;
+  role: TeamRole;
+  status: 'pending' | 'accepted' | 'declined' | 'revoked';
+  createdAt: string;
+  expiresAt: string;
+  respondedAt?: string;
+  // Who accepted an open link.
+  acceptedBy?: string;
+}
+
 // Same format the file has always had: batches list their products by token.
 interface SavedState {
   nextTokenId?: number;
@@ -88,6 +107,7 @@ interface SavedState {
   batches?: (Omit<Batch, 'tokens'> & { tokens: string[] })[];
   purchases?: Purchase[];
   workspaces?: Workspace[];
+  invitations?: Invitation[];
 }
 
 export const hashSecret = (secret: string) => createHash('sha256').update(secret).digest('hex');
@@ -110,7 +130,8 @@ const createState = () => {
     ]),
     batches: new Map<string, Batch>(),
     purchases: new Map<string, Purchase>(),
-    workspaces: new Map<string, Workspace>()
+    workspaces: new Map<string, Workspace>(),
+    invitations: new Map<string, Invitation>()
   };
 
   const readSaved = (file: string) => JSON.parse(readFileSync(file, 'utf8')) as SavedState;
@@ -134,12 +155,16 @@ const createState = () => {
   }
   for (const purchase of saved.purchases ?? []) state.purchases.set(purchase.purchaseId, purchase);
   for (const workspace of saved.workspaces ?? []) state.workspaces.set(workspace.owner, workspace);
+  for (const invitation of saved.invitations ?? []) state.invitations.set(invitation.id, invitation);
   state.nextTokenId = Math.max(state.nextTokenId, Number(saved.nextTokenId) || 0);
   state.nextBatchId = Math.max(state.nextBatchId, Number(saved.nextBatchId) || 0);
   return state;
 };
 
 export const store = singleton('store', createState);
+// A state created by an older version of this module (the dev server keeps it across reloads) lacks the lists added
+// since; they start empty instead of breaking every request that reads them.
+store.invitations ??= new Map<string, Invitation>();
 
 export const saveState = () => {
   const saved: SavedState = {
@@ -148,7 +173,8 @@ export const saveState = () => {
     products: [...store.products.values()],
     batches: [...store.batches.values()].map((batch) => ({ ...batch, tokens: batch.tokens.map((product) => product.token) })),
     purchases: [...store.purchases.values()],
-    workspaces: [...store.workspaces.values()]
+    workspaces: [...store.workspaces.values()],
+    invitations: [...store.invitations.values()]
   };
   // Written beside the file and renamed over it: a rename is atomic, so a crash leaves either the previous state or
   // the new one, never half of either. The previous file is kept as .bak for the case where the disk itself lied.

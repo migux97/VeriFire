@@ -151,6 +151,28 @@ export interface CreatedPurchase {
   qr: string;
 }
 
+export type TeamRole = 'admin' | 'operator' | 'auditor' | 'viewer';
+
+// An invitation to a company's team, as the invitee and the inviter see it. Its secret token is not part of it.
+export interface InvitationView {
+  id: string;
+  companyName: string;
+  inviterName: string;
+  role: TeamRole;
+  status: 'pending' | 'accepted' | 'declined' | 'revoked' | 'expired';
+  // Who it is for. Empty for an open link.
+  email: string;
+  createdAt: string;
+  expiresAt: string;
+  respondedAt: string | null;
+  acceptedBy: string | null;
+}
+
+// An invitation waiting in the invitee's panel, with the token needed to answer it.
+export interface InboxInvitation extends InvitationView {
+  token: string;
+}
+
 export interface CountryOption {
   code: string;
   name: string;
