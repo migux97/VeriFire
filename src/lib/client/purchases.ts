@@ -1,7 +1,7 @@
 // A purchase id is the key to the secret codes of its batch and there are no server-side company accounts, so the
 // list of purchases is kept in this browser, per account. Shared by the buy page and the list of batches.
 import type { PurchaseStatus } from '../types';
-import { getJson } from './api';
+import { getJson, postJson } from './api';
 import { userSession } from './session';
 import { readStored, writeStored } from './storage';
 
@@ -38,6 +38,11 @@ export const migrateLegacyPurchase = () => {
   }
 };
 
-// With { summary: true } the answer carries no secret codes and no QR images: enough to list and count batches.
-export const fetchPurchase = (purchaseId: string, { summary = false } = {}) =>
-  getJson<PurchaseStatus>(`/api/purchases/${encodeURIComponent(purchaseId)}${summary ? '?summary=1' : ''}`, 'No se pudo consultar la compra.');
+// The summary of a purchase: enough to list and count batches, with no secret code and no QR image.
+export const fetchPurchase = (purchaseId: string) =>
+  getJson<PurchaseStatus>(`/api/purchases/${encodeURIComponent(purchaseId)}`, 'No se pudo consultar la compra.');
+
+// The batch with the secret code and the QR images of every product. Asked for with the id in the body, never in the
+// URL: the id is the only key to those codes and it cannot be rotated.
+export const fetchPurchaseDetail = (purchaseId: string) =>
+  postJson<PurchaseStatus>('/api/purchases/detail', { purchaseId }, 'No se pudo consultar la compra.');

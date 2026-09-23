@@ -140,7 +140,7 @@ export const publicProductView = (product: Product): PublicProduct => ({
 // Products this account passed on and no longer owns, the latest first. When it owned one twice, the last time counts.
 export const transferredBy = (owner: string): TransferredWarranty[] =>
   [...store.products.values()]
-    .filter((product) => product.owner !== owner)
+    .filter((product) => product.owner !== owner && product.events?.some((event) => event.kind === 'transferred' && event.from === owner))
     .flatMap((product) => {
       const given = transfersOf(product).findLast((event) => event.from === owner);
       return given ? [{

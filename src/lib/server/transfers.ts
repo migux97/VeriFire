@@ -8,6 +8,7 @@ import { shortAddress } from '../format';
 import type { PreparedTransfer, Warranty } from '../types';
 import { isStellarAddress } from '../validation';
 import { chain } from './chain';
+import { reconcileProduct } from './chain-sync';
 import { HttpError } from './errors';
 import { textField, type JsonBody } from './http';
 import {
@@ -47,10 +48,12 @@ const transferKeyOf = (body: JsonBody) => {
 };
 
 // The owner's side: the product by its public token, held by the account asking.
-const ownedProduct = (body: JsonBody) => {
+const ownedProduct = async (body: JsonBody) => {
   requireChain();
-  const product = findProduct(textField(body, 'token'));
-  if (!product) throw new HttpError(404, 'El producto no existe.');
+  const found = findProduct(textField(body, 'token'));
+  if (!found) throw new HttpError(404, 'El producto no existe.');
+  // A transfer that landed after this server stopped waiting for it already changed the owner in the contract.
+  const product = await reconcileProduct(found);
   const owner = textField(body, 'owner').trim();
   if (!isStellarAddress(owner) || !product.claimed || product.owner !== owner) throw new HttpError(403, messages.notOwner);
   if (!isCurrentOnChain(product)) {
@@ -61,11 +64,13 @@ const ownedProduct = (body: JsonBody) => {
 };
 
 // The recipient's side: the product whose open link matches the key derived from the link's secret.
-const offeredProduct = (body: JsonBody) => {
+const offeredProduct = async (body: JsonBody) => {
   requireChain();
   const key = transferKeyOf(body);
-  const product = [...store.products.values()].find((candidate) => candidate.transfer?.key === key);
-  if (!product || !isCurrentOnChain(product)) throw new HttpError(404, messages.linkClosed);
+  const found = [...store.products.values()].find((candidate) => candidate.transfer?.key === key);
+  if (!found || !isCurrentOnChain(found)) throw new HttpError(404, messages.linkClosed);
+  const product = await reconcileProduct(found);
+  if (!isCurrentOnChain(product)) throw new HttpError(404, messages.linkClosed);
   if (!openTransferOf(product)) throw new HttpError(410, messages.linkExpired);
   const recipient = textField(body, 'recipient').trim();
   if (!isStellarAddress(recipient)) throw new HttpError(400, messages.invalidOwner);
@@ -74,7 +79,7 @@ const offeredProduct = (body: JsonBody) => {
 };
 
 export const offerTransfer = async (body: JsonBody, baseUrl: string): Promise<Step> => {
-  const { product, owner, tokenId } = ownedProduct(body);
+  const { product, owner, tokenId } = await ownedProduct(body);
   const key = transferKeyOf(body);
   const transferKey = Buffer.from(key, 'hex');
   const signedXdr = textField(body, 'signedXdr');
@@ -88,7 +93,7 @@ export const offerTransfer = async (body: JsonBody, baseUrl: string): Promise<St
 };
 
 export const cancelTransfer = async (body: JsonBody, baseUrl: string): Promise<Step> => {
-  const { product, owner, tokenId } = ownedProduct(body);
+  const { product, owner, tokenId } = await ownedProduct(body);
   const signedXdr = textField(body, 'signedXdr');
   if (!signedXdr) return { xdr: await chain.buildTransferCancel({ tokenId, owner }) };
 
@@ -100,7 +105,7 @@ export const cancelTransfer = async (body: JsonBody, baseUrl: string): Promise<S
 
 // What the link offers, so the recipient sees the product before accepting, and the message to sign with its key.
 export const prepareTransfer = async (body: JsonBody): Promise<PreparedTransfer> => {
-  const { product, recipient, tokenId } = offeredProduct(body);
+  const { product, recipient, tokenId } = await offeredProduct(body);
   return {
     token: product.token,
     model: product.model,
@@ -113,7 +118,7 @@ export const prepareTransfer = async (body: JsonBody): Promise<PreparedTransfer>
 };
 
 export const acceptTransfer = async (body: JsonBody, baseUrl: string): Promise<Step> => {
-  const { product, recipient, tokenId } = offeredProduct(body);
+  const { product, recipient, tokenId } = await offeredProduct(body);
   const signedXdr = textField(body, 'signedXdr');
   if (!signedXdr) {
     const signature = Buffer.from(textField(body, 'signature'), 'base64');

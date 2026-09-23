@@ -57,7 +57,7 @@ export function PurchaseForm({ countries, batchesHref = '/batches', embedded = f
     const polled = purchaseId.current;
     pollTimer.current = undefined;
     try {
-      const data = await fetchPurchase(polled, { summary: true });
+      const data = await fetchPurchase(polled);
       // Ignore an answer for a purchase that was already replaced by a newer one.
       if (polled !== purchaseId.current) return;
       if (data.succeeded && data.purchase.batchId) {

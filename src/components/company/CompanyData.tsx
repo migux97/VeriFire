@@ -1,6 +1,6 @@
 import { CompanyOverview } from './CompanyOverview';
 import { useEffect, useState } from 'react';
-import { fetchPurchase, savedPurchaseIds } from '@/lib/client/purchases';
+import { fetchPurchaseDetail, savedPurchaseIds } from '@/lib/client/purchases';
 import { userSession } from '@/lib/client/session';
 import type { PurchaseStatus } from '@/lib/types';
 
@@ -20,7 +20,7 @@ export function CompanyData({ view = 'dashboard' }: { view?: 'dashboard' | 'prod
       const purchases = await Promise.all(
         savedPurchaseIds().map(async (purchaseId) => {
           try {
-            const result = await fetchPurchase(purchaseId);
+            const result = await fetchPurchaseDetail(purchaseId);
             return result;
           } catch {
             return null;

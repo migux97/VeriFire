@@ -8,6 +8,7 @@ import { randomUUID } from 'node:crypto';
 import type { PreparedClaim, Warranty } from '../types';
 import { isStellarAddress, normalizeId } from '../validation';
 import { chain } from './chain';
+import { reconcileProduct } from './chain-sync';
 import { HttpError } from './errors';
 import { textField, type JsonBody } from './http';
 import { secretFromQrKey } from './links';
@@ -40,11 +41,14 @@ const completeClaim = (product: Product, owner: string, baseUrl: string, claimTr
 };
 
 // Checks shared by the three on-chain steps.
-const onChainClaim = (body: JsonBody) => {
+const onChainClaim = async (body: JsonBody) => {
   if (!chain.enabled) throw new HttpError(409, 'La activación en Stellar no está configurada en este servidor.');
   const key = textField(body, 'activationKey').toLowerCase();
-  const product = /^[0-9a-f]{64}$/.test(key) ? [...store.products.values()].find((candidate) => activationKeyOf(candidate) === key) : undefined;
-  if (!product) throw new HttpError(404, messages.qrNotFound);
+  const found = /^[0-9a-f]{64}$/.test(key) ? [...store.products.values()].find((candidate) => activationKeyOf(candidate) === key) : undefined;
+  if (!found) throw new HttpError(404, messages.qrNotFound);
+  // An activation that landed after this server stopped waiting for it is adopted here, so the buyer sees the
+  // warranty instead of "ya fue reclamado en Stellar" with no way out.
+  const product = await reconcileProduct(found);
   const owner = textField(body, 'owner').trim();
   assertClaimable(product, owner);
   if (!isCurrentOnChain(product)) {
@@ -57,21 +61,21 @@ const onChainClaim = (body: JsonBody) => {
 export const prepareClaim = async (body: JsonBody): Promise<PreparedClaim> => {
   // Without a contract the browser falls back to the demo claim.
   if (!chain.enabled) return { onChain: false };
-  const { tokenId, owner } = onChainClaim(body);
+  const { tokenId, owner } = await onChainClaim(body);
   const message = await chain.activationMessage(tokenId, owner);
   // feeAccount: an existing account for the payment with which the Cavos kit creates a new buyer account.
   return { onChain: true, message: message.toString('base64'), feeAccount: chain.issuerAddress() };
 };
 
 export const buildClaimTransaction = async (body: JsonBody) => {
-  const { tokenId, owner } = onChainClaim(body);
+  const { tokenId, owner } = await onChainClaim(body);
   const signature = Buffer.from(textField(body, 'signature'), 'base64');
   if (signature.length !== 64) throw new HttpError(400, 'La firma del QR no es válida.');
   return { xdr: await chain.buildActivation({ tokenId, claimant: owner, signature }) };
 };
 
 export const submitOnChainClaim = async (body: JsonBody, baseUrl: string) => {
-  const { product, owner, tokenId } = onChainClaim(body);
+  const { product, owner, tokenId } = await onChainClaim(body);
   if (claimsInFlight.has(product.token)) {
     throw new HttpError(409, 'La activación de este producto ya se está registrando en Stellar.', { retryable: true });
   }

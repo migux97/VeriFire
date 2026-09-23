@@ -9,7 +9,7 @@ import type { Message } from '@/components/ui/StatusMessage';
 import { Toast } from '@/components/ui/Toast';
 import { ApiError, postJson } from '@/lib/client/api';
 import { downloadBatchCsv, downloadDataUrl } from '@/lib/client/download';
-import { fetchPurchase, forgetPurchase, migrateLegacyPurchase, savedPurchaseIds } from '@/lib/client/purchases';
+import { fetchPurchase, fetchPurchaseDetail, forgetPurchase, migrateLegacyPurchase, savedPurchaseIds } from '@/lib/client/purchases';
 import { userSession } from '@/lib/client/session';
 import { errorMessage } from '@/lib/errors';
 import { plural } from '@/lib/format';
@@ -76,6 +76,8 @@ export function BatchList() {
   const [printing, setPrinting] = useState(false);
   // purchaseId -> batch with secret codes and QR images, loaded when first needed.
   const fullBatches = useRef(new Map<string, CompanyBatch>());
+  // Requests already in flight, so two actions on the same batch share one answer.
+  const loadingBatches = useRef(new Map<string, Promise<CompanyBatch>>());
   const openId = useRef('');
   const items = useRef(new Map<string, HTMLElement>());
   const pollTimer = useRef<number | undefined>(undefined);
@@ -94,20 +96,27 @@ export function BatchList() {
   // A new search or order starts from its first page.
   useEffect(() => setPage(1), [query, sort, setPage]);
 
-  const loadFullBatch = async (purchaseId: string) => {
+  const loadFullBatch = (purchaseId: string) => {
     const cached = fullBatches.current.get(purchaseId);
-    if (cached) return cached;
-    const data = await fetchPurchase(purchaseId);
-    if (!data.succeeded || !data.batch) throw new Error('Este lote todavía no está listo: falta confirmar el pago.');
-    fullBatches.current.set(purchaseId, data.batch);
-    setSummary(purchaseId, data.purchase);
-    return data.batch;
+    if (cached) return Promise.resolve(cached);
+    // Printing and downloading the same batch at once asked for it twice, and the answer carries every secret code.
+    const inFlightRequest = loadingBatches.current.get(purchaseId);
+    if (inFlightRequest) return inFlightRequest;
+    const request = (async () => {
+      const data = await fetchPurchaseDetail(purchaseId);
+      if (!data.succeeded || !data.batch) throw new Error('Este lote todavía no está listo: falta confirmar el pago.');
+      fullBatches.current.set(purchaseId, data.batch);
+      setSummary(purchaseId, data.purchase);
+      return data.batch;
+    })().finally(() => loadingBatches.current.delete(purchaseId));
+    loadingBatches.current.set(purchaseId, request);
+    return request;
   };
 
   const refreshSummary = async (purchaseId: string) => {
     const previous = $summaries.get()[purchaseId];
     try {
-      const { purchase } = await fetchPurchase(purchaseId, { summary: true });
+      const { purchase } = await fetchPurchase(purchaseId);
       setSummary(purchaseId, purchase);
     } catch (error) {
       // A network hiccup keeps what was already shown; a purchase the server no longer has is marked.

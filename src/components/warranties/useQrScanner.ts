@@ -29,6 +29,8 @@ export function useQrScanner(options: QrScannerOptions) {
   const frameTimer = useRef<number | undefined>(undefined);
   // Incremented on every stop, so a camera that finishes starting after the user moved on is closed right away.
   const cameraRequest = useRef(0);
+  // Same idea for images: incremented on every read, so a slow one cannot answer after a newer one.
+  const imageRequest = useRef(0);
   const decoder = useRef<ReturnType<typeof createQrDecoder> | null>(null);
   // The frame loop outlives renders: it always calls the latest callbacks.
   const callbacks = useRef(options);
@@ -122,13 +124,17 @@ export function useQrScanner(options: QrScannerOptions) {
     stop();
     callbacks.current.onScanStart();
     message('Leyendo la imagen...', 'info');
+    // Pasting a second image (or picking a file while one is being read) replaces the first: only the last one answers.
+    imageRequest.current += 1;
+    const request = imageRequest.current;
     try {
       const bitmap = await window.createImageBitmap(image);
       const text = await decode()(bitmap, bitmap.width, bitmap.height);
+      if (request !== imageRequest.current) return;
       if (text) callbacks.current.onDetected(text);
       else message('No encontramos un QR en la imagen. Probá con una imagen más nítida y cercana.', 'error');
     } catch {
-      message('No pudimos leer esa imagen. Probá con otra imagen del QR.', 'error');
+      if (request === imageRequest.current) message('No pudimos leer esa imagen. Probá con otra imagen del QR.', 'error');
     }
   }, [stop]);
 
@@ -137,6 +143,8 @@ export function useQrScanner(options: QrScannerOptions) {
     window.addEventListener('pagehide', stop);
     return () => {
       window.removeEventListener('pagehide', stop);
+      // An image still being read must not answer into a panel that is gone.
+      imageRequest.current += 1;
       stop();
     };
   }, [stop]);
