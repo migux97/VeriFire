@@ -10,8 +10,8 @@ import { singleton } from './singleton';
 import { shortAddress } from '../format';
 import { activationKeyFor, explorerTxUrl, isTxHash } from './stellar';
 import { hashSecret, saveState, store, type Product, type ProductFields, type StoredEvent } from './store';
+import { DEFAULT_WARRANTY_MONTHS, supportOf } from './support';
 
-const WARRANTY_MONTHS = 12;
 const HOUR_MS = 60 * 60 * 1000;
 // Public checks of one product counted in its history: one per half day, the latest ones only.
 const VERIFIED_EVERY_MS = 12 * HOUR_MS;
@@ -29,10 +29,15 @@ export const openTransferOf = (product: Product) => {
   return Date.now() <= new Date(expiresAt).getTime() ? { ...transfer, expiresAt } : null;
 };
 
-const warrantyUntil = (claimedAt: string | undefined) => {
-  if (!claimedAt) return null;
-  const date = new Date(claimedAt);
-  date.setUTCMonth(date.getUTCMonth() + WARRANTY_MONTHS);
+const warrantyUntil = (product: Product) => {
+  if (!product.claimedAt) return null;
+  const date = new Date(product.claimedAt);
+  const day = date.getUTCDate();
+  // Day 1 first, so a month-end activation lands on the target month (Aug 31 + 6 months is Feb 28, not Mar 3).
+  date.setUTCDate(1);
+  date.setUTCMonth(date.getUTCMonth() + (product.warrantyMonths ?? DEFAULT_WARRANTY_MONTHS));
+  const lastDay = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 0)).getUTCDate();
+  date.setUTCDate(Math.min(day, lastDay));
   return date.toISOString();
 };
 
@@ -45,9 +50,10 @@ export const isCurrentOnChain = (product: Product): product is Product & { chain
   Boolean(product.chain
     && Number.isInteger(product.chain.tokenId)
     && config.contractId
-    // A product registered before the contract id was stored belongs to the replaced contract, when there is one: with
-    // no way to tell, it is registered again instead of pointing at whatever token carries that id now.
-    && (product.chain.contractId ?? (config.previousContractId ? config.previousContractId : null)) === config.contractId);
+    // A product registered before the contract id was stored belongs to the replaced contract when there is one, and
+    // otherwise to the current one (see store.ts). Treating it as unregistered made it be minted again, which the
+    // contract refuses: it stayed "registrándose" forever.
+    && (product.chain.contractId ?? (config.previousContractId || config.contractId)) === config.contractId);
 
 const txUrlOf = (tx: string | undefined) => (isTxHash(tx) ? explorerTxUrl(tx) : null);
 
@@ -126,7 +132,7 @@ export const publicProductView = (product: Product): PublicProduct => ({
   status: statusOf(product),
   claimed: product.claimed,
   claimedAt: product.claimedAt ?? null,
-  warrantyUntil: warrantyUntil(product.claimedAt),
+  warrantyUntil: warrantyUntil(product),
   network: config.network,
   // True only for products registered in the contract, not merely because a contract is configured.
   blockchainBacked: isCurrentOnChain(product),
@@ -167,7 +173,12 @@ export const warrantyView = (product: Product, baseUrl: string): Warranty => ({
   chainTokenId: isCurrentOnChain(product) ? product.chain?.tokenId ?? null : null,
   transferable: product.claimed && isCurrentOnChain(product),
   transferOfferedAt: openTransferOf(product)?.offeredAt ?? null,
-  transferExpiresAt: openTransferOf(product)?.expiresAt ?? null
+  transferExpiresAt: openTransferOf(product)?.expiresAt ?? null,
+  // Only for the owner: the company that issued the product and the email it set for support.
+  support: (() => {
+    const support = supportOf(product);
+    return support ? { company: support.companyName, email: support.email } : null;
+  })()
 });
 
 export const mintedProductView = (product: Product, baseUrl: string): MintedProduct => ({

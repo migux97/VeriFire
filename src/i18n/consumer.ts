@@ -80,6 +80,7 @@ const es = {
     transferTitle: 'Transacción pública del cambio de dueño (Stellar testnet)',
     empty: 'No tenés garantías registradas todavía. Escaneá el QR de tu producto arriba para reclamar tu certificado de autenticidad.',
     pagesActive: 'Páginas de garantías activas', pagesTransferred: 'Páginas de productos transferidos',
+    previous: 'Anterior', next: 'Siguiente', pageOf: 'Página {page} de {pages}', closeNotice: 'Cerrar aviso',
     count: '{count} productos', countOne: '1 producto'
   },
   device: {
@@ -100,14 +101,14 @@ const es = {
   }
   ,
   support: {
-    action: 'Gestionar garantía / Soporte', title: 'Gestionar garantía', close: 'Cerrar',
-    intro: 'Reuní los datos de tu producto para solicitar asistencia al vendedor o fabricante.',
-    instructions: 'Contactá al vendedor o fabricante por el canal indicado en tu comprobante de compra. Presentá este resumen junto con tu factura y describí el problema del producto.',
-    note: 'Este resumen no envía una solicitud de soporte ni reemplaza el certificado en Stellar.',
-    product: 'Producto', lot: 'Lote', serial: 'Identificador', owner: 'Titular', network: 'Red',
-    certificate: 'Ver certificado en Stellar', noCertificate: 'Este producto todavía no tiene un certificado registrado en Stellar.',
-    download: 'Descargar resumen de garantía', downloaded: 'Resumen descargado', downloadError: 'No se pudo descargar el resumen. Intentá nuevamente.',
-    document: 'Verifire · Resumen de garantía', issued: 'Generado el', missing: 'No disponible'
+    action: 'Soporte', title: 'Soporte de tu producto', close: 'Cerrar',
+    intro: 'Escribile a la empresa que fabricó tu producto. Incluí el identificador del producto y describí el problema.',
+    company: 'Empresa', email: 'Correo de soporte',
+    write: 'Escribir al correo', copy: 'Copiar correo', copied: 'Correo copiado',
+    subject: 'Garantía de {model} ({token})',
+    noEmail: 'La empresa todavía no configuró un correo de soporte. Volvé a intentarlo más tarde.',
+    unknownCompany: 'No disponible',
+    certificate: 'Ver certificado en Stellar', missing: 'No disponible'
   }
 };
 
@@ -192,6 +193,7 @@ const en: Messages = {
     transferTitle: 'Public transaction of the change of owner (Stellar testnet)',
     empty: 'You have no warranties registered yet. Scan the QR of your product above to claim your certificate of authenticity.',
     pagesActive: 'Pages of active warranties', pagesTransferred: 'Pages of transferred products',
+    previous: 'Previous', next: 'Next', pageOf: 'Page {page} of {pages}', closeNotice: 'Close notice',
     count: '{count} products', countOne: '1 product'
   },
   device: {
@@ -212,14 +214,14 @@ const en: Messages = {
   }
   ,
   support: {
-    action: 'Manage warranty / Support', title: 'Manage warranty', close: 'Close',
-    intro: 'Gather your product details to request assistance from the seller or manufacturer.',
-    instructions: 'Contact the seller or manufacturer using the channel on your purchase receipt. Share this summary with your invoice and describe the product issue.',
-    note: 'This summary does not submit a support request or replace the certificate on Stellar.',
-    product: 'Product', lot: 'Batch', serial: 'Identifier', owner: 'Owner', network: 'Network',
-    certificate: 'View certificate on Stellar', noCertificate: 'This product does not have a certificate recorded on Stellar yet.',
-    download: 'Download warranty summary', downloaded: 'Summary downloaded', downloadError: 'Could not download the summary. Please try again.',
-    document: 'Verifire · Warranty summary', issued: 'Generated on', missing: 'Unavailable'
+    action: 'Support', title: 'Support for your product', close: 'Close',
+    intro: 'Write to the company that made your product. Include the product identifier and describe the problem.',
+    company: 'Company', email: 'Support email',
+    write: 'Write an email', copy: 'Copy email', copied: 'Email copied',
+    subject: 'Warranty of {model} ({token})',
+    noEmail: 'The company has not set a support email yet. Please try again later.',
+    unknownCompany: 'Unavailable',
+    certificate: 'View certificate on Stellar', missing: 'Unavailable'
   }
 };
 

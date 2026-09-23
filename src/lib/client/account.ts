@@ -30,7 +30,12 @@ export const storedUser = () => readStored<StoredUser>(localStorage, USER_KEY);
 
 export const persistUser = (user: StoredUser) => writeStored(localStorage, USER_KEY, user);
 
+// Announced so what is already on screen (the profile menu) follows a change made elsewhere.
+export const ACCOUNT_UPDATED_EVENT = 'verifire:account-updated';
+
 export const updateStoredUser = (changes: Partial<StoredUser>) => {
   const user = storedUser();
-  if (user) persistUser({ ...user, ...changes });
+  if (!user) return;
+  persistUser({ ...user, ...changes });
+  window.dispatchEvent(new CustomEvent(ACCOUNT_UPDATED_EVENT));
 };

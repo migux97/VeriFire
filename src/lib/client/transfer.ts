@@ -75,7 +75,9 @@ export interface IncomingTransfer extends PreparedTransfer {
 export const readTransferLink = async (secret: string, recipient: string): Promise<IncomingTransfer> => {
   const key = await deriveSigningKey(TRANSFER_DOMAIN, secret);
   const prepared = await postJson<PreparedTransfer>('/api/transfers/prepare', { transferKey: key.publicKey, recipient }, 'No se pudo leer el link de transferencia.');
-  return { ...prepared, key };
+  // The countdown runs on this device's clock, from the time the server says is left (older servers: its date).
+  const expiresAt = Number.isFinite(prepared.expiresInMs) ? new Date(Date.now() + prepared.expiresInMs).toISOString() : prepared.expiresAt;
+  return { ...prepared, expiresAt, key };
 };
 
 export const acceptTransfer = async (appId: string, incoming: IncomingTransfer, recipient: string, onProgress: Progress) => {

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Icon } from '@/components/ui/Icon';
-import { storedUser, type StoredUser } from '@/lib/client/account';
+import { ACCOUNT_UPDATED_EVENT, storedUser, type StoredUser } from '@/lib/client/account';
 import { leaveSession } from '@/lib/client/session';
 import { currentTheme, setTheme, THEME_EVENT } from '@/lib/client/theme';
 import { companyMemberships } from '@/lib/client/workspace';
@@ -15,10 +15,16 @@ export function ProfileMenu({ labels = getLandingMessages().profile }: { labels?
   const buttonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    const currentUser = storedUser();
-    setUser(currentUser);
-    setCompanyAccess(Boolean(currentUser && (currentUser.accountType === 'business' || companyMemberships(currentUser.email).length)));
+    const read = () => {
+      const currentUser = storedUser();
+      setUser(currentUser);
+      setCompanyAccess(Boolean(currentUser && (currentUser.accountType === 'business' || companyMemberships(currentUser.email).length)));
+    };
+    read();
     setDark(currentTheme() === 'dark');
+    // The company side of the account can arrive from the server a moment after the page opens (WorkspaceSync).
+    window.addEventListener(ACCOUNT_UPDATED_EVENT, read);
+    return () => window.removeEventListener(ACCOUNT_UPDATED_EVENT, read);
   }, []);
 
   // The header has a switch too: both show the same state.

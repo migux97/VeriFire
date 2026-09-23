@@ -6,6 +6,7 @@ import { isStellarAddress } from '../validation';
 import { chain } from './chain';
 import { isCurrentOnChain, recordEvent } from './products';
 import { saveState, type Product } from './store';
+import { monthsAtActivation } from './support';
 
 export const reconcileProduct = async (product: Product): Promise<Product> => {
   if (!chain.enabled || !isCurrentOnChain(product)) return product;
@@ -24,7 +25,7 @@ export const reconcileProduct = async (product: Product): Promise<Product> => {
   if (!product.claimed) {
     // Activated on-chain and never saved here. The transaction hash is unknown, so the warranty shows no certificate
     // link until the product's history is read again; everything else is the same as a claim completed normally.
-    Object.assign(product, { claimed: true, owner, claimedAt: at });
+    Object.assign(product, { claimed: true, owner, claimedAt: at, warrantyMonths: monthsAtActivation(product) });
     console.warn(`${product.token} estaba activado en el contrato y no acá: se tomó el estado del contrato.`);
     saveState();
     return product;

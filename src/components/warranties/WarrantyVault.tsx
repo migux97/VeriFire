@@ -54,6 +54,7 @@ function TransferredCard({ product, locale }: { product: TransferredWarranty; lo
 export function WarrantyVault({ warranties, status, transfers, transferred, locale = 'es' }: WarrantyVaultProps) {
   const labels = getConsumerMessages(locale);
   const { vault } = labels;
+  const pageText = { previous: vault.previous, next: vault.next, page: (page: number, pages: number) => fillIn(vault.pageOf, { page, pages }) };
   const productCount = (count: number) => (count === 1 ? vault.countOne : fillIn(vault.count, { count }));
   const count = warranties?.length ?? 0;
   const active = usePagination(warranties ?? [], PAGE_SIZE);
@@ -80,7 +81,7 @@ export function WarrantyVault({ warranties, status, transfers, transferred, loca
           />
         ))}
       </div>
-      <Pagination page={active.page} pages={active.pages} onPage={active.setPage} label={vault.pagesActive} />
+      <Pagination page={active.page} pages={active.pages} onPage={active.setPage} label={vault.pagesActive} text={pageText} />
       <div className="vault-empty" hidden={warranties === null || count > 0}>
         <svg viewBox="0 0 96 96" aria-hidden="true" focusable="false">
           <path d="M48 8 16 20v24c0 22 13.6 38.6 32 44 18.4-5.4 32-22 32-44V20L48 8Z" fill="#fde6e4" stroke="#e3261f" strokeWidth="3" strokeLinejoin="miter" />
@@ -98,7 +99,7 @@ export function WarrantyVault({ warranties, status, transfers, transferred, loca
           <div className="vault-grid">
             {passedOn.items.map((product) => <TransferredCard key={`${product.token}-${product.at}`} product={product} locale={locale} />)}
           </div>
-          <Pagination page={passedOn.page} pages={passedOn.pages} onPage={passedOn.setPage} label={vault.pagesTransferred} />
+          <Pagination page={passedOn.page} pages={passedOn.pages} onPage={passedOn.setPage} label={vault.pagesTransferred} text={pageText} />
         </div>
       )}
     </section>

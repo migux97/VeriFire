@@ -21,6 +21,7 @@ import {
   shipPurchase
 } from '@/lib/client/purchases';
 import { userSession } from '@/lib/client/session';
+import { motionEnabled } from '@/lib/client/theme';
 import { errorMessage } from '@/lib/errors';
 import type { Locale } from '@/lib/locale';
 import type { CompanyBatch } from '@/lib/types';
@@ -32,7 +33,6 @@ import { PaymentDetail } from './PaymentDetail';
 const POLL_MS = 5000;
 // Every 12 checks (about a minute) every batch is refreshed, not only the ones waiting for something.
 const REFRESH_EVERY_TICKS = 12;
-const PAGE_SIZE = 10;
 
 type SortKey = keyof typeof sorters;
 
@@ -67,15 +67,22 @@ const matchesSearch = (summary: SummaryEntry | undefined, query: string) => {
 
 const needsPolling = (summary: SummaryEntry | undefined) => isSummary(summary) && (!summary.batchId || summary.pendingOnChain > 0);
 
-export function BatchList({ locale }: { locale?: Locale | undefined }) {
+interface BatchListProps {
+  locale?: Locale | undefined;
+  // How many batches each page shows, and whether they stack or sit in a grid (the company panel uses a grid).
+  pageSize?: number;
+  layout?: 'list' | 'grid';
+}
+
+export function BatchList({ locale, pageSize = 10, layout = 'list' }: BatchListProps) {
   return (
     <CompanyTextProvider locale={locale}>
-      <Batches />
+      <Batches pageSize={pageSize} layout={layout} />
     </CompanyTextProvider>
   );
 }
 
-function Batches() {
+function Batches({ pageSize, layout }: { pageSize: number; layout: 'list' | 'grid' }) {
   const t = useCompanyText();
   const purchaseIds = useStore($purchaseIds);
   const summaries = useStore($summaries);
@@ -105,7 +112,8 @@ function Batches() {
       .filter((purchaseId) => matchesSearch(summaries[purchaseId], normalizedQuery))
       .sort((first, second) => sorters[sort](summaries[first], summaries[second]));
   }, [purchaseIds, summaries, query, sort]);
-  const batchPage = usePagination(visibleIds, PAGE_SIZE);
+  const batchPage = usePagination(visibleIds, pageSize);
+  const listRef = useRef<HTMLDivElement>(null);
   const { setPage } = batchPage;
   // A new search or order starts from its first page.
   useEffect(() => setPage(1), [query, sort, setPage]);
@@ -362,7 +370,7 @@ function Batches() {
       </div>
 
       <Toast message={status} onClose={() => setStatus(null)} closeLabel={t.notifications.close} />
-      <div className="batch-list">
+      <div ref={listRef} className={`batch-list ${layout === 'grid' ? 'is-grid' : ''}`}>
         {batchPage.items.map((purchaseId) => (
           <BatchItem
             key={purchaseId}
@@ -379,7 +387,14 @@ function Batches() {
           />
         ))}
       </div>
-      <Pagination page={batchPage.page} pages={batchPage.pages} onPage={batchPage.setPage} label={t.batches.pages} text={t.pagination} />
+      <Pagination page={batchPage.page} pages={batchPage.pages} onPage={(page) => {
+          batchPage.setPage(page);
+          // The new page starts at the top of the list, not wherever the buttons left the scroll.
+          listRef.current?.scrollIntoView({ block: 'start', behavior: motionEnabled() ? 'smooth' : 'auto' });
+        }}
+        label={t.batches.pages}
+        text={t.pagination}
+      />
       <ConfirmDialog confirmation={confirmation} onCancel={() => setConfirmation(null)} />
       <div className="vault-empty" hidden={!loaded || visibleIds.length > 0}>
         <p>{total ? t.batches.noMatch : t.batches.empty}</p>

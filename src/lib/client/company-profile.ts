@@ -1,9 +1,9 @@
 // The company's public profile, edited in Configuración: logo, legal and contact data. Kept in this browser per
 // account, outside the demo data. The trade name stays in the account (StoredUser.companyName), where the rest of the
 // panel and the label configurator already read it.
-import { storedUser, updateStoredUser } from './account';
+import { readAccountData, writeAccountData } from './account-data';
 import { userSession } from './session';
-import { readStored, writeStored } from './storage';
+import { storedUser, updateStoredUser } from './account';
 
 export interface CompanyProfile {
   // A square PNG as a data URL, or '' without a logo.
@@ -39,15 +39,16 @@ const LOGO_SIZE = 256;
 const MAX_LOGO_BYTES = 5 * 1024 * 1024;
 const LOGO_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml', 'image/gif'];
 
-const profileKey = () => `verifire:company-profile:${userSession.email().toLowerCase()}`;
+// Where the profile was kept before it traveled with the account: a logo saved then is not lost.
+const legacyProfileKey = () => `verifire:company-profile:${userSession.email().toLowerCase()}`;
 
-export const readCompanyProfile = (): CompanyProfile => ({ ...emptyProfile, ...(readStored<Partial<CompanyProfile>>(localStorage, profileKey()) ?? {}) });
+export const readCompanyProfile = (): CompanyProfile => ({ ...emptyProfile, ...(readAccountData<Partial<CompanyProfile>>('company-profile', legacyProfileKey()) ?? {}) });
 
 export const companyName = () => storedUser()?.companyName ?? '';
 
 // False when the browser would not store it (a full quota, most likely because of the logo).
 export const saveCompanyProfile = (profile: CompanyProfile, name: string) => {
-  if (!writeStored(localStorage, profileKey(), profile)) return false;
+  if (!writeAccountData('company-profile', profile)) return false;
   updateStoredUser({ companyName: name });
   window.dispatchEvent(new Event(COMPANY_PROFILE_EVENT));
   return true;
@@ -65,19 +66,24 @@ export const prepareLogo = (file: File): Promise<string> =>
     const image = new Image();
     image.onload = () => {
       URL.revokeObjectURL(url);
-      const canvas = document.createElement('canvas');
-      canvas.width = LOGO_SIZE;
-      canvas.height = LOGO_SIZE;
-      const context = canvas.getContext('2d');
-      const width = image.naturalWidth || LOGO_SIZE;
-      const height = image.naturalHeight || LOGO_SIZE;
-      if (!context) return reject(new Error('read' satisfies LogoError));
-      const scale = Math.min(LOGO_SIZE / width, LOGO_SIZE / height);
-      const drawnWidth = width * scale;
-      const drawnHeight = height * scale;
-      context.imageSmoothingQuality = 'high';
-      context.drawImage(image, (LOGO_SIZE - drawnWidth) / 2, (LOGO_SIZE - drawnHeight) / 2, drawnWidth, drawnHeight);
-      resolve(canvas.toDataURL('image/png'));
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = LOGO_SIZE;
+        canvas.height = LOGO_SIZE;
+        const context = canvas.getContext('2d');
+        const width = image.naturalWidth || LOGO_SIZE;
+        const height = image.naturalHeight || LOGO_SIZE;
+        if (!context) return reject(new Error('read' satisfies LogoError));
+        const scale = Math.min(LOGO_SIZE / width, LOGO_SIZE / height);
+        const drawnWidth = width * scale;
+        const drawnHeight = height * scale;
+        context.imageSmoothingQuality = 'high';
+        context.drawImage(image, (LOGO_SIZE - drawnWidth) / 2, (LOGO_SIZE - drawnHeight) / 2, drawnWidth, drawnHeight);
+        resolve(canvas.toDataURL('image/png'));
+      } catch {
+        // Some browsers cannot draw an SVG without a size: the upload says so instead of spinning forever.
+        reject(new Error('read' satisfies LogoError));
+      }
     };
     image.onerror = () => {
       URL.revokeObjectURL(url);

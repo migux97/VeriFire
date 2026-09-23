@@ -15,13 +15,19 @@ type View = 'dashboard' | 'products' | 'activity';
 // batch: they are asked for once per page and shared. The overview needs no codes and reads the batch summaries that
 // the list of batches keeps up to date.
 let details: Promise<(PurchaseStatus | null)[]> | null = null;
-const loadDetails = () =>
-  (details ??= Promise.all(savedPurchaseIds().map((purchaseId) => fetchPurchaseDetail(purchaseId).catch(() => null))));
+let detailsKey = '';
+// Asked again when the set of issued batches changes (a new purchase, a payment confirmed): otherwise the products of
+// a batch bought after the page opened never showed up until a reload.
+const loadDetails = (key: string) => {
+  if (!details || key !== detailsKey) {
+    detailsKey = key;
+    details = Promise.all(savedPurchaseIds().map((purchaseId) => fetchPurchaseDetail(purchaseId).catch(() => null)));
+  }
+  return details;
+};
 
 export function CompanyData({ view = 'dashboard', locale }: { view?: View; locale?: Locale | undefined }) {
-  return (
-    <CompanyTextProvider locale={locale}>{view === 'dashboard' ? <Dashboard /> : <Products view={view} />}</CompanyTextProvider>
-  );
+  return <CompanyTextProvider locale={locale}>{view === 'dashboard' ? <Dashboard /> : <Products view={view} />}</CompanyTextProvider>;
 }
 
 function Dashboard() {
@@ -35,6 +41,17 @@ function Dashboard() {
 
 function Products({ view }: { view: 'products' | 'activity' }) {
   const t = useCompanyText();
+  const summaries = useStore($summaries);
+  const ids = useStore($purchaseIds);
+  const ready = useStore($summariesReady);
+  // Which purchases have a batch, counted once the list of batches finished its first round: summaries arrive one by
+  // one, and keying on each of them asked for every batch's secret codes again as each one came in.
+  const issuedKey = ready
+    ? ids
+        .filter((id) => isSummary(summaries[id]) && summaries[id].batchId)
+        .sort()
+        .join(',')
+    : null;
   const [records, setRecords] = useState<PurchaseStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
@@ -45,7 +62,8 @@ function Products({ view }: { view: 'products' | 'activity' }) {
       setLoading(false);
       return undefined;
     }
-    void loadDetails().then((purchases) => {
+    if (issuedKey === null) return undefined;
+    void loadDetails(issuedKey).then((purchases) => {
       if (!active) return;
       setFailed(purchases.some((record) => record === null));
       setRecords(purchases.filter((record): record is PurchaseStatus => Boolean(record)));
@@ -54,7 +72,7 @@ function Products({ view }: { view: 'products' | 'activity' }) {
     return () => {
       active = false;
     };
-  }, []);
+  }, [issuedKey]);
 
   const formatDate = (value: string | null) =>
     value ? new Intl.DateTimeFormat(t.intl, { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(value)) : t.common.pending;
@@ -117,9 +135,7 @@ function Products({ view }: { view: 'products' | 'activity' }) {
               {page.items.map((product) => (
                 <tr key={product.token}>
                   <td>
-                    <strong>
-                      {view === 'activity' ? <a href={`/verify?token=${encodeURIComponent(product.token)}`}>{product.token}</a> : product.token}
-                    </strong>
+                    <strong>{view === 'activity' ? <a href={`/verify?token=${encodeURIComponent(product.token)}`}>{product.token}</a> : product.token}</strong>
                     <small>{t.data.lot(product.lot)}</small>
                   </td>
                   <td>{product.model}</td>

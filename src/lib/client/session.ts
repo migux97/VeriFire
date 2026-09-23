@@ -42,10 +42,18 @@ export const userSession = {
     removeStored(sessionStorage, IN_APP_KEY);
     removeStored(sessionStorage, 'verifireSession');
     removeStored(sessionStorage, WALLET_KEY);
-    // The account's own data stays (it is keyed by email), so logging in again finds it.
+    // The account's own data stays (it is keyed by email), so logging in again finds it. The secrets of open transfer
+    // links do not: whoever used this browser next could open one and take the product. The owner can still cancel a
+    // link from the panel and open a new one.
     for (const storage of [localStorage, sessionStorage]) {
       storedKeys(storage)
-        .filter((key) => key.startsWith('cavos-kit:identity:') || key.startsWith('cavos-kit:token:'))
+        .filter(
+          (key) =>
+            key.startsWith('cavos-kit:identity:') ||
+            key.startsWith('cavos-kit:token:') ||
+            key.startsWith(`${ACCOUNT_PREFIX}:transfer-links:`) ||
+            key === 'verifireTransferLinks'
+        )
         .forEach((key) => removeStored(storage, key));
     }
   }

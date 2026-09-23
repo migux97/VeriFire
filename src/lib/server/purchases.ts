@@ -3,23 +3,25 @@ import { parseIssuanceOptions } from '../issuance';
 import { randomUUID } from 'node:crypto';
 import { Client } from '@cosmosapp/pay_sdk';
 import type { CompanyBatch, CreatedPurchase, PublicBatch, PurchaseStatus, PurchaseSummary } from '../types';
-import { normalizeId } from '../validation';
+import { isStellarAddress, normalizeId } from '../validation';
 import { chain } from './chain';
 import { config } from './config';
 import { HttpError } from './errors';
-import type { JsonBody } from './http';
+import { textField, type JsonBody } from './http';
 import { batchUrl, qrImage, secretUrl, verificationUrl } from './links';
 import { anchorPendingProducts, isCurrentOnChain, isPendingOnChain, mintProduct, readProductFields } from './products';
 import { explorerTxUrl, isTxHash } from './stellar';
 import { saveState, store, type Batch, type Purchase } from './store';
+import { parseSupport } from './support';
 
 const MAX_QUANTITY = 500;
 
 const cosmosPay = () => new Client({ apiKey: config.cosmosPay.apiKey });
 
+// The placeholders of .env.example (dv_REPLACE..., G_REPLACE...) count as not configured, like an empty value.
 export const paymentsConfigured = () => {
   const { apiKey, destination } = config.cosmosPay;
-  return Boolean(apiKey && destination && !destination.startsWith('G_REPLACE'));
+  return Boolean(apiKey && destination && !apiKey.includes('REPLACE') && !destination.includes('REPLACE'));
 };
 
 export const findBatch = (batchId: unknown) => store.batches.get(normalizeId(batchId));
@@ -78,6 +80,8 @@ export const createBatchPayment = async (body: JsonBody): Promise<CreatedPurchas
   let configuration;
   try { configuration = parseIssuanceOptions(body['configuration']); }
   catch (error) { throw new HttpError(400, error instanceof Error ? error.message : 'Configuración inválida.'); }
+  // The company's warranty settings at the time of buying; it can change them later for all its batches.
+  const support = parseSupport(body['support']);
   const total = (Number(config.cosmosPay.amountPerToken) * quantity).toFixed(2);
   const intent = await cosmosPay().paymentIntents.createPay({
     destination: config.cosmosPay.destination,
@@ -85,12 +89,21 @@ export const createBatchPayment = async (body: JsonBody): Promise<CreatedPurchas
     msg: `Verifire emisión ${quantity} tokens ${fields.model}`
   });
   const purchaseId = `PUR-${randomUUID()}`;
+  // Sent by the panel when its wallet is at hand: from then on the batch is found by signing with that wallet.
+  const owner = textField(body, 'owner').trim();
   // The payment QR is kept so a pending purchase can be reopened from the company's list of batches.
   store.purchases.set(purchaseId, {
-    purchaseId, quantity, ...fields, ...(configuration ? { configuration } : {}), total, intentId: intent.id,
+    purchaseId, quantity, ...fields, ...(configuration ? { configuration } : {}), ...(support ? { support } : {}), total, intentId: intent.id,
+    ...(isStellarAddress(owner) ? { owner } : {}),
     createdAt: new Date().toISOString(), paymentQr: intent.qr || null, paymentUri: intent.uri || null
   });
-  saveState();
+  try {
+    saveState();
+  } catch (error) {
+    // The client never learns its id, so nobody could ever pay or find it: it is not kept.
+    store.purchases.delete(purchaseId);
+    throw error;
+  }
   return {
     purchaseId,
     quantity,
@@ -110,7 +123,7 @@ const finalizePurchase = (purchase: Purchase, txHash: string | null) => {
     const batchId = `BATCH-${String(store.nextBatchId++).padStart(4, '0')}`;
     const { model, lot, destination } = purchase;
     const tokens = Array.from({ length: purchase.quantity }, () => mintProduct({ model, lot, destination, batchId }));
-    store.batches.set(batchId, { batchId, tokens, model, lot, destination, amount: purchase.total, txHash, ...(purchase.configuration ? { configuration: purchase.configuration } : {}) });
+    store.batches.set(batchId, { batchId, tokens, model, lot, destination, amount: purchase.total, txHash, ...(purchase.configuration ? { configuration: purchase.configuration } : {}), ...(purchase.support ? { support: purchase.support } : {}) });
     Object.assign(purchase, { batchId, txHash });
     saveState();
     // Registers the new products in the contract in the background; the QR sheet does not wait for it.

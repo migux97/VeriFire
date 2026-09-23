@@ -1,10 +1,12 @@
 import type { IssuanceOptions } from '../issuance';
 // Products, batches and purchases, kept in memory and saved to a JSON file after every change.
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { config } from './config';
+import { HttpError } from './errors';
 import { singleton } from './singleton';
+import type { TeamRole } from '../types';
 
 export interface ProductFields {
   configuration?: IssuanceOptions;
@@ -24,6 +26,13 @@ export interface StoredEvent {
   by?: string;
 }
 
+// Who the buyer contacts for support and how long a warranty lasts, set by the company (see support.ts).
+export interface SupportSettings {
+  companyName: string;
+  email: string;
+  warrantyMonths: number;
+}
+
 export interface Product extends ProductFields {
   tokenId: number;
   token: string;
@@ -35,6 +44,8 @@ export interface Product extends ProductFields {
   owner: string | null;
   createdAt?: string;
   claimedAt?: string;
+  // The warranty's length, fixed when it was activated. Absent on products activated before it could be chosen (12).
+  warrantyMonths?: number;
   claimTransaction?: string;
   // Hex public key derived from the secret code (see activationKeyOf).
   activationKey?: string;
@@ -52,10 +63,13 @@ export interface Batch extends ProductFields {
   amount: string;
   txHash: string | null;
   shippedAt?: string;
+  support?: SupportSettings;
 }
 
 export interface Purchase extends ProductFields {
   purchaseId: string;
+  // Wallet of the company that bought it. Older purchases have none until a browser that holds their id says so.
+  owner?: string;
   quantity: number;
   total: string;
   intentId: string;
@@ -64,6 +78,37 @@ export interface Purchase extends ProductFields {
   paymentUri: string | null;
   batchId?: string;
   txHash?: string | null;
+  support?: SupportSettings;
+}
+
+// What a company account keeps beside its wallet, so another browser finds the same panel (see workspaces.ts).
+export interface Workspace {
+  owner: string;
+  purchaseIds: string[];
+  accountType?: 'personal' | 'business';
+  companyName?: string;
+  // What the company configured (team, agenda, templates, profile), each kind with the moment it was last written:
+  // the newest copy wins over the one another browser sends. The server never looks inside a value.
+  data?: Record<string, { value: unknown; updatedAt: string }>;
+  updatedAt: string;
+}
+
+// An invitation to a company's team (see invitations.ts). The token is the secret carried by the link and the QR.
+export interface Invitation {
+  id: string;
+  token: string;
+  companyName: string;
+  inviterName: string;
+  inviterEmail: string;
+  // Lower case. Empty for an open link, which whoever opens it can accept.
+  email: string;
+  role: TeamRole;
+  status: 'pending' | 'accepted' | 'declined' | 'revoked';
+  createdAt: string;
+  expiresAt: string;
+  respondedAt?: string;
+  // Who accepted an open link.
+  acceptedBy?: string;
 }
 
 // Same format the file has always had: batches list their products by token.
@@ -73,6 +118,8 @@ interface SavedState {
   products?: Product[];
   batches?: (Omit<Batch, 'tokens'> & { tokens: string[] })[];
   purchases?: Purchase[];
+  workspaces?: Workspace[];
+  invitations?: Invitation[];
 }
 
 export const hashSecret = (secret: string) => createHash('sha256').update(secret).digest('hex');
@@ -94,19 +141,24 @@ const createState = () => {
       }]
     ]),
     batches: new Map<string, Batch>(),
-    purchases: new Map<string, Purchase>()
+    purchases: new Map<string, Purchase>(),
+    workspaces: new Map<string, Workspace>(),
+    invitations: new Map<string, Invitation>()
   };
 
   const readSaved = (file: string) => JSON.parse(readFileSync(file, 'utf8')) as SavedState;
+  const backup = `${config.dataFile}.bak`;
   let saved: SavedState;
   try {
     saved = readSaved(config.dataFile);
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return state;
-    // A file cut in half by a crash during a write: the copy left by the previous save is still whole.
+    const missing = (error as NodeJS.ErrnoException).code === 'ENOENT';
+    // A first start has neither file. A missing file with a copy beside it, or a file cut in half by a crash, is
+    // recovered from the copy the previous save left: starting empty there would overwrite every purchase at the next save.
+    if (missing && !existsSync(backup)) return state;
     try {
-      saved = readSaved(`${config.dataFile}.bak`);
-      console.warn(`${config.dataFile} está dañado: se cargó la copia anterior ${config.dataFile}.bak.`);
+      saved = readSaved(backup);
+      console.warn(`${config.dataFile} ${missing ? 'no existe' : 'está dañado'}: se cargó la copia anterior ${backup}.`);
     } catch {
       throw new Error(`No se pudo leer ${config.dataFile}. Revisalo o borralo antes de iniciar el servidor.`, { cause: error });
     }
@@ -117,12 +169,17 @@ const createState = () => {
     state.batches.set(batch.batchId, { ...batch, tokens });
   }
   for (const purchase of saved.purchases ?? []) state.purchases.set(purchase.purchaseId, purchase);
+  for (const workspace of saved.workspaces ?? []) state.workspaces.set(workspace.owner, workspace);
+  for (const invitation of saved.invitations ?? []) state.invitations.set(invitation.id, invitation);
   state.nextTokenId = Math.max(state.nextTokenId, Number(saved.nextTokenId) || 0);
   state.nextBatchId = Math.max(state.nextBatchId, Number(saved.nextBatchId) || 0);
   return state;
 };
 
 export const store = singleton('store', createState);
+// A state created by an older version of this module (the dev server keeps it across reloads) lacks the lists added
+// since; they start empty instead of breaking every request that reads them.
+store.invitations ??= new Map<string, Invitation>();
 
 export const saveState = () => {
   const saved: SavedState = {
@@ -130,19 +187,25 @@ export const saveState = () => {
     nextBatchId: store.nextBatchId,
     products: [...store.products.values()],
     batches: [...store.batches.values()].map((batch) => ({ ...batch, tokens: batch.tokens.map((product) => product.token) })),
-    purchases: [...store.purchases.values()]
+    purchases: [...store.purchases.values()],
+    workspaces: [...store.workspaces.values()],
+    invitations: [...store.invitations.values()]
   };
-  // Written beside the file and renamed over it: a rename is atomic, so a crash leaves either the previous state or
-  // the new one, never half of either. The previous file is kept as .bak for the case where the disk itself lied.
+  // Written beside the file and renamed over it: a rename replaces the file atomically, so a crash leaves either the
+  // previous state or the new one, never half of either and never no file at all. The previous state is copied to .bak
+  // first (the file itself stays in place) for the case where the disk itself lied.
   const temporary = `${config.dataFile}.tmp`;
   try {
     mkdirSync(dirname(config.dataFile), { recursive: true });
     writeFileSync(temporary, JSON.stringify(saved, null, 2));
-    if (existsSync(config.dataFile)) renameSync(config.dataFile, `${config.dataFile}.bak`);
+    if (existsSync(config.dataFile)) copyFileSync(config.dataFile, `${config.dataFile}.bak`);
     renameSync(temporary, config.dataFile);
   } catch (error) {
     // The caller answers the request anyway, so what it just promised the user has to be visible in the log.
     console.error('No se pudo guardar el estado de Verifire:', error);
-    throw new Error('No se pudo guardar el cambio. Intentá de nuevo en unos segundos.', { cause: error });
+    // An HttpError, so the client reads this message (and may retry) instead of the generic one of the operation.
+    const failure = new HttpError(503, 'No se pudo guardar el cambio. Intentá de nuevo en unos segundos.', { retryable: true });
+    failure.cause = error;
+    throw failure;
   }
 };

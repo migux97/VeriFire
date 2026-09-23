@@ -1,7 +1,6 @@
 // The company's agenda of batches and payments: reminders kept in this browser, per account. They do not execute
 // payments or create tokens; the notifications (notifications.ts) read them to warn before each date.
-import { accountKey } from './session';
-import { readStored, writeStored } from './storage';
+import { readAccountData, writeAccountData } from './account-data';
 
 export type ScheduleType = 'batch' | 'payment';
 
@@ -15,8 +14,6 @@ export interface ScheduleItem {
 }
 
 export const SCHEDULES_CHANGED_EVENT = 'company-schedules-changed';
-
-const storageKey = () => accountKey('company-schedules', 'verifire-company-schedules');
 
 const isScheduleItem = (item: unknown): item is ScheduleItem => {
   const entry = item as Partial<ScheduleItem> | null;
@@ -33,13 +30,13 @@ const isScheduleItem = (item: unknown): item is ScheduleItem => {
 };
 
 export const readSchedules = (): ScheduleItem[] => {
-  const saved = readStored<unknown>(localStorage, storageKey());
+  const saved = readAccountData<unknown>('company-schedules', 'verifire-company-schedules');
   return Array.isArray(saved) ? saved.filter(isScheduleItem) : [];
 };
 
 // False when the browser would not store it.
 export const writeSchedules = (items: ScheduleItem[]) => {
-  if (!writeStored(localStorage, storageKey(), items)) return false;
+  if (!writeAccountData('company-schedules', items)) return false;
   window.dispatchEvent(new Event(SCHEDULES_CHANGED_EVENT));
   return true;
 };

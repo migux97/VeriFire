@@ -1,6 +1,8 @@
 ---
+import { InvitationInbox } from '@/components/invitations/InvitationInbox';
 import AppTopbar from '@/components/layout/AppTopbar.astro';
 import SiteFooter from '@/components/layout/SiteFooter.astro';
+import { WorkspaceSync } from '@/components/company/WorkspaceSync';
 import LanguageMenu from '@/components/ui/LanguageMenu.astro';
 import { ProfileMenu } from '@/components/warranties/ProfileMenu';
 import { WarrantyDashboard } from '@/components/warranties/WarrantyDashboard';
@@ -25,11 +27,13 @@ const { profile, nav } = getLandingMessages(locale);
 >
   <AppTopbar>
     <LanguageMenu locale={locale} label={nav.language} mode="query" />
+    <InvitationInbox client:load locale={locale} />
     <ProfileMenu client:load labels={profile} />
   </AppTopbar>
 
   <main class="container dashboard">
     <WarrantyDashboard client:load cavosAppId={publicConfig.cavosAppId} locale={locale} />
+    <WorkspaceSync client:load cavosAppId={publicConfig.cavosAppId} />
   </main>
 
   <SiteFooter />

@@ -150,10 +150,12 @@ export interface DemoPurchaseRequest {
 }
 
 export const createDemoPurchase = async (request: DemoPurchaseRequest): Promise<CreatedPurchase> => {
+  // The QR first: reading the state before this wait let two quick purchases get the same number, the second one
+  // overwriting the first.
+  const paymentQr = await demoPaymentQr();
   const state = readState();
   const number = state.next;
   const now = Date.now();
-  const paymentQr = await demoPaymentQr();
   const purchase: DemoPurchase = {
     purchaseId: `${DEMO_PREFIX}${number}`,
     batchId: `DEMO-BATCH-${String(number).padStart(4, '0')}`,

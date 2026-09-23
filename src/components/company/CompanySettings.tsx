@@ -7,6 +7,7 @@ import { motionEnabled, setMotionEnabled, setTheme, themePreference, type ThemeP
 import { LOCALE_COOKIE, type Locale } from '@/lib/locale';
 import { CompanyProfileSettings } from './CompanyProfileSettings';
 import { CompanyRoleSettings } from './CompanyRoleSettings';
+import { CompanyWarrantySettings } from './CompanyWarrantySettings';
 import { CompanyTextProvider, useCompanyText } from './CompanyText';
 
 const LOCALE_COOKIE_MAX_AGE = 365 * 24 * 60 * 60;
@@ -139,6 +140,8 @@ function Settings({ locale }: { locale: Locale }) {
   return (
     <div className="settings-grid">
       <CompanyProfileSettings />
+
+      <CompanyWarrantySettings />
 
       <Card icon="fa-palette" title={text.appearance.title} lead={text.appearance.lead}>
         <Row title={text.appearance.theme}>

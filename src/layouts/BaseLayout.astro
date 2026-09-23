@@ -12,13 +12,15 @@ interface Props {
   description: string;
   bodyClass: string;
   session?: 'public' | 'protected' | 'guest' | 'landing';
+  // Pages written in a single language say so, whatever language the landing was left in.
+  lang?: string;
 }
 
-const { title, description, bodyClass, session = 'public' } = Astro.props;
+const { title, description, bodyClass, session = 'public', lang } = Astro.props;
 ---
 
 <!doctype html>
-<html lang={pageLocale(Astro)}>
+<html lang={lang ?? pageLocale(Astro)}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />

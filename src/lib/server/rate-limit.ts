@@ -11,6 +11,16 @@ const MAX_TRACKED = 5000;
 
 const windows = singleton('rate-limit', () => new Map<string, { count: number; until: number }>());
 
+// Like rateLimit, for work that is optional: answers false instead of throwing once the budget is spent.
+export const withinBudget = (bucket: string, caller: string | undefined, limit: number) => {
+  try {
+    rateLimit(bucket, caller, limit);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 // `caller` is the client address, or the empty string when the adapter cannot tell (then the limit is shared).
 export const rateLimit = (bucket: string, caller: string | undefined, limit: number) => {
   const now = Date.now();

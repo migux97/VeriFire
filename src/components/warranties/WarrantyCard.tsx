@@ -32,9 +32,13 @@ function TransferLink({ link, labels }: { link: string; labels: CardLabels }) {
   useEffect(() => {
     let current = true;
     // Generated here: the link carries the transfer secret and must never reach a third-party QR service.
-    void import('qrcode').then((QRCode) => QRCode.toDataURL(link, { margin: 1, width: 200 })).then((url) => {
-      if (current) setQr(url);
-    });
+    import('qrcode')
+      .then((QRCode) => QRCode.toDataURL(link, { margin: 1, width: 200 }))
+      .then((url) => {
+        if (current) setQr(url);
+      })
+      // Without the image the link itself is still there to copy.
+      .catch(() => {});
     return () => {
       current = false;
     };

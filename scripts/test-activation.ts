@@ -112,10 +112,8 @@ const offerTx = await stellar.submitTransferOffer({
   signedXdr: signAs(buyer, await stellar.buildTransferOffer({ tokenId, owner: buyer.publicKey(), transferKey }))
 });
 console.log(`6. Link de transferencia abierto por el dueño: ${explorerTxUrl(offerTx)}`);
-// The server answers this wait itself; here the contract is asked directly, as someone skipping the server would.
-await expectRejection('Un segundo link antes de la espera', () => stellar.buildTransferOffer({
-  tokenId, owner: buyer.publicKey(), transferKey: Buffer.from(deriveTransferKeypair('OTRO-LINK').rawPublicKey())
-}), /./);
+// There is no wait between links: opening another one replaces this one (the contract's own test
+// owner_opens_another_link_right_away covers it). It is not opened here, because the steps below accept this link.
 const [expiresAt, offeredAt] = await stellar.transferTimes(tokenId);
 console.log(`   El link vence ${expiresAt - offeredAt} segundos después de abrirlo.`);
 

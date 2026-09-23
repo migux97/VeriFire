@@ -53,6 +53,8 @@ export interface Warranty extends PublicProduct {
   // When the owner opened a transfer link that nobody accepted yet and has not expired, and when it expires.
   transferOfferedAt: string | null;
   transferExpiresAt: string | null;
+  // The company that issued it and its support email, when the company set one.
+  support: { company: string; email: string } | null;
 }
 
 // Answer of POST /api/products, the only one that carries the secret code of a single product.
@@ -151,6 +153,30 @@ export interface CreatedPurchase {
   qr: string;
 }
 
+export type TeamRole = 'admin' | 'operator' | 'auditor' | 'viewer';
+
+// An invitation to a company's team, as the invitee and the inviter see it. Its secret token is not part of it.
+export interface InvitationView {
+  id: string;
+  companyName: string;
+  inviterName: string;
+  role: TeamRole;
+  status: 'pending' | 'accepted' | 'declined' | 'revoked' | 'expired';
+  // Who it is for. Empty for an open link.
+  email: string;
+  createdAt: string;
+  expiresAt: string;
+  respondedAt: string | null;
+  acceptedBy: string | null;
+  // Milliseconds left when the server answered, measured with its own clock.
+  expiresInMs: number;
+}
+
+// An invitation waiting in the invitee's panel, with the token needed to answer it.
+export interface InboxInvitation extends InvitationView {
+  token: string;
+}
+
 export interface CountryOption {
   code: string;
   name: string;
@@ -169,4 +195,6 @@ export interface PreparedTransfer {
   message: string;
   feeAccount: string;
   expiresAt: string;
+  // The time left, measured by the server: the recipient's clock may be off by minutes.
+  expiresInMs: number;
 }

@@ -1,0 +1,19 @@
+---
+// Where an invitation link or QR lands. The token travels after the # (see lib/client/invitations.ts), so the page
+// itself carries nothing secret and is the same for everyone.
+import { InviteAccept } from '@/components/invitations/InviteAccept';
+import BrandLogo from '@/components/layout/BrandLogo.astro';
+import { invitationMessages } from '@/i18n/invitations';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { pageLocale } from '@/lib/server/page-locale';
+
+const locale = pageLocale(Astro);
+const { meta } = invitationMessages(locale);
+---
+
+<BaseLayout title={meta.title} description={meta.description} bodyClass="invite-page">
+  <main class="invite-shell">
+    <BrandLogo href="/" />
+    <InviteAccept client:load locale={locale} />
+  </main>
+</BaseLayout>

@@ -6,9 +6,9 @@ import { CompanyDemoBanner } from '@/components/company/CompanyDemoBanner';
 import { CompanyIdentity } from '@/components/company/CompanyIdentity';
 import { CompanyIssuance } from '@/components/company/CompanyIssuance';
 import { CompanyNotifications } from '@/components/company/CompanyNotifications';
-import { CompanyOperations } from '@/components/company/CompanyOperations';
 import { CompanySettings } from '@/components/company/CompanySettings';
 import { CompanyTeamManager } from '@/components/company/CompanyTeamManager';
+import { WorkspaceSync } from '@/components/company/WorkspaceSync';
 import BrandLogo from '@/components/layout/BrandLogo.astro';
 import { companyMessages } from '@/i18n/company';
 import BaseLayout from '@/layouts/BaseLayout.astro';
@@ -62,7 +62,7 @@ const views = t.views;
             <div>
               <a href="#batches" data-catalog-tab="batches" tabindex="-1">{t.nav.batches}</a>
               <a href="#products" data-catalog-tab="products" tabindex="-1">{t.nav.products}</a>
-              <a href="#generate" data-catalog-tab="generate" tabindex="-1">{t.nav.generate}</a>
+              <a href="#generate" data-catalog-tab="generate" data-issuance-mode="now" tabindex="-1">{t.nav.generate}</a>
             </div>
           </div>
         </div>
@@ -110,6 +110,7 @@ const views = t.views;
       </header>
 
       <CompanyDemoBanner client:load locale={locale} />
+      <WorkspaceSync client:load cavosAppId={publicConfig.cavosAppId} />
 
       <main class="company-content">
         <section class="company-view" data-company-view="dashboard" aria-labelledby="view-dashboard">
@@ -129,25 +130,24 @@ const views = t.views;
           </header>
           <div class="company-subview" data-catalog-view="catalog">
             <CompanyCatalogSummary client:load locale={locale} />
-            <CompanyOperations client:load locale={locale} />
           </div>
           <div class="company-subview" data-catalog-view="batches" hidden>
             <div class="company-catalog-heading">
               <h2>{t.catalogHeading.batches}</h2>
-              <a class="company-button is-primary" href="#generate">
+              <a class="company-button is-primary" href="#generate" data-issuance-mode="now">
                 <i class="fa-solid fa-plus" aria-hidden="true"></i>
                 {t.catalogHeading.create}
               </a>
             </div>
             <div class="company-card company-batches">
-              <BatchList client:load locale={locale} />
+              <BatchList client:load locale={locale} pageSize={6} layout="grid" />
             </div>
           </div>
           <div class="company-subview" data-catalog-view="products" hidden>
             <CompanyData client:load view="products" locale={locale} />
           </div>
           <div class="company-subview" data-catalog-view="generate" hidden>
-            <CompanyIssuance client:load countries={countryOptions} pricePerToken={publicConfig.pricePerToken} locale={locale} />
+            <CompanyIssuance client:load countries={countryOptions} pricePerToken={publicConfig.pricePerToken} cavosAppId={publicConfig.cavosAppId} locale={locale} />
           </div>
         </section>
 
@@ -205,6 +205,7 @@ const views = t.views;
   const setNavOpen = (open: boolean) => {
     shell?.toggleAttribute('data-nav-open', open);
     menuOpen?.setAttribute('aria-expanded', String(open));
+    if (open) document.querySelector<HTMLElement>('.company-menu-close')?.focus();
   };
   menuOpen?.addEventListener('click', () => setNavOpen(true));
   document.querySelectorAll('[data-nav-close]').forEach((element) => element.addEventListener('click', () => setNavOpen(false)));

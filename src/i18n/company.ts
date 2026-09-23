@@ -221,10 +221,53 @@ const es = {
     active: 'Activo',
     revokeLabel: (email: string) => `Revocar acceso de ${email}`,
     email: 'Correo del integrante',
+    emailPlaceholder: 'persona@empresa.com',
     role: 'Rol y permisos',
     create: 'Crear invitación',
     invite: 'Invitar integrante',
-    closeInvite: 'Cerrar invitación'
+    closeInvite: 'Cerrar invitación',
+    modeLabel: 'Cómo querés invitar',
+    modes: { email: 'Por correo', link: 'Link', qr: 'QR' },
+    modeHelp: {
+      email: 'Le enviamos un correo con la invitación y también le aparece en su panel de Verifire.',
+      link: 'Un enlace para compartir por WhatsApp, chat o donde quieras. Quien lo abra puede sumarse con el rol que elijas.',
+      qr: 'Un código para escanear con el celular, ideal si la persona está con vos. Quien lo escanee puede sumarse con el rol que elijas.'
+    },
+    validity: 'Por seguridad, cada invitación vence a los 3 minutos y sirve una sola vez.',
+    creating: 'Creando…',
+    shareTitle: 'Invitación lista',
+    linkTitle: 'Link de invitación',
+    qrTitle: 'QR de invitación',
+    emailTitle: 'Invitación enviada',
+    shareLink: 'Compartí este enlace con quien quieras sumar.',
+    shareQr: 'Mostrale este código a la persona para que lo escanee con su celular.',
+    emailStatus: {
+      sent: (email: string) => `Le enviamos el correo a ${email}. También le aparece en su panel de Verifire.`,
+      'not-configured': (email: string) => `El envío de correos todavía no está configurado (faltan RESEND_API_KEY o PUBLIC_APP_URL). A ${email} le aparece igual en su panel de Verifire.`,
+      failed: (email: string) => `No se pudo enviar el correo a ${email}. Le aparece igual en su panel de Verifire.`,
+      throttled: (email: string) => `Ya le enviamos un correo a ${email} hace instantes. Esperá un minuto para enviar otro; la invitación le aparece en su panel.`
+    },
+    countdown: (left: string) => `Vence en ${left}`,
+    fullscreen: 'Ver en grande',
+    expiredQr: 'Este QR venció',
+    expiredHelp: 'Esta invitación venció y ya no sirve. Generá una nueva para seguir invitando.',
+    regenerate: 'Generar uno nuevo',
+    resend: 'Enviar de nuevo',
+    copy: 'Copiar link',
+    copied: 'Link copiado',
+    share: 'Compartir',
+    shareText: (company: string) => `Te invito a sumarte al equipo de ${company} en Verifire.`,
+    downloadQr: 'Descargar QR',
+    qrAlt: 'QR de la invitación',
+    qrFile: 'verifire-invitacion.png',
+    done: 'Listo',
+    shareAgain: (who: string) => `Compartir invitación de ${who}`,
+    linkMember: 'Invitación por link',
+    qrMember: 'Invitación por QR',
+    demoBlocked: 'En modo demo no se envían invitaciones reales. Desactivá el modo demo en Configuración para invitar a tu equipo.',
+    declined: 'Rechazada',
+    expired: 'Vencida',
+    revokeFailed: 'No se pudo cancelar la invitación en el servidor. Se quitó de tu lista.'
   },
   rolesSettings: {
     eyebrow: 'Administración',
@@ -244,6 +287,26 @@ const es = {
   },
   settings: {
     local: 'Se guarda en este navegador',
+    warranty: {
+      title: 'Garantías de productos',
+      lead: 'El contacto de soporte y la duración de la garantía de los productos que emitís. El comprador ve el nombre de tu empresa y este correo cuando necesita ayuda.',
+      email: 'Correo de soporte *',
+      emailPlaceholder: 'soporte@tuempresa.com',
+      emailHelp: 'Es el único dato de contacto que ve el comprador en su garantía.',
+      months: 'Duración de la garantía',
+      monthsHelp: 'Se aplica a los productos que se activen desde ahora. Las garantías que ya están activas conservan su duración.',
+      monthOption: (months: number) => `${months} meses`,
+      preview: 'Así lo ve el comprador',
+      previewCompany: 'Empresa',
+      previewEmail: 'Correo',
+      noCompany: 'Tu empresa',
+      save: 'Guardar y aplicar',
+      saving: 'Aplicando…',
+      saved: (count: number) => (count ? `Guardado y aplicado a ${count} ${count === 1 ? 'lote' : 'lotes'}.` : 'Guardado. Se va a aplicar a los lotes que emitas.'),
+      invalidEmail: 'Ingresá un correo de soporte válido.',
+      missing: 'Sin configurar: tus compradores todavía no tienen un correo para pedir soporte.',
+      readOnly: 'Solo un administrador puede cambiar la configuración de garantías.'
+    },
     profile: {
       title: 'Perfil de empresa',
       lead: 'Cómo se presenta tu empresa en el panel. El nombre comercial también figura como marca en las etiquetas nuevas.',
@@ -353,6 +416,7 @@ const es = {
     clear: 'Vaciar',
     empty: 'No tenés notificaciones. Te avisamos cuando se confirme un pago, se cree un lote o se acerque una fecha de tu agenda.',
     close: 'Cerrar aviso',
+    closePanel: 'Cerrar notificaciones',
     settings: 'Configurar',
     kinds: {
       paymentSucceeded: {
@@ -378,6 +442,18 @@ const es = {
       batchDue: {
         title: 'Llegó la fecha de un lote programado',
         body: (p: Record<string, string>) => `${p['title'] ?? ''} estaba programado para ${p['when'] ?? ''}. Emitilo desde Generar tokens.`
+      },
+      teamInvite: {
+        title: 'Te invitaron a un equipo',
+        body: (p: Record<string, string>) => `${p['inviter'] ?? ''} te invitó a ${p['company'] ?? ''} como ${p['roleLabel'] ?? ''}. Tocá para responder.`
+      },
+      inviteAccepted: {
+        title: 'Invitación aceptada',
+        body: (p: Record<string, string>) => `${p['who'] ?? ''} se sumó a ${p['company'] ?? ''} como ${p['roleLabel'] ?? ''}.`
+      },
+      inviteDeclined: {
+        title: 'Invitación rechazada',
+        body: (p: Record<string, string>) => `${p['who'] ?? ''} rechazó la invitación a ${p['company'] ?? ''}.`
       },
       demo: { title: 'Modo demo activado', body: () => 'Estás viendo datos de ejemplo. Podés desactivarlo desde Configuración.' },
       test: { title: 'Notificación de prueba', body: () => 'Así vas a ver los avisos de pagos, lotes y vencimientos.' }
@@ -763,10 +839,53 @@ const en: CompanyMessages = {
     active: 'Active',
     revokeLabel: (email: string) => `Revoke access for ${email}`,
     email: 'Member email',
+    emailPlaceholder: 'person@company.com',
     role: 'Role and permissions',
     create: 'Create invitation',
     invite: 'Invite member',
-    closeInvite: 'Close invitation'
+    closeInvite: 'Close invitation',
+    modeLabel: 'How do you want to invite',
+    modes: { email: 'By email', link: 'Link', qr: 'QR' },
+    modeHelp: {
+      email: 'We email them the invitation, and it also shows up in their Verifire dashboard.',
+      link: 'A link to share on WhatsApp, chat or anywhere. Whoever opens it can join with the role you choose.',
+      qr: 'A code to scan with a phone, handy when the person is with you. Whoever scans it can join with the role you choose.'
+    },
+    validity: 'For security, every invitation expires after 3 minutes and works only once.',
+    creating: 'Creating…',
+    shareTitle: 'Invitation ready',
+    linkTitle: 'Invitation link',
+    qrTitle: 'Invitation QR',
+    emailTitle: 'Invitation sent',
+    shareLink: 'Share this link with whoever you want to add.',
+    shareQr: 'Show this code to the person so they can scan it with their phone.',
+    emailStatus: {
+      sent: (email: string) => `We emailed ${email}. It also shows up in their Verifire dashboard.`,
+      'not-configured': (email: string) => `Email sending is not set up yet (RESEND_API_KEY or PUBLIC_APP_URL is missing). ${email} still sees it in their Verifire dashboard.`,
+      failed: (email: string) => `The email to ${email} could not be sent. They still see it in their Verifire dashboard.`,
+      throttled: (email: string) => `We just emailed ${email}. Wait a minute to send another one; the invitation is in their dashboard.`
+    },
+    countdown: (left: string) => `Expires in ${left}`,
+    fullscreen: 'View large',
+    expiredQr: 'This QR expired',
+    expiredHelp: 'This invitation expired and no longer works. Create a new one to keep inviting.',
+    regenerate: 'Create a new one',
+    resend: 'Send again',
+    copy: 'Copy link',
+    copied: 'Link copied',
+    share: 'Share',
+    shareText: (company: string) => `Join the ${company} team on Verifire.`,
+    downloadQr: 'Download QR',
+    qrAlt: 'Invitation QR',
+    qrFile: 'verifire-invitation.png',
+    done: 'Done',
+    shareAgain: (who: string) => `Share the invitation for ${who}`,
+    linkMember: 'Invitation by link',
+    qrMember: 'Invitation by QR',
+    demoBlocked: 'Demo mode does not send real invitations. Turn demo mode off in Settings to invite your team.',
+    declined: 'Declined',
+    expired: 'Expired',
+    revokeFailed: 'The invitation could not be cancelled on the server. It was removed from your list.'
   },
   rolesSettings: {
     eyebrow: 'Administration',
@@ -786,6 +905,26 @@ const en: CompanyMessages = {
   },
   settings: {
     local: 'Stored in this browser',
+    warranty: {
+      title: 'Product warranties',
+      lead: 'The support contact and warranty length of the products you issue. Buyers see your company name and this email when they need help.',
+      email: 'Support email *',
+      emailPlaceholder: 'support@yourcompany.com',
+      emailHelp: 'It is the only contact detail the buyer sees on their warranty.',
+      months: 'Warranty length',
+      monthsHelp: 'It applies to products activated from now on. Warranties already running keep their length.',
+      monthOption: (months: number) => `${months} months`,
+      preview: 'What the buyer sees',
+      previewCompany: 'Company',
+      previewEmail: 'Email',
+      noCompany: 'Your company',
+      save: 'Save and apply',
+      saving: 'Applying…',
+      saved: (count: number) => (count ? `Saved and applied to ${count} ${count === 1 ? 'batch' : 'batches'}.` : 'Saved. It will apply to the batches you issue.'),
+      invalidEmail: 'Enter a valid support email.',
+      missing: 'Not set: your buyers do not have an email to ask for support yet.',
+      readOnly: 'Only an administrator can change the warranty settings.'
+    },
     profile: {
       title: 'Company profile',
       lead: 'How your company shows up in the dashboard. The trade name is also the brand on new labels.',
@@ -895,6 +1034,7 @@ const en: CompanyMessages = {
     clear: 'Clear',
     empty: 'You have no notifications. We will let you know when a payment is confirmed, a batch is created or a date in your agenda is near.',
     close: 'Dismiss notice',
+    closePanel: 'Close notifications',
     settings: 'Settings',
     kinds: {
       paymentSucceeded: {
@@ -920,6 +1060,18 @@ const en: CompanyMessages = {
       batchDue: {
         title: 'A scheduled batch is due',
         body: (p: Record<string, string>) => `${p['title'] ?? ''} was scheduled for ${p['when'] ?? ''}. Issue it from Issue tokens.`
+      },
+      teamInvite: {
+        title: 'You were invited to a team',
+        body: (p: Record<string, string>) => `${p['inviter'] ?? ''} invited you to ${p['company'] ?? ''} as ${p['roleLabel'] ?? ''}. Tap to answer.`
+      },
+      inviteAccepted: {
+        title: 'Invitation accepted',
+        body: (p: Record<string, string>) => `${p['who'] ?? ''} joined ${p['company'] ?? ''} as ${p['roleLabel'] ?? ''}.`
+      },
+      inviteDeclined: {
+        title: 'Invitation declined',
+        body: (p: Record<string, string>) => `${p['who'] ?? ''} declined the invitation to ${p['company'] ?? ''}.`
       },
       demo: { title: 'Demo mode on', body: () => 'You are looking at sample data. You can turn it off in Settings.' },
       test: { title: 'Test notification', body: () => 'This is how payment, batch and due date notices look.' }

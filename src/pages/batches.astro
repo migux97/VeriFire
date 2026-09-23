@@ -3,10 +3,9 @@ import { BatchList } from '@/components/batches/BatchList';
 import { BatchStats } from '@/components/batches/BatchStats';
 import AppTopbar from '@/components/layout/AppTopbar.astro';
 import SiteFooter from '@/components/layout/SiteFooter.astro';
+import { WorkspaceSync } from '@/components/company/WorkspaceSync';
 import BaseLayout from '@/layouts/BaseLayout.astro';
-
-// Nothing here depends on the request: the batches are read in the browser.
-export const prerender = true;
+import { publicConfig } from '@/lib/server/config';
 ---
 
 <BaseLayout
@@ -31,6 +30,7 @@ export const prerender = true;
     </section>
 
     <BatchList client:load />
+    <WorkspaceSync client:load cavosAppId={publicConfig.cavosAppId} />
   </main>
 
   <SiteFooter />

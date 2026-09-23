@@ -1,8 +1,8 @@
 import { join } from 'node:path';
 import {
   ADMIN_API_TOKEN, CAVOS_APP_ID, CORS_ORIGIN, COSMOS_PAY_AMOUNT, COSMOS_PAY_API_KEY, COSMOS_PAY_DESTINATION, DATA_FILE,
-  PUBLIC_APP_URL, STELLAR_ADMIN_SECRET, STELLAR_CONTRACT_ID, STELLAR_ISSUER_SECRET, STELLAR_NETWORK, STELLAR_PREVIOUS_CONTRACT_ID,
-  STELLAR_RPC_URL
+  PUBLIC_APP_URL, RESEND_API_KEY, RESEND_FROM, STELLAR_ADMIN_SECRET, STELLAR_CONTRACT_ID, STELLAR_ISSUER_SECRET, STELLAR_NETWORK,
+  STELLAR_PREVIOUS_CONTRACT_ID, STELLAR_RPC_URL
 } from 'astro:env/server';
 import { stellarConfigFromEnv } from './stellar';
 
@@ -12,10 +12,16 @@ export const config = {
     apiKey: COSMOS_PAY_API_KEY || '',
     // Treasury account: receives the payment of each batch and never signs on-chain.
     destination: COSMOS_PAY_DESTINATION || '',
-    // Test amount per token, in XLM.
-    amountPerToken: COSMOS_PAY_AMOUNT || '5'
+    // Test amount per token, in XLM. A value that is not a positive number falls back to 5 instead of pricing every
+    // batch as "NaN".
+    amountPerToken: Number(COSMOS_PAY_AMOUNT) > 0 ? String(Number(COSMOS_PAY_AMOUNT)) : '5'
   },
   cavosAppId: CAVOS_APP_ID || '',
+  // Email of the team invitations. Without a key, invitations still work in the panel and as links, just not by mail.
+  resend: {
+    apiKey: RESEND_API_KEY || '',
+    from: RESEND_FROM || 'Verifire <onboarding@resend.dev>'
+  },
   adminApiToken: ADMIN_API_TOKEN || '',
   corsOrigin: CORS_ORIGIN || '',
   publicAppUrl: PUBLIC_APP_URL?.replace(/\/$/, '') || '',

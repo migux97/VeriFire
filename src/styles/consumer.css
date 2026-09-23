@@ -51,6 +51,20 @@
 .support-details dt { color: var(--vf-muted); }
 .support-details dd { overflow-wrap: anywhere; font: 12px/1.7 var(--vf-mono); }
 .support-instructions { font-size: .9375rem; line-height: 1.6; }
+/* Support: the company and its support email, with a way to write to it. */
+.support-dialog { width: min(480px, calc(100% - 32px)); }
+.support-dialog-head { display: flex; align-items: flex-start; gap: 14px; }
+.support-dialog-head > div { flex: 1; min-width: 0; }
+.support-dialog-head h2 { font-size: 1.35rem; }
+.support-dialog-icon { display: grid; flex: none; place-items: center; width: 46px; height: 46px; border-radius: 14px; background: var(--vf-blush); color: var(--vf-red); }
+.support-dialog-product { margin-top: 4px; color: var(--vf-muted); font-size: .875rem; }
+.support-dialog-product span { font-family: var(--vf-mono); font-size: .8125rem; }
+.support-dialog .support-details > div { grid-template-columns: 140px minmax(0, 1fr); align-items: baseline; }
+.support-dialog .support-details dd { font: 700 .9375rem/1.5 var(--vf-font); }
+.support-dialog .support-details a { color: var(--vf-red); overflow-wrap: anywhere; }
+.support-dialog-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.support-dialog-actions .button { flex: 1 1 180px; }
+.support-dialog-missing { display: flex; gap: 10px; padding: 14px 16px; border-radius: 10px; background: var(--vf-mist); color: var(--vf-muted); line-height: 1.5; }
 .consumer-page :is(button, input):focus-visible { outline: 3px solid var(--vf-red); outline-offset: 3px; }
 @media (max-width: 640px) {
   

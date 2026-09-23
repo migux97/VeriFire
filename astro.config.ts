@@ -62,7 +62,10 @@ export default defineConfig({
       STELLAR_ISSUER_SECRET: runtimeVar(),
       // Old name of STELLAR_ISSUER_SECRET.
       STELLAR_ADMIN_SECRET: runtimeVar(),
-      STELLAR_RPC_URL: runtimeVar()
+      STELLAR_RPC_URL: runtimeVar(),
+      // Resend (resend.com): sends the team invitations by email. The sender must belong to a domain verified there.
+      RESEND_API_KEY: runtimeVar(),
+      RESEND_FROM: runtimeVar()
     }
   }
 });
