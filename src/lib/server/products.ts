@@ -10,7 +10,7 @@ import { singleton } from './singleton';
 import { shortAddress } from '../format';
 import { activationKeyFor, explorerTxUrl, isTxHash } from './stellar';
 import { hashSecret, saveState, store, type Product, type ProductFields, type StoredEvent } from './store';
-import { issuerOf } from './brands';
+import { issuerOf, publishedIssuerOf } from './brands';
 import { DEFAULT_WARRANTY_MONTHS, supportOf } from './support';
 
 const HOUR_MS = 60 * 60 * 1000;
@@ -125,7 +125,7 @@ export const recordRejectedClaim = (product: Product, claimant: string) => {
   recordEventQuietly(product, { kind: 'rejected', at: new Date().toISOString(), by: claimant });
 };
 
-export const publicProductView = (product: Product): PublicProduct => ({
+export const publicProductView = (product: Product, baseUrl: string): PublicProduct => ({
   token: product.token,
   model: product.model,
   lot: product.lot,
@@ -141,7 +141,8 @@ export const publicProductView = (product: Product): PublicProduct => ({
   lastTransfer: (() => {
     const last = transfersOf(product).at(-1);
     return last ? { to: shortAddress(last.to), at: last.at } : null;
-  })()
+  })(),
+  issuer: publishedIssuerOf(product.batchId, baseUrl)
 });
 
 // Products this account passed on and no longer owns, the latest first. When it owned one twice, the last time counts.
@@ -164,7 +165,7 @@ export const transferredBy = (owner: string): TransferredWarranty[] =>
 // What the buyer may see is the certification only: the activation transaction signed by the issuing account.
 // The Cosmos Pay payment that bought the batch moves company money and never leaves the company panel.
 export const warrantyView = (product: Product, baseUrl: string): Warranty => ({
-  ...publicProductView(product),
+  ...publicProductView(product, baseUrl),
   certificateUrl: isTxHash(product.claimTransaction) ? explorerTxUrl(product.claimTransaction) : null,
   tokenId: product.tokenId,
   owner: product.owner,

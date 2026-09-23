@@ -309,7 +309,7 @@ const es = {
     },
     brand: {
       title: 'Marca para tus compradores',
-      lead: 'Lo que ve el comprador en cada garantía: tu nombre comercial, el logo, el sitio web, la descripción y cómo contactarte para soporte. La razón social, el CUIT y la dirección no se publican.',
+      lead: 'Lo que ve el comprador en cada garantía y cualquiera que escanee el QR público de tus productos: tu nombre comercial, el logo, el sitio web, la descripción y cómo contactarte para soporte. La razón social, el CUIT y la dirección no se publican.',
       preview: 'Así lo ve el comprador',
       issuedBy: 'Emitido por',
       write: 'Escribir',
@@ -979,7 +979,7 @@ const en: CompanyMessages = {
     },
     brand: {
       title: 'Brand for your buyers',
-      lead: 'What the buyer sees on each warranty: your trade name, your logo, your website, a description and how to contact you for support. The legal name, the tax ID and the address are not published.',
+      lead: 'What the buyer sees on each warranty, and anyone who scans the public QR of your products: your trade name, your logo, your website, a description and how to contact you for support. The legal name, the tax ID and the address are not published.',
       preview: 'How the buyer sees it',
       issuedBy: 'Issued by',
       write: 'Write',

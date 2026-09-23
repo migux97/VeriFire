@@ -8,6 +8,7 @@
 import { createHash } from 'node:crypto';
 import { BRAND_LIMITS, isEmail, isPhone, isPngDataUrl, isWebsite, slugify, type PublicBrand } from '../brand';
 import { HttpError } from './errors';
+import type { Issuer } from '../types';
 import type { Brand, Product } from './store';
 import { store } from './store';
 
@@ -73,35 +74,33 @@ export const logoBytes = (brand: Brand) => {
   return Buffer.from(brand.logo.slice(brand.logo.indexOf(',') + 1), 'base64');
 };
 
-export interface IssuerView {
-  name: string;
-  logoUrl: string | null;
-  website: string | null;
-  email: string | null;
-  phone: string | null;
-}
-
 export const logoUrlOf = (brand: Brand, baseUrl: string) =>
   brand.logo ? `${baseUrl}/api/brand/${encodeURIComponent(brand.slug)}/logo.png?v=${brand.logoVersion ?? ''}` : null;
 
-// Who issued a product, for its owner. The brand comes from the wallet that owns the purchase of its batch, and a
-// purchase only gets an owner through a signed request, so a company cannot borrow another one's name by claiming its
-// wallet. Without a brand, the name and email the company set for support are what there is.
+// The brand published by whoever bought a batch, as anyone may see it. It comes from the wallet that owns the purchase
+// of the batch, and a purchase only gets an owner through a signed request, so a company cannot borrow another one's
+// name by claiming its wallet. A company that never published one shows nothing here: this is what the public QR uses.
+export const publishedIssuerOf = (batchId: string | undefined, baseUrl: string): Issuer | null => {
+  const purchase = batchId ? [...store.purchases.values()].find((candidate) => candidate.batchId === batchId) : undefined;
+  const brand = purchase?.owner ? store.workspaces.get(purchase.owner)?.brand : undefined;
+  if (!brand) return null;
+  return {
+    name: brand.name,
+    logoUrl: logoUrlOf(brand, baseUrl),
+    website: brand.website ?? null,
+    email: brand.supportEmail ?? null,
+    phone: brand.supportPhone ?? null
+  };
+};
+
+// Who issued a product, for its owner: the published brand, and without one the name and email the company set for
+// support, which stay private to the owner.
 export const issuerOf = (
   product: Product,
   baseUrl: string,
   support: { companyName: string; email: string } | undefined
-): IssuerView | null => {
-  const purchase = product.batchId ? [...store.purchases.values()].find((candidate) => candidate.batchId === product.batchId) : undefined;
-  const brand = purchase?.owner ? store.workspaces.get(purchase.owner)?.brand : undefined;
-  if (brand) {
-    return {
-      name: brand.name,
-      logoUrl: logoUrlOf(brand, baseUrl),
-      website: brand.website ?? null,
-      email: brand.supportEmail ?? support?.email ?? null,
-      phone: brand.supportPhone ?? null
-    };
-  }
+): Issuer | null => {
+  const published = publishedIssuerOf(product.batchId, baseUrl);
+  if (published) return { ...published, email: published.email ?? support?.email ?? null };
   return support ? { name: support.companyName, logoUrl: null, website: null, email: support.email, phone: null } : null;
 };

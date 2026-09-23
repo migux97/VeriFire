@@ -2234,3 +2234,8 @@ a.network-status:hover {
   background: var(--vf-ink);
   color: var(--vf-paper);
 }
+
+/* On the public pages the badge sits above the details of the product. */
+.verify-card .issuer {
+  margin: 4px 0 14px;
+}

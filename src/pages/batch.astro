@@ -1,6 +1,7 @@
 ---
 // Public page behind the QR of a whole lot: read-only summary, no session needed.
 import StandaloneHeader from '@/components/layout/StandaloneHeader.astro';
+import { IssuerBadge } from '@/components/ui/IssuerBadge';
 import { DetailRows } from '@/components/verification/DetailRows';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import { getVerifyMessages } from '@/i18n/verify';
@@ -36,6 +37,7 @@ if (batch) {
       <span class="eyebrow">{copy.header.batchEyebrow}</span>
       <h1 id="batch-title">{title}</h1>
       <p class="verify-message">{message}</p>
+      {batch?.issuer && <IssuerBadge issuer={batch.issuer} labels={{ issuedBy: copy.issuer.issuedBy, write: copy.issuer.write, call: copy.issuer.call }} />}
       {
         batch && (
           <DetailRows

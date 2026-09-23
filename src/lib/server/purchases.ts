@@ -8,6 +8,7 @@ import { chain } from './chain';
 import { config } from './config';
 import { HttpError } from './errors';
 import type { JsonBody } from './http';
+import { publishedIssuerOf } from './brands';
 import { batchUrl, qrImage, secretUrl, verificationUrl } from './links';
 import { anchorPendingProducts, isCurrentOnChain, isPendingOnChain, mintProduct, readProductFields } from './products';
 import { explorerTxUrl, isTxHash } from './stellar';
@@ -40,6 +41,7 @@ const batchBase = (batch: Batch, baseUrl: string) => ({
 
 export const publicBatchView = (batch: Batch, baseUrl: string): PublicBatch => ({
   ...batchBase(batch, baseUrl),
+  issuer: publishedIssuerOf(batch.batchId, baseUrl),
   tokens: batch.tokens.map((product) => ({ token: product.token, status: product.claimed ? 'CLAIMED_IN_WARRANTY' : 'SEALED' }))
 });
 

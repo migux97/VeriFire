@@ -3,11 +3,13 @@
 // without logging in. It only shows public data and does not link to the rest of the app.
 import LocalDates from '@/components/layout/LocalDates.astro';
 import StandaloneHeader from '@/components/layout/StandaloneHeader.astro';
+import { IssuerBadge } from '@/components/ui/IssuerBadge';
 import { ProductDetails } from '@/components/verification/ProductDetails';
 import { ProductHistory } from '@/components/verification/ProductHistory';
 import { VerifyScanner } from '@/components/verification/VerifyScanner';
 import { getVerifyMessages } from '@/i18n/verify';
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import { publicBaseUrl } from '@/lib/server/config';
 import { pageLocale } from '@/lib/server/page-locale';
 import { findProduct, publicProductView, recordVerification } from '@/lib/server/products';
 import { withinBudget } from '@/lib/server/rate-limit';
@@ -20,7 +22,7 @@ const found = requestedToken.trim() ? findProduct(requestedToken) : undefined;
 // Every check with the public QR goes into the product's history (see recordVerification). Recording writes the
 // store, so an address that walks through the (sequential) tokens only gets a few recorded; the page still answers.
 if (found && withinBudget('verify-record', Astro.clientAddress, 30)) recordVerification(found);
-const product = found ? publicProductView(found) : null;
+const product = found ? publicProductView(found, publicBaseUrl(Astro.url)) : null;
 
 let title = copy.product.title;
 let message = copy.product.lead;
@@ -51,6 +53,7 @@ if (product) {
         </div>
       </div>
       <p class="verify-message">{message}</p>
+      {product?.issuer && <IssuerBadge issuer={product.issuer} labels={{ issuedBy: copy.issuer.issuedBy, write: copy.issuer.write, call: copy.issuer.call }} />}
       {product && <ProductDetails product={product} locale={locale} />}
       {
         product && product.history.length > 0 && (
