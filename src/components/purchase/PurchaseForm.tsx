@@ -10,6 +10,7 @@ import { Toast } from '@/components/ui/Toast';
 import { isDemoPurchase } from '@/lib/client/demo';
 import { createPurchase, fetchPurchase, migrateLegacyPurchase, savePurchase } from '@/lib/client/purchases';
 import { userSession } from '@/lib/client/session';
+import { resolveWalletAddress } from '@/lib/client/wallet';
 import { errorMessage } from '@/lib/errors';
 import type { CountryOption, CreatedPurchase } from '@/lib/types';
 
@@ -17,6 +18,8 @@ const POLL_MS = 4000;
 
 interface PurchaseFormProps {
   countries: CountryOption[];
+  // Needed to ask the wallet for its address: the purchase is recorded under it.
+  cavosAppId?: string;
   batchesHref?: string;
   embedded?: boolean;
   pricePerToken?: string;
@@ -29,8 +32,17 @@ const groupByRegion = (countries: CountryOption[]) => {
   return [...regions.entries()].sort(([first], [second]) => (first === 'LATAM' ? -1 : second === 'LATAM' ? 1 : first.localeCompare(second, 'es')));
 };
 
-export function PurchaseForm({ countries, batchesHref = '/batches', embedded = false, pricePerToken }: PurchaseFormProps) {
+export function PurchaseForm({ countries, cavosAppId = '', batchesHref = '/batches', embedded = false, pricePerToken }: PurchaseFormProps) {
   const t = useCompanyText();
+  // Best effort: a browser that cannot reach the wallet still buys, and the batch is claimed on the next sync.
+  const walletAddress = async () => {
+    if (!cavosAppId) return undefined;
+    try {
+      return await resolveWalletAddress(cavosAppId);
+    } catch {
+      return undefined;
+    }
+  };
   const [message, setMessage] = useState<Message | null>(null);
   const [payment, setPayment] = useState<CreatedPurchase | null>(null);
   const [paymentStatus, setPaymentStatus] = useState(t.purchase.waiting);
@@ -96,7 +108,9 @@ export function PurchaseForm({ countries, batchesHref = '/batches', embedded = f
           ...(formData.get('configuration') ? { configuration: JSON.parse(String(formData.get('configuration'))) } : {})
         },
         countries.find((option) => option.code === chosen)?.destination ?? chosen,
-        t.purchase.createFailed
+        t.purchase.createFailed,
+        // The wallet of the account, when this browser can tell: the batch then belongs to the account, not to it.
+        await walletAddress()
       );
 
       // Saved right away: the purchase is already in Mis lotes, even if this page is closed before paying.

@@ -56,6 +56,8 @@ export interface Batch extends ProductFields {
 
 export interface Purchase extends ProductFields {
   purchaseId: string;
+  // Wallet of the company that bought it. Older purchases have none until a browser that holds their id says so.
+  owner?: string;
   quantity: number;
   total: string;
   intentId: string;

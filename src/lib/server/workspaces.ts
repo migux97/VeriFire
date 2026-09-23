@@ -11,12 +11,20 @@ const MAX_PURCHASES = 500;
 
 export const findWorkspace = (owner: string): Workspace | undefined => store.workspaces.get(owner);
 
+// Newest first, the way the panel lists them.
+const purchasesOf = (owner: string) => [...store.purchases.values()]
+  .filter((purchase) => purchase.owner === owner)
+  .sort((first, second) => String(second.createdAt ?? '').localeCompare(String(first.createdAt ?? '')))
+  .map((purchase) => purchase.purchaseId);
+
 export const workspaceView = (owner: string) => {
   const workspace = findWorkspace(owner);
+  const purchaseIds = purchasesOf(owner);
   return {
     owner,
-    purchaseIds: workspace?.purchaseIds ?? [],
-    accountType: workspace?.accountType ?? null,
+    purchaseIds,
+    // A wallet that bought a batch is a company: its panel is offered on every device it signs in from.
+    accountType: workspace?.accountType ?? (purchaseIds.length ? ('business' as const) : null),
     companyName: workspace?.companyName ?? null
   };
 };
@@ -42,14 +50,22 @@ export const mergeWorkspace = (owner: string, changes: {
     : []);
   if (incoming.length > MAX_PURCHASES) throw new HttpError(400, 'Demasiadas compras en una sola sincronización.');
 
-  const purchaseIds = [...new Set([...incoming, ...(current?.purchaseIds ?? [])])]
-    .filter((purchaseId) => !removed.has(purchaseId) && store.purchases.has(purchaseId))
-    .slice(0, MAX_PURCHASES);
+  // A purchase made before the panel sent its wallet is claimed by the browser that still holds its id, and only
+  // while nobody else holds it: from then on it belongs to that account and no browser has to remember it.
+  for (const purchaseId of incoming.slice(0, MAX_PURCHASES)) {
+    const purchase = store.purchases.get(purchaseId);
+    if (purchase && !purchase.owner && !removed.has(purchaseId)) purchase.owner = owner;
+  }
+  for (const purchaseId of removed) {
+    const purchase = store.purchases.get(purchaseId);
+    if (purchase?.owner === owner) delete purchase.owner;
+  }
 
   const accountType = changes.accountType === 'business' || changes.accountType === 'personal'
     ? changes.accountType
     : current?.accountType;
   const companyName = changes.companyName === undefined ? current?.companyName : text(changes.companyName, 80);
+  const purchaseIds = workspaceView(owner).purchaseIds;
 
   store.workspaces.set(owner, {
     owner,

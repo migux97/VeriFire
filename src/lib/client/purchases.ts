@@ -137,10 +137,10 @@ export interface PurchaseRequest {
 }
 
 // Creates the Cosmos Pay payment of a new batch. `destination` is how the labels will read it, used by demo mode.
-export const createPurchase = (request: PurchaseRequest, destination: string, fallbackError: string) =>
+export const createPurchase = (request: PurchaseRequest, destination: string, fallbackError: string, owner?: string) =>
   inDemo()
     ? createDemoPurchase({ model: request.model, lot: request.lot, quantity: request.quantity, destination, ...(request.configuration ? { configuration: request.configuration } : {}) })
-    : postJson<CreatedPurchase>('/api/purchases', request, fallbackError);
+    : postJson<CreatedPurchase>('/api/purchases', { ...request, ...(owner ? { owner } : {}) }, fallbackError);
 
 export const shipPurchase = (purchaseId: string, fallbackError: string) =>
   inDemo(purchaseId)
