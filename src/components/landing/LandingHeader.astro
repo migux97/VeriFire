@@ -4,7 +4,7 @@ import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { ProfileMenu } from '@/components/warranties/ProfileMenu';
 import { getLandingMessages } from '@/i18n/landing';
 import { getTechnicalLandingCopy } from '@/i18n/technical-landing';
-import LanguageMenu from './LanguageMenu.astro';
+import LanguageMenu from '@/components/ui/LanguageMenu.astro';
 const locale = Astro.currentLocale ?? 'es';
 const { nav: shared, profile } = getLandingMessages(locale);
 const { nav, account } = getTechnicalLandingCopy(locale);
