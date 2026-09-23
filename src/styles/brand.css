@@ -53,6 +53,7 @@
 /* Parts that are black in both modes keep the light-mode tokens inside them. */
 :root[data-theme='dark'] .lp-footer,
 :root[data-theme='dark'] .lp-band,
+:root[data-theme='dark'] .auth-visual,
 :root[data-theme='dark'] .scan-viewer {
   --vf-ink: #000000;
   --vf-text: #262626;
