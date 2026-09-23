@@ -1,4 +1,5 @@
 ---
+import { formatMessage, getLandingMessages } from '@/i18n/landing';
 // A product box drawn in flat planes: black carton, colored label and the public QR sticker. Needs LandingSprite on
 // the page for the QR.
 interface Props {
@@ -12,6 +13,7 @@ interface Props {
 }
 
 const { word, color, lot, class: className, statuses = [] } = Astro.props;
+const { artwork: copy } = getLandingMessages(Astro.currentLocale);
 
 // The label is 138 units wide: shorter words print bigger.
 const longest = Math.max(...word.map((line) => line.length));
@@ -27,18 +29,19 @@ const firstBaseline = 254 - ((word.length - 1) * lineHeight) / 2 + fontSize * 0.
   <polygon points="214,86 272,46 272,326 214,366" fill="#121212"></polygon>
   <rect x="40" y="86" width="174" height="34" fill="#2e2e2e"></rect>
   <polygon points="214,86 272,46 272,80 214,120" fill="#1a1a1a"></polygon>
+  <image href="/brand/verifire-light.png" x="58" y="135" width="78" height="25"></image>
 
   <rect x="58" y="178" width="138" height="152" fill={color}></rect>
   <rect x="64" y="184" width="126" height="140" fill="none" stroke="#000000" stroke-width="1.2"></rect>
-  <text x="127" y="202" class="lp-package-small" text-anchor="middle">Original verificado</text>
+  <text x="127" y="202" class="lp-package-small" text-anchor="middle">{copy.verified}</text>
   {
-    word.map((line, index) => (
+    word.join('') === 'VERIFIRE' ? <image href="/brand/verifire.png" x="70" y="236" width="114" height="36" /> : word.map((line, index) => (
       <text x="127" y={firstBaseline + index * lineHeight} class="lp-package-word" font-size={fontSize} text-anchor="middle">
         {line}
       </text>
     ))
   }
-  <text x="127" y="316" class="lp-package-small" text-anchor="middle">Lote {lot}</text>
+  <text x="127" y="316" class="lp-package-small" text-anchor="middle">{formatMessage(copy.lot, { lot })}</text>
 
   <g transform="translate(146 96) rotate(-8)">
     <rect width="70" height="70" fill="#ffffff"></rect>

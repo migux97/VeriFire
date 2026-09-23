@@ -1,5 +1,6 @@
 import node from '@astrojs/node';
 import react from '@astrojs/react';
+import tailwindcss from '@tailwindcss/vite';
 import { defineConfig, envField, fontProviders } from 'astro/config';
 
 // Every variable is declared `secret`, even the ones that are not: only secret server variables are read at runtime
@@ -8,10 +9,16 @@ import { defineConfig, envField, fontProviders } from 'astro/config';
 const runtimeVar = () => envField.string({ context: 'server', access: 'secret', optional: true });
 
 export default defineConfig({
+  i18n: {
+    defaultLocale: 'es',
+    locales: ['es', 'en'],
+    routing: { prefixDefaultLocale: false }
+  },
   output: 'server',
   adapter: node({ mode: 'standalone' }),
   integrations: [react()],
   vite: {
+    plugins: [tailwindcss()],
     // Prepare the lazy wallet dependency before the first authentication request.
     optimizeDeps: { include: ['@cavos/kit', 'buffer'] }
   },

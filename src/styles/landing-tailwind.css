@@ -1,0 +1,5 @@
+/* Prefix utilities and omit Preflight to preserve the app's existing styles. */
+@layer theme, base, components, utilities;
+@import 'tailwindcss/theme.css' layer(theme) prefix(tw);
+@import 'tailwindcss/utilities.css' layer(utilities) prefix(tw) important;
+@source '../components/landing';

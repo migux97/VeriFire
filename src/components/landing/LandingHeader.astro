@@ -1,36 +1,29 @@
----
-// Header of the landing page. Visitors get the login and registration links; a session opened in another tab gets its
-// profile and the way back to its panel (see the landing mode of SessionGate).
+﻿---
 import BrandLogo from '@/components/layout/BrandLogo.astro';
-import { ProfileMenu } from '@/components/warranties/ProfileMenu';
+import { getRelativeLocaleUrl } from 'astro:i18n';
+import { getLandingMessages } from '@/i18n/landing';
+import { getTechnicalLandingCopy } from '@/i18n/technical-landing';
+const locale = Astro.currentLocale ?? 'es';
+const { nav: shared } = getLandingMessages(locale);
+const { nav, account } = getTechnicalLandingCopy(locale);
 ---
-
-<header class="lp-header">
+<header class="lp-header lp-technical-header">
   <BrandLogo />
-
-  <a class="lp-button lp-button-outline lp-header-verify" href="/verify">
-    <i class="fa-solid fa-qrcode" aria-hidden="true"></i> Verificar producto
-  </a>
-
-  <nav class="lp-nav" aria-label="Secciones">
-    <a href="#history">Historial</a>
-    <a href="#how-it-works">Cómo funciona</a>
-    <a href="#brands">Para marcas</a>
-    <a href="#faq">Preguntas</a>
+  <nav class="lp-nav" aria-label={shared.sections}>
+    <a href="#technology">{nav.technology}</a>
+    <a href="#how-it-works">{nav.how}</a>
+    <a href="#history">{nav.cases}</a>
+    <a href="#docs-api">{nav.docs}</a>
   </nav>
-
-  <div class="lp-guest-actions">
-    <a class="lp-login" href="/login">
-      <i class="fa-regular fa-user" aria-hidden="true"></i>
-      <span>Ingresar</span>
-    </a>
-    <a class="lp-button lp-button-solid lp-header-cta" href="/login?modo=registro">Crear cuenta</a>
+  <div class="lp-header-actions">
+    <nav class="lp-language" aria-label={shared.language}>
+      <a href={getRelativeLocaleUrl('es')} lang="es" hreflang="es" aria-label="Español" aria-current={locale === 'es' ? 'page' : undefined}>ES</a>
+      <a href={getRelativeLocaleUrl('en')} lang="en" hreflang="en" aria-label="English" aria-current={locale === 'en' ? 'page' : undefined}>EN</a>
+    </nav>
+    <a class="lp-button lp-button-solid lp-header-cta" href="/verify"><i class="fa-solid fa-qrcode" aria-hidden="true"></i>{nav.scan}</a>
   </div>
-
-  <div class="lp-session-actions">
-    <a class="lp-button lp-button-solid lp-header-cta" href="/app">
-      <i class="fa-solid fa-table-columns" aria-hidden="true"></i> Ir a mi panel
-    </a>
-    <ProfileMenu client:load />
+  <div class="lp-header-account">
+    <a class="lp-header-login" href="/login">{account.login}</a>
+    <a class="lp-button lp-button-outline lp-header-register" href="/login?modo=registro">{account.register}</a>
   </div>
 </header>

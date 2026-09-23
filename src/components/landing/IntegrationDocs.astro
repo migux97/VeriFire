@@ -1,0 +1,29 @@
+---
+import { getTechnicalLandingCopy } from '@/i18n/technical-landing';
+const { docs } = getTechnicalLandingCopy(Astro.currentLocale);
+const endpoints = [
+  { method: 'GET', path: '/api/products/{token}', description: docs.public },
+  { method: 'POST', path: '/api/products', description: docs.issue },
+  { method: 'POST', path: '/api/warranties/prepare', description: docs.claim }
+];
+---
+<section class="lp-section lp-integration" id="docs-api" aria-labelledby="lp-integration-title">
+  <p class="lp-eyebrow">{docs.eyebrow}</p>
+  <h2 id="lp-integration-title" class="lp-section-title">{docs.title}</h2>
+  <p class="lp-integration-lead">{docs.lead}</p>
+  <div class="tw:mt-8 tw:grid tw:gap-8 tw:lg:grid-cols-2">
+    <dl class="lp-endpoints">
+      {endpoints.map((endpoint) => <div><dt><span>{endpoint.method}</span><code>{endpoint.path}</code></dt><dd>{endpoint.description}</dd></div>)}
+    </dl>
+    <div class="lp-code-sample">
+      <p>{docs.example}</p>
+      <pre><code>{'GET /api/products/VF-1043-018\nAccept: application/json'}</code></pre>
+      <p>{docs.sample}</p>
+      <p>{docs.flow}</p>
+      <div class="tw:mt-6 tw:flex tw:flex-wrap tw:gap-5">
+        <a href="https://github.com/migux97/VeriFire/blob/dev/contracts/README.md">{docs.architecture} <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i></a>
+        <a href="https://developers.stellar.org/docs/data/apis/rpc">{docs.reference} <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i></a>
+      </div>
+    </div>
+  </div>
+</section>

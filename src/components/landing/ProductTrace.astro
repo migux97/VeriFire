@@ -1,120 +1,23 @@
+﻿---
+import { getLandingContent } from '@/i18n/landing-content';
+import { getLandingMessages } from '@/i18n/landing';
+import { getTechnicalLandingCopy } from '@/i18n/technical-landing';
+import { UseCaseCarousel, type UseCaseItem } from './UseCaseCarousel';
+const locale = Astro.currentLocale ?? 'es';
+const { sampleProducts } = getLandingContent(locale);
+const { cases: copy } = getTechnicalLandingCopy(locale);
+const { artwork } = getLandingMessages(locale);
+const ids = ['relojes', 'perfumes', 'vinos', 'repuestos', 'cosmetica'];
+const items: UseCaseItem[] = ids.map((id, index) => ({
+  ...sampleProducts.find((product) => product.id === id)!,
+  industry: copy.industries[index]!,
+  description: copy.descriptions[index]!
+}));
 ---
-import { sampleProducts, traceIcons } from './content';
-import ProductGalleryArt from './ProductGalleryArt.astro';
----
-
-<section class="lp-catalog" id="history" aria-labelledby="lp-catalog-title">
+<section class="lp-catalog lp-use-cases" id="history" aria-labelledby="lp-catalog-title">
   <div class="lp-catalog-head">
-    <h2 id="lp-catalog-title">Elegí un producto y mirá su recorrido</h2>
-    <p>Ejemplos de cómo queda registrada una unidad en distintas industrias, desde la planta hasta su dueño actual.</p>
+    <div><p class="lp-eyebrow">{copy.eyebrow}</p><h2 id="lp-catalog-title">{copy.title}</h2></div>
+    <p>{copy.lead}</p>
   </div>
-
-  <div class="products-grid" data-rail>
-    {
-      sampleProducts.map((product, index) => (
-        <button class:list={['product-card', index === 0 && 'active']} type="button" data-product={product.id} aria-pressed={index === 0 ? 'true' : 'false'} aria-controls="lp-trace">
-          <span class="product-preview">
-            <span class="qr-badge" aria-hidden="true">
-              <svg viewBox="0 0 25 25"><use href="#lp-qr-public" /></svg>
-            </span>
-            <ProductGalleryArt kind={product.id} color={product.labelColor} />
-            <span class="floor-shadow"></span>
-          </span>
-          <span class="product-header">
-            <strong>{product.category}</strong>
-            <span class="lot">Lote {product.lot}</span>
-          </span>
-          <span class="product-desc">{product.summary}</span>
-          <span class="product-footer">
-            <span class="product-code">{product.token}</span>
-            <span class="btn-action" aria-hidden="true">↻</span>
-          </span>
-        </button>
-      ))
-    }
-  </div>
-
-  <div class="lp-trace" id="lp-trace" aria-live="polite">
-    {
-      sampleProducts.map((product, index) => (
-        <article class="lp-trace-panel" data-trace={product.id} hidden={index !== 0} aria-label={`Historial de ${product.token}`}>
-          <dl class="lp-trace-facts">
-            <div>
-              <dt>Token</dt>
-              <dd>{product.token}</dd>
-            </div>
-            <div>
-              <dt>Modelo</dt>
-              <dd>{product.model}</dd>
-            </div>
-            <div>
-              <dt>Destino</dt>
-              <dd>{product.destination}</dd>
-            </div>
-            <div>
-              <dt>Dueño actual</dt>
-              <dd>{product.owner}</dd>
-            </div>
-            <div>
-              <dt>Activaciones</dt>
-              <dd>{product.activations}</dd>
-            </div>
-          </dl>
-          <ol class="lp-timeline">
-            {product.events.map((event) => (
-              <li class:list={['lp-event', `lp-event-${event.kind}`]}>
-                <span class="lp-event-icon">
-                  <i class={traceIcons[event.kind]} aria-hidden="true" />
-                </span>
-                <strong>{event.title}</strong>
-                <span>{event.place}</span>
-                <span class="lp-event-date">{event.date}</span>
-              </li>
-            ))}
-          </ol>
-        </article>
-      ))
-    }
-  </div>
-
-  <div class="lp-catalog-foot">
-    <a class="lp-button lp-button-outline" href="/verify">
-      Verificar un código real <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
-    </a>
-    <div class="lp-arrows">
-      <button class="lp-arrow" type="button" data-rail-step="-1" aria-label="Productos anteriores">
-        <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
-      </button>
-      <button class="lp-arrow" type="button" data-rail-step="1" aria-label="Productos siguientes">
-        <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
-      </button>
-    </div>
-  </div>
+  <UseCaseCarousel items={items} copy={copy} artwork={artwork} locale={locale} client:load />
 </section>
-
-<script>
-  const rail = document.querySelector<HTMLElement>('[data-rail]');
-  if (rail) {
-    const cards = [...rail.querySelectorAll<HTMLButtonElement>('[data-product]')];
-    const panels = [...document.querySelectorAll<HTMLElement>('[data-trace]')];
-
-    cards.forEach((card) =>
-      card.addEventListener('click', () => {
-        cards.forEach((other) => {
-          const selected = other === card;
-          other.classList.toggle('active', selected);
-          other.setAttribute('aria-pressed', String(selected));
-        });
-        panels.forEach((panel) => (panel.hidden = panel.dataset.trace !== card.dataset.product));
-      })
-    );
-
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-    document.querySelectorAll<HTMLButtonElement>('[data-rail-step]').forEach((arrow) => {
-      arrow.addEventListener('click', () => {
-        const step = cards[0]?.offsetWidth ?? rail.clientWidth;
-        rail.scrollBy({ left: Number(arrow.dataset.railStep) * step, behavior: reducedMotion.matches ? 'auto' : 'smooth' });
-      });
-    });
-  }
-</script>
