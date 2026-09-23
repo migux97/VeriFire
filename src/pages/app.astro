@@ -6,20 +6,26 @@ import { WarrantyDashboard } from '@/components/warranties/WarrantyDashboard';
 import { WalletStatus } from '@/components/warranties/WalletStatus';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import { publicConfig } from '@/lib/server/config';
+import { getConsumerMessages } from '@/i18n/consumer';
+import { getLandingMessages } from '@/i18n/landing';
+import { DEFAULT_LOCALE, LOCALE_COOKIE, toLocale } from '@/lib/locale';
 import '@/styles/consumer.css';
 
-const locale = Astro.currentLocale === 'en' ? 'en' : 'es';
+// The language chosen on the landing (see the locale middleware); this page has a single route.
+const locale = toLocale(Astro.cookies.get(LOCALE_COOKIE)?.value) ?? toLocale(Astro.currentLocale) ?? DEFAULT_LOCALE;
+const copy = getConsumerMessages(locale);
+const { profile } = getLandingMessages(locale);
 ---
 
 <BaseLayout
-  title="Verifire | Mis garantías"
-  description="Escaneá el QR de tus productos para activar su garantía oficial y consultá tus certificados de autenticidad."
+  title={copy.meta.title}
+  description={copy.meta.description}
   bodyClass="catalog-body consumer-page"
   session="protected"
 >
   <AppTopbar>
     <WalletStatus client:load locale={locale} />
-    <ProfileMenu client:load />
+    <ProfileMenu client:load labels={profile} />
   </AppTopbar>
 
   <main class="container dashboard">

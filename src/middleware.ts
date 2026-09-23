@@ -1,5 +1,6 @@
 import { defineMiddleware, sequence } from 'astro:middleware';
 import { CORS_ORIGIN } from 'astro:env/server';
+import { LOCALE_COOKIE, toLocale } from './lib/locale';
 
 // Printed QR labels and the Cavos Google callback still point at the old .html pages. The `redirects` option of the
 // Astro config would drop the query string, which carries the product token, so they are redirected here.
@@ -20,6 +21,22 @@ const legacyPaths = defineMiddleware((context, next) => {
   return target ? context.redirect(`${target}${context.url.search}`, 301) : next();
 });
 
+// A year is long enough for a choice the visitor can change from the landing at any time.
+const LOCALE_COOKIE_MAX_AGE = 365 * 24 * 60 * 60;
+
+// Where the language is chosen: the English landing, the Spanish one, or an explicit ?lang=. The pages behind the
+// login have a single route each, so they read the cookie this leaves.
+const localeCookie = defineMiddleware((context, next) => {
+  const { pathname, searchParams } = context.url;
+  const asked = toLocale(searchParams.get('lang'));
+  const fromRoute = pathname === '/en' || pathname.startsWith('/en/') ? 'en' : pathname === '/' ? 'es' : null;
+  const locale = asked ?? fromRoute;
+  if (locale && context.cookies.get(LOCALE_COOKIE)?.value !== locale) {
+    context.cookies.set(LOCALE_COOKIE, locale, { path: '/', maxAge: LOCALE_COOKIE_MAX_AGE, sameSite: 'lax' });
+  }
+  return next();
+});
+
 // Only when CORS_ORIGIN is set: the frontend served by this same server needs no CORS.
 const cors = defineMiddleware(async (context, next) => {
   if (!context.url.pathname.startsWith('/api/')) return next();
@@ -35,4 +52,4 @@ const cors = defineMiddleware(async (context, next) => {
   return response;
 });
 
-export const onRequest = sequence(legacyPaths, cors);
+export const onRequest = sequence(legacyPaths, localeCookie, cors);

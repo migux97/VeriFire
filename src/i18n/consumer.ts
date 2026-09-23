@@ -1,6 +1,10 @@
 export type ConsumerLocale = 'es' | 'en';
 
 const es = {
+  meta: {
+    title: 'Verifire | Mis garantías',
+    description: 'Escaneá el QR de tus productos para activar su garantía oficial y consultá tus certificados de autenticidad.'
+  },
   wallet: { address: 'Dirección de tu wallet', unavailable: 'Wallet no disponible', copy: 'Copiar dirección', copied: 'Dirección copiada', copyError: 'No se pudo copiar la dirección', network: 'Stellar Testnet' },
   scan: {
     camera: 'Abrir cámara', upload: 'Subir imagen del QR', preview: 'Vista de la cámara', close: 'Cerrar cámara',
@@ -30,6 +34,10 @@ const es = {
 
 type Messages = typeof es;
 const en: Messages = {
+  meta: {
+    title: 'Verifire | My warranties',
+    description: 'Scan the QR of your products to activate their official warranty and check your certificates of authenticity.'
+  },
   wallet: { address: 'Your wallet address', unavailable: 'Wallet unavailable', copy: 'Copy address', copied: 'Address copied', copyError: 'Could not copy the address', network: 'Stellar Testnet' },
   scan: {
     camera: 'Open camera', upload: 'Upload QR image', preview: 'Camera preview', close: 'Close camera',
