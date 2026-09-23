@@ -2,7 +2,7 @@ import { ACCOUNT_DATA_EVENT } from '@/lib/client/account-data';
 import { useEffect, useState } from 'react';
 import { storedUser, type StoredUser } from '@/lib/client/account';
 import { COMPANY_PROFILE_EVENT, readCompanyProfile } from '@/lib/client/company-profile';
-import { companyMemberships, type CompanyRole } from '@/lib/client/workspace';
+import { currentWorkspace, type CompanyRole } from '@/lib/client/workspace';
 import { userSession } from '@/lib/client/session';
 import type { Locale } from '@/lib/locale';
 import { CompanyTextProvider, useCompanyText } from './CompanyText';
@@ -37,21 +37,22 @@ function Identity({ view }: { view: 'workspace' | 'profile' }) {
 
   useEffect(() => {
     const currentUser = storedUser();
-    const memberships = currentUser ? companyMemberships(currentUser.email) : [];
-    if (!userSession.isActive() || !currentUser || (currentUser.accountType !== 'business' && memberships.length === 0)) {
+    const workspace = currentWorkspace(currentUser);
+    if (!userSession.isActive() || !currentUser || !workspace) {
       window.location.replace('/app');
       return undefined;
     }
-    const membership = memberships[0];
     // The profile saved in Configuración updates the card at once.
     const load = () => {
       const user = storedUser() ?? currentUser;
+      const current = currentWorkspace(user) ?? workspace;
       setUser(user);
-      setCompanyName(membership?.companyName || user.companyName || '');
-      setLogo(membership ? '' : readCompanyProfile().logo);
+      setCompanyName(current.companyName);
+      // Only the account's own company has its logo in this browser.
+      setLogo(current.own ? readCompanyProfile().logo : '');
     };
     load();
-    setRole(membership?.role || 'admin');
+    setRole(workspace.role);
     window.addEventListener(COMPANY_PROFILE_EVENT, load);
     window.addEventListener(ACCOUNT_DATA_EVENT, load);
     return () => {

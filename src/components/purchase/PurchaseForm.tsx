@@ -9,6 +9,7 @@ import type { Message } from '@/components/ui/StatusMessage';
 import { Toast } from '@/components/ui/Toast';
 import { isDemoPurchase } from '@/lib/client/demo';
 import { createPurchase, fetchPurchase, migrateLegacyPurchase, savePurchase } from '@/lib/client/purchases';
+import { supportForNewBatch } from '@/lib/client/warranty-settings';
 import { userSession } from '@/lib/client/session';
 import { resolveWalletAddress } from '@/lib/client/wallet';
 import { errorMessage } from '@/lib/errors';
@@ -99,8 +100,10 @@ export function PurchaseForm({ countries, cavosAppId = '', batchesHref = '/batch
     setBatchReady(false);
     setMessage({ text: t.purchase.creating, tone: 'info' });
     try {
+      const support = supportForNewBatch();
       const purchase = await createPurchase(
         {
+          ...(support ? { support } : {}),
           model: String(formData.get('model') ?? '').trim(),
           lot: String(formData.get('lot') ?? '').trim(),
           country: chosen,

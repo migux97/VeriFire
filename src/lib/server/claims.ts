@@ -16,6 +16,7 @@ import { activationKeyOf, anchorPendingProducts, isCurrentOnChain, recordRejecte
 import { messages } from './messages';
 import { singleton } from './singleton';
 import { hashSecret, saveState, store, type Product } from './store';
+import { monthsAtActivation } from './support';
 
 
 // Keeps a second request for the same product from submitting a duplicate transaction.
@@ -35,8 +36,18 @@ const assertClaimable = (product: Product, owner: string) => {
 // Runs synchronously after the request body was read, so two concurrent claims cannot both pass the check.
 const completeClaim = (product: Product, owner: string, baseUrl: string, claimTransaction = `demo-${randomUUID()}`): Warranty => {
   assertClaimable(product, owner);
-  Object.assign(product, { claimed: true, owner, claimedAt: new Date().toISOString(), claimTransaction });
-  saveState();
+  const before = { claimed: product.claimed, owner: product.owner };
+  Object.assign(product, { claimed: true, owner, claimedAt: new Date().toISOString(), warrantyMonths: monthsAtActivation(product), claimTransaction });
+  try {
+    saveState();
+  } catch (error) {
+    // Back to unclaimed in memory too: otherwise a retry would answer "ya activada" for a claim the file never kept.
+    Object.assign(product, before);
+    delete product.claimedAt;
+    delete product.warrantyMonths;
+    delete product.claimTransaction;
+    throw error;
+  }
   return warrantyView(product, baseUrl);
 };
 
@@ -47,8 +58,9 @@ const onChainClaim = async (body: JsonBody) => {
   const found = /^[0-9a-f]{64}$/.test(key) ? [...store.products.values()].find((candidate) => activationKeyOf(candidate) === key) : undefined;
   if (!found) throw new HttpError(404, messages.qrNotFound);
   // An activation that landed after this server stopped waiting for it is adopted here, so the buyer sees the
-  // warranty instead of "ya fue reclamado en Stellar" with no way out.
-  const product = await reconcileProduct(found);
+  // warranty instead of "ya fue reclamado en Stellar" with no way out. Not while this server is submitting one for the
+  // product: the contract already shows it, and adopting it then made the submission itself fail as "ya activada".
+  const product = claimsInFlight.has(found.token) ? found : await reconcileProduct(found);
   const owner = textField(body, 'owner').trim();
   assertClaimable(product, owner);
   if (!isCurrentOnChain(product)) {
@@ -82,6 +94,14 @@ export const submitOnChainClaim = async (body: JsonBody, baseUrl: string) => {
   claimsInFlight.add(product.token);
   try {
     const txHash = await chain.submitActivation({ tokenId, claimant: owner, signedXdr: textField(body, 'signedXdr') });
+    // Adopted meanwhile by another path that reads the contract (a transfer check): it only lacks its transaction.
+    if (product.claimed && product.owner === owner) {
+      if (!product.claimTransaction) {
+        product.claimTransaction = txHash;
+        saveState();
+      }
+      return warrantyView(product, baseUrl);
+    }
     return completeClaim(product, owner, baseUrl, txHash);
   } finally {
     claimsInFlight.delete(product.token);

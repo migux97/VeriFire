@@ -2,7 +2,7 @@ import { useStore } from '@nanostores/react';
 import { formatNumber } from '@/lib/format';
 import type { Locale } from '@/lib/locale';
 import type { PurchaseSummary } from '@/lib/types';
-import { $purchaseIds, $summaries, isSummary } from '@/stores/batches';
+import { $purchaseIds, $summaries, $summariesReady, isSummary } from '@/stores/batches';
 import { CompanyTextProvider, useCompanyText, useHydrated } from './CompanyText';
 
 export function CompanyCatalogSummary({ locale }: { locale?: Locale | undefined }) {
@@ -23,7 +23,9 @@ function Summary() {
   const summaries = useStore($summaries);
   const ids = hydrated ? storedIds : [];
   const records = ids.map((id) => summaries[id]).filter((entry): entry is PurchaseSummary => isSummary(entry));
-  const incomplete = records.length !== ids.length;
+  const ready = useStore($summariesReady);
+  // While the summaries arrive one by one every list is "incomplete": it only means something once they all answered.
+  const incomplete = ready && records.length !== ids.length;
   const issued = records.filter((record) => record.batchId);
   const units = issued.reduce((sum, record) => sum + record.quantity, 0);
   const claimed = issued.reduce((sum, record) => sum + record.claimed, 0);

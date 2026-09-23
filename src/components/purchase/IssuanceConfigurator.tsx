@@ -1,6 +1,6 @@
 import { useCompanyText } from '@/components/company/CompanyText';
 import { storedUser } from '@/lib/client/account';
-import { companyMemberships } from '@/lib/client/workspace';
+import { currentWorkspace } from '@/lib/client/workspace';
 import { useEffect, useState, type SubmitEvent } from 'react';
 import type { CountryOption } from '@/lib/types';
 import type { IssuanceOptions } from '@/lib/issuance';
@@ -41,7 +41,8 @@ export function IssuanceConfigurator({
   const update = <K extends keyof Draft>(key: K, value: Draft[K]) => setDraft((old) => ({ ...old, [key]: value }));
   useEffect(() => {
     const user = storedUser();
-    const company = user ? companyMemberships(user.email)[0]?.companyName || user.companyName || '' : '';
+    // The same company the support settings of the new batch belong to (see supportForNewBatch).
+    const company = currentWorkspace(user)?.companyName ?? '';
     setCompanyName(company);
     setDraft((old) => ({ ...old, brand: company }));
     try {
@@ -268,7 +269,18 @@ export function IssuanceConfigurator({
           <p className="field-hint">{t.reviewHint}</p>
           <label>
             {t.saveTemplate}
-            <input maxLength={80} value={name} placeholder={t.templatePlaceholder} onChange={(event) => setName(event.target.value)} />
+            <input
+              maxLength={80}
+              value={name}
+              placeholder={t.templatePlaceholder}
+              onChange={(event) => setName(event.target.value)}
+              // Enter here would submit the form, which creates the purchase: it saves the template instead.
+              onKeyDown={(event) => {
+                if (event.key !== 'Enter') return;
+                event.preventDefault();
+                persist(false);
+              }}
+            />
           </label>
           <button type="button" className="button button-secondary" onClick={() => persist(false)}>
             {t.saveTemplateButton}

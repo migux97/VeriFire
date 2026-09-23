@@ -55,10 +55,14 @@ if (!existsSync(wasmFile)) {
   process.exit(1);
 }
 
-const adminSecret = process.env['STELLAR_ADMIN_SECRET'];
+// The same key the server signs with (see stellarConfigFromEnv): STELLAR_ISSUER_SECRET, or its old name. Reading only
+// the old name made a --force deploy create a new random admin whenever .env used the new one, and the server's calls
+// to the new contract then failed its admin check.
+const adminSecret = process.env['STELLAR_ISSUER_SECRET'] || process.env['STELLAR_ADMIN_SECRET'];
+const secretName = process.env['STELLAR_ISSUER_SECRET'] ? 'STELLAR_ISSUER_SECRET' : 'STELLAR_ADMIN_SECRET';
 const admin = adminSecret ? Keypair.fromSecret(adminSecret) : Keypair.random();
 // Saved before any network call, so a failed deploy never loses a funded key.
-setEnv({ STELLAR_ADMIN_SECRET: admin.secret() });
+setEnv({ [secretName]: admin.secret() });
 await ensureFunded(admin);
 console.log(`Cuenta admin (testnet): ${admin.publicKey()}`);
 
@@ -78,4 +82,4 @@ const { txHash } = await submitOperation(admin, new Contract(contractId).call('i
 const previousContractId = process.env['STELLAR_CONTRACT_ID'];
 setEnv({ STELLAR_NETWORK: 'testnet', STELLAR_CONTRACT_ID: contractId, ...(previousContractId ? { STELLAR_PREVIOUS_CONTRACT_ID: previousContractId } : {}) });
 if (previousContractId) console.log(`Contrato anterior guardado como STELLAR_PREVIOUS_CONTRACT_ID: ${previousContractId}`);
-console.log(`Contrato inicializado (tx ${txHash}). STELLAR_CONTRACT_ID y STELLAR_ADMIN_SECRET quedaron guardados en .env.`);
+console.log(`Contrato inicializado (tx ${txHash}). STELLAR_CONTRACT_ID y ${secretName} quedaron guardados en .env.`);

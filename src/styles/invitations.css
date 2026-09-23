@@ -291,6 +291,12 @@
   font-size: 0.78rem;
 }
 
+.invite-inbox-panel li small.invite-inbox-countdown {
+  color: var(--vf-warning);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
 .invite-inbox-actions {
   display: flex;
   gap: 8px;
@@ -301,6 +307,17 @@
   color: var(--vf-muted);
   font-size: 0.86rem;
   line-height: 1.5;
+}
+
+/* On a phone the bell is not at the right edge: the panel spans the screen instead of running off its left side. */
+@media (max-width: 480px) {
+  .invite-inbox-panel {
+    position: fixed;
+    top: 72px;
+    right: 12px;
+    left: 12px;
+    width: auto;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

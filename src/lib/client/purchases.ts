@@ -57,8 +57,10 @@ const trackPurchase = (status: PurchaseStatus) => {
   return status;
 };
 
-export const savedPurchaseIds = (): string[] => {
-  if (inDemo()) return demoPurchaseIds();
+export const savedPurchaseIds = (): string[] => (inDemo() ? demoPurchaseIds() : realPurchaseIds());
+
+// The company's real purchases, even while demo mode shows the sample ones (settings sent to the server use these).
+export const realPurchaseIds = (): string[] => {
   const list = readStored<unknown>(localStorage, purchasesKey());
   if (!Array.isArray(list)) return [];
   return list
@@ -80,7 +82,9 @@ export const PURCHASES_CHANGED_EVENT = 'verifire:purchases-changed';
 // A purchase created here starts as unpaid, so its payment and its batch are notified when they arrive.
 export const savePurchase = (purchaseId: string) => {
   writeStored(localStorage, statesKey(), { ...readStates(), [purchaseId]: { paid: false, batch: false } });
-  if (!inDemo(purchaseId)) writePurchaseIds([purchaseId, ...savedPurchaseIds().filter((id) => id !== purchaseId)]);
+  // Always from the real list: savedPurchaseIds() answers the sample ids while demo mode is on (maybe turned on in
+  // another tab), and writing those here would replace every real purchase id, the only key to their batches.
+  if (!inDemo(purchaseId)) writePurchaseIds([purchaseId, ...realPurchaseIds().filter((id) => id !== purchaseId)]);
   window.dispatchEvent(new Event(PURCHASES_CHANGED_EVENT));
 };
 
@@ -96,14 +100,14 @@ export const addPurchaseIds = (purchaseIds: string[]) => {
 
 export const forgetPurchase = (purchaseId: string) => {
   if (inDemo(purchaseId)) return forgetDemoPurchase(purchaseId);
-  writePurchaseIds(savedPurchaseIds().filter((id) => id !== purchaseId));
+  writePurchaseIds(realPurchaseIds().filter((id) => id !== purchaseId));
 };
 
 // The panel used to keep only the last purchase under its own key; it moves into the list once.
 export const migrateLegacyPurchase = () => {
   if (inDemo()) return;
   const legacy = readStored<{ purchaseId?: unknown }>(localStorage, LEGACY_PURCHASE_KEY);
-  if (typeof legacy?.purchaseId === 'string' && !savedPurchaseIds().includes(legacy.purchaseId)) savePurchase(legacy.purchaseId);
+  if (typeof legacy?.purchaseId === 'string' && !realPurchaseIds().includes(legacy.purchaseId)) savePurchase(legacy.purchaseId);
   try {
     localStorage.removeItem(LEGACY_PURCHASE_KEY);
   } catch {
@@ -134,6 +138,8 @@ export interface PurchaseRequest {
   country: string;
   quantity: number;
   configuration?: IssuanceOptions;
+  // The company's warranty settings (support email, warranty length), carried by the new batch.
+  support?: { companyName: string; email: string; warrantyMonths: number };
 }
 
 // Creates the Cosmos Pay payment of a new batch. `destination` is how the labels will read it, used by demo mode.

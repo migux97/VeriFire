@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState, type ChangeEvent, type DragEvent, type SubmitEvent } from 'react';
 import { storedUser } from '@/lib/client/account';
 import { companyName, emptyProfile, prepareLogo, readCompanyProfile, saveCompanyProfile, type CompanyProfile, type LogoError } from '@/lib/client/company-profile';
-import { companyMemberships } from '@/lib/client/workspace';
+import { currentWorkspace } from '@/lib/client/workspace';
 import { useCompanyText } from './CompanyText';
 
 const DESCRIPTION_MAX = 280;
@@ -33,12 +33,12 @@ export function CompanyProfileSettings() {
 
   useEffect(() => {
     const user = storedUser();
-    const membership = user ? companyMemberships(user.email)[0] : undefined;
+    // The profile edited here is the account's own company: a team the account joined keeps its profile elsewhere.
     const current = { name: companyName(), profile: readCompanyProfile() };
     setSaved(current);
     setName(current.name);
     setProfile(current.profile);
-    setEditable(Boolean(user?.accountType === 'business' && (!membership || membership.role === 'admin')));
+    setEditable(Boolean(currentWorkspace(user)?.own));
   }, []);
 
   const dirty = name !== saved.name || JSON.stringify(profile) !== JSON.stringify(saved.profile);
@@ -122,7 +122,10 @@ export function CompanyProfileSettings() {
               event.preventDefault();
               if (editable) setDragging(true);
             }}
-            onDragLeave={() => setDragging(false)}
+            onDragLeave={(event) => {
+              // Moving over the image inside the drop zone also fires dragleave: only leaving the zone counts.
+              if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDragging(false);
+            }}
             onDrop={onDrop}
           >
             {profile.logo ? (

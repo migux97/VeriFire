@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { persistUser, storedUser, type StoredUser } from '@/lib/client/account';
 import { describeAuthError, googleCallbackUrl, sendEmailCode, verifyEmailCode } from '@/lib/client/email-code';
 import { deviceCodeFor, hashPassword, verifyPassword } from '@/lib/client/password';
-import { hasPendingClaim } from '@/lib/client/qr';
+import { hasPendingClaim, hasPendingTransfer } from '@/lib/client/qr';
 import { userSession, type SessionEndReason } from '@/lib/client/session';
 import { readStored, writeStored } from '@/lib/client/storage';
 import { connectCavosWallet, createCavosAuth, rememberDeviceCode, rememberWallet } from '@/lib/client/wallet';
@@ -64,7 +64,13 @@ const googleUserFromIdentity = (identity: Identity): StoredUser => {
     name: identity.name || (sameAccount && existingUser?.name) || 'Usuario de Google',
     email,
     passwordHash: sameAccount ? existingUser?.passwordHash : undefined,
-    provider: 'google'
+    provider: 'google',
+    // A company account that signs in with Google stays a company account: without these the panel sent it to the
+    // buyer's view and the company panel turned it away.
+    ...(sameAccount && existingUser?.accountType ? { accountType: existingUser.accountType } : {}),
+    ...(sameAccount && existingUser?.companyName ? { companyName: existingUser.companyName } : {}),
+    // A Google login has no password to enable the multi-device factor: it keeps the one a password login saved.
+    ...(sameAccount && existingUser?.deviceFactorAt ? { deviceFactorAt: existingUser.deviceFactorAt } : {})
   };
 };
 
@@ -117,7 +123,9 @@ export function AuthPanel({ cavosAppId }: AuthPanelProps) {
       const invite = pendingInvite();
       window.location.href = invite
         ? `/invite#t=${invite}`
-        : pendingCompanyInvitation(user.email)
+        : hasPendingClaim() || hasPendingTransfer()
+          ? '/app'
+          : pendingCompanyInvitation(user.email)
           ? '/choose-workspace'
           : user.accountType === 'business'
             ? '/company'
@@ -156,7 +164,7 @@ export function AuthPanel({ cavosAppId }: AuthPanelProps) {
       walletAddress: connection.address,
       cavosUserId: identity.userId,
       emailVerifiedAt: Date.now(),
-      deviceFactorAt: connection.deviceFactor ? Date.now() : 0
+      deviceFactorAt: connection.deviceFactor ? Date.now() : (user.deviceFactorAt ?? 0)
     }, loginMode, connection.deviceError);
     return true;
   };

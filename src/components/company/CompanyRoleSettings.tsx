@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { storedUser } from '@/lib/client/account';
 import {
-  companyMemberships,
+  currentWorkspace,
   companyRolePermissions,
   defaultCompanyRolePermissions,
   saveCompanyRolePermissions,
@@ -23,9 +23,9 @@ export function CompanyRoleSettings() {
 
   useEffect(() => {
     const user = storedUser();
-    const membership = user ? companyMemberships(user.email)[0] : undefined;
+    const workspace = currentWorkspace(user);
     setPermissions(companyRolePermissions());
-    setEditable(Boolean(user?.accountType === 'business' && (!membership || membership.role === 'admin')));
+    setEditable(Boolean(workspace && (workspace.own || workspace.role === 'admin')));
   }, []);
 
   const toggle = (role: CompanyRole, permission: CompanyPermission) => {

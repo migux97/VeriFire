@@ -96,13 +96,18 @@ export function WarrantyDashboard({ cavosAppId, locale = 'es' }: WarrantyDashboa
   const listChanged = () => { loadRequest.current += 1; };
 
   // An open link is accepted in someone else's browser: check until it happens and tell the owner right away.
-  const openOffers = warranties?.filter((warranty) => warranty.transferExpiresAt).map((warranty) => warranty.token).join(',') ?? '';
+  // With the offer date: a product that once left this account and came back already has an older transfer listed.
+  const openOffers = warranties?.filter((warranty) => warranty.transferExpiresAt).map((warranty) => `${warranty.token}@${warranty.transferOfferedAt ?? ''}`).join(',') ?? '';
   useEffect(() => {
     if (!openOffers) return undefined;
-    const tokens = openOffers.split(',');
+    const offers = openOffers.split(',').map((offer) => {
+      const [token = '', offeredAt = ''] = offer.split('@');
+      return { token, offeredAt: new Date(offeredAt).getTime() || 0 };
+    });
     const timer = window.setInterval(async () => {
       const data = await loadWarranties({ quiet: true });
-      const given = data?.transferred.find((product) => tokens.includes(product.token));
+      const given = data?.transferred.find((product) =>
+        offers.some((offer) => offer.token === product.token && new Date(product.at).getTime() >= offer.offeredAt));
       if (given) showMessage(fillIn(incomingCopy.given, { model: given.model, to: given.to }), 'success');
     }, TRANSFER_POLL_MS);
     return () => window.clearInterval(timer);
@@ -363,7 +368,7 @@ export function WarrantyDashboard({ cavosAppId, locale = 'es' }: WarrantyDashboa
           onMessage={setMessage}
           onScanStart={() => setScannedClaim(null)}
         />
-        <Toast message={message} onClose={() => setMessage(null)} />
+        <Toast message={message} onClose={() => setMessage(null)} closeLabel={labels.vault.closeNotice} />
         {repair && (storedDeviceCode()
           ? (
             <div className="repair-prompt">

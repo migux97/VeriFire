@@ -1,9 +1,10 @@
 import type { IssuanceOptions } from '../issuance';
 // Products, batches and purchases, kept in memory and saved to a JSON file after every change.
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { config } from './config';
+import { HttpError } from './errors';
 import { singleton } from './singleton';
 import type { TeamRole } from '../types';
 
@@ -25,6 +26,13 @@ export interface StoredEvent {
   by?: string;
 }
 
+// Who the buyer contacts for support and how long a warranty lasts, set by the company (see support.ts).
+export interface SupportSettings {
+  companyName: string;
+  email: string;
+  warrantyMonths: number;
+}
+
 export interface Product extends ProductFields {
   tokenId: number;
   token: string;
@@ -36,6 +44,8 @@ export interface Product extends ProductFields {
   owner: string | null;
   createdAt?: string;
   claimedAt?: string;
+  // The warranty's length, fixed when it was activated. Absent on products activated before it could be chosen (12).
+  warrantyMonths?: number;
   claimTransaction?: string;
   // Hex public key derived from the secret code (see activationKeyOf).
   activationKey?: string;
@@ -53,6 +63,7 @@ export interface Batch extends ProductFields {
   amount: string;
   txHash: string | null;
   shippedAt?: string;
+  support?: SupportSettings;
 }
 
 export interface Purchase extends ProductFields {
@@ -67,6 +78,7 @@ export interface Purchase extends ProductFields {
   paymentUri: string | null;
   batchId?: string;
   txHash?: string | null;
+  support?: SupportSettings;
 }
 
 // What a company account keeps beside its wallet, so another browser finds the same panel (see workspaces.ts).
@@ -135,15 +147,18 @@ const createState = () => {
   };
 
   const readSaved = (file: string) => JSON.parse(readFileSync(file, 'utf8')) as SavedState;
+  const backup = `${config.dataFile}.bak`;
   let saved: SavedState;
   try {
     saved = readSaved(config.dataFile);
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return state;
-    // A file cut in half by a crash during a write: the copy left by the previous save is still whole.
+    const missing = (error as NodeJS.ErrnoException).code === 'ENOENT';
+    // A first start has neither file. A missing file with a copy beside it, or a file cut in half by a crash, is
+    // recovered from the copy the previous save left: starting empty there would overwrite every purchase at the next save.
+    if (missing && !existsSync(backup)) return state;
     try {
-      saved = readSaved(`${config.dataFile}.bak`);
-      console.warn(`${config.dataFile} está dañado: se cargó la copia anterior ${config.dataFile}.bak.`);
+      saved = readSaved(backup);
+      console.warn(`${config.dataFile} ${missing ? 'no existe' : 'está dañado'}: se cargó la copia anterior ${backup}.`);
     } catch {
       throw new Error(`No se pudo leer ${config.dataFile}. Revisalo o borralo antes de iniciar el servidor.`, { cause: error });
     }
@@ -176,17 +191,21 @@ export const saveState = () => {
     workspaces: [...store.workspaces.values()],
     invitations: [...store.invitations.values()]
   };
-  // Written beside the file and renamed over it: a rename is atomic, so a crash leaves either the previous state or
-  // the new one, never half of either. The previous file is kept as .bak for the case where the disk itself lied.
+  // Written beside the file and renamed over it: a rename replaces the file atomically, so a crash leaves either the
+  // previous state or the new one, never half of either and never no file at all. The previous state is copied to .bak
+  // first (the file itself stays in place) for the case where the disk itself lied.
   const temporary = `${config.dataFile}.tmp`;
   try {
     mkdirSync(dirname(config.dataFile), { recursive: true });
     writeFileSync(temporary, JSON.stringify(saved, null, 2));
-    if (existsSync(config.dataFile)) renameSync(config.dataFile, `${config.dataFile}.bak`);
+    if (existsSync(config.dataFile)) copyFileSync(config.dataFile, `${config.dataFile}.bak`);
     renameSync(temporary, config.dataFile);
   } catch (error) {
     // The caller answers the request anyway, so what it just promised the user has to be visible in the log.
     console.error('No se pudo guardar el estado de Verifire:', error);
-    throw new Error('No se pudo guardar el cambio. Intentá de nuevo en unos segundos.', { cause: error });
+    // An HttpError, so the client reads this message (and may retry) instead of the generic one of the operation.
+    const failure = new HttpError(503, 'No se pudo guardar el cambio. Intentá de nuevo en unos segundos.', { retryable: true });
+    failure.cause = error;
+    throw failure;
   }
 };

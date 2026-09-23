@@ -5,17 +5,28 @@
 // for what an invitation grants today (a membership kept in the invitee's own browser), not for anything that must be
 // proven: a link or QR token is the only real secret here.
 import { randomBytes, randomUUID } from 'node:crypto';
+import { toLocale } from '../locale';
+import { config } from './config';
+import { sendEmail } from './email';
 import { HttpError } from './errors';
 import type { JsonBody } from './http';
+import { invitationEmail } from './invitation-email';
+import { singleton } from './singleton';
 import type { InvitationView, TeamRole } from '../types';
 import { saveState, store, type Invitation } from './store';
 
-const HOUR_MS = 60 * 60 * 1000;
-const DAY_MS = 24 * HOUR_MS;
-// How long an invitation (and so its link and QR) works, chosen by the company. An open link lasts a day unless it
-// says otherwise, since whoever holds it can join; one for a given email, a week.
-const VALID_HOURS = [1, 24, 72, 168];
-const DEFAULT_HOURS = { link: 24, email: 168 };
+const MINUTE_MS = 60 * 1000;
+const DAY_MS = 24 * 60 * MINUTE_MS;
+// Every invitation (by email, link or QR) works for this long, and only once.
+export const INVITATION_MINUTES = 3;
+
+// Without server-side accounts anyone can ask for an invitation email to any address, so sending is bounded: one
+// email per address per minute, and a daily total for the whole server. Both live in memory and reset with it.
+const EMAIL_COOLDOWN_MS = MINUTE_MS;
+const EMAILS_PER_DAY = 300;
+const emailLog = singleton('invitation-emails', () => ({ lastTo: new Map<string, number>(), day: '', count: 0 }));
+
+export type InvitationEmailStatus = 'sent' | 'not-configured' | 'failed' | 'throttled';
 // Answered invitations and expired ones are dropped this long after, so the file does not grow forever.
 const KEEP_DAYS = 30;
 const MAX_PENDING = 5000;
@@ -44,7 +55,10 @@ export const viewOf = (invitation: Invitation): InvitationView => ({
   createdAt: invitation.createdAt,
   expiresAt: invitation.expiresAt,
   respondedAt: invitation.respondedAt ?? null,
-  acceptedBy: invitation.acceptedBy ?? null
+  acceptedBy: invitation.acceptedBy ?? null,
+  // From the server's clock: the browser counts down from when it received this, so a phone whose clock is a few
+  // minutes off does not see a 3-minute invitation as already expired.
+  expiresInMs: Math.max(0, Date.parse(invitation.expiresAt) - Date.now())
 });
 
 const prune = (now = Date.now()) => {
@@ -60,14 +74,48 @@ const byToken = (token: string) => {
   return found;
 };
 
-export const createInvitation = (body: JsonBody) => {
+// Sends the invitation email, unless the address was just written to or the day's budget is spent.
+const emailInvitation = async (invitation: Invitation, locale: 'es' | 'en'): Promise<InvitationEmailStatus> => {
+  // The link and the logo of the email use PUBLIC_APP_URL only. Taken from the request, they would come from its Host
+  // header, and anyone could get a genuine Verifire email whose button leads to a site of their own.
+  const baseUrl = config.publicAppUrl;
+  if (!baseUrl) {
+    console.error('Invitation email not sent: PUBLIC_APP_URL is not set.');
+    return 'not-configured';
+  }
+  const now = Date.now();
+  const today = new Date(now).toISOString().slice(0, 10);
+  if (emailLog.day !== today) {
+    emailLog.day = today;
+    emailLog.count = 0;
+    emailLog.lastTo.clear();
+  }
+  if (emailLog.count >= EMAILS_PER_DAY || now - (emailLog.lastTo.get(invitation.email) ?? 0) < EMAIL_COOLDOWN_MS) return 'throttled';
+  emailLog.lastTo.set(invitation.email, now);
+  emailLog.count += 1;
+  const result = await sendEmail({
+    to: invitation.email,
+    ...invitationEmail({
+      companyName: invitation.companyName,
+      inviterName: invitation.inviterName,
+      role: invitation.role,
+      link: `${baseUrl}/invite#t=${invitation.token}`,
+      minutes: INVITATION_MINUTES,
+      baseUrl,
+      locale
+    })
+  });
+  if (result.sent) return 'sent';
+  return result.reason === 'not-configured' ? 'not-configured' : 'failed';
+};
+
+export const createInvitation = async (body: JsonBody) => {
   const companyName = text(body, 'companyName', 100);
   const inviterName = text(body, 'inviterName', 100);
   const inviterEmail = emailOf(text(body, 'inviterEmail', 254));
   const email = emailOf(text(body, 'email', 254));
   const role = body['role'] as TeamRole;
-  const requestedHours = Number(body['validHours']);
-  const validHours = VALID_HOURS.includes(requestedHours) ? requestedHours : email ? DEFAULT_HOURS.email : DEFAULT_HOURS.link;
+  const locale = toLocale(body['locale']) ?? 'es';
   if (!companyName) throw new HttpError(400, 'Completá el nombre de la empresa en Configuración antes de invitar.');
   if (!EMAIL.test(inviterEmail)) throw new HttpError(400, 'No se pudo identificar quién invita.');
   if (email && !EMAIL.test(email)) throw new HttpError(400, 'Ingresá un correo válido.');
@@ -78,15 +126,8 @@ export const createInvitation = (body: JsonBody) => {
   prune(now);
   const pending = [...store.invitations.values()].filter((invitation) => statusOf(invitation, now) === 'pending');
   if (pending.length >= MAX_PENDING) throw new HttpError(503, 'No se pueden crear más invitaciones por ahora.', { retryable: true });
-  // Inviting the same person again to the same company replaces the pending invitation instead of piling them up.
-  if (email) {
-    for (const invitation of pending) {
-      if (invitation.email === email && invitation.inviterEmail === inviterEmail && invitation.companyName === companyName) {
-        invitation.status = 'revoked';
-        invitation.respondedAt = new Date(now).toISOString();
-      }
-    }
-  }
+  // A previous invitation to the same person is left alone: its email already reached them, and a new email within the
+  // minute is held back (see emailInvitation), so revoking it could leave them with no working link. It expires anyway.
 
   const invitation: Invitation = {
     id: randomUUID(),
@@ -98,12 +139,19 @@ export const createInvitation = (body: JsonBody) => {
     role,
     status: 'pending',
     createdAt: new Date(now).toISOString(),
-    expiresAt: new Date(now + validHours * HOUR_MS).toISOString()
+    expiresAt: new Date(now + INVITATION_MINUTES * MINUTE_MS).toISOString()
   };
   store.invitations.set(invitation.id, invitation);
-  saveState();
+  try {
+    saveState();
+  } catch (error) {
+    store.invitations.delete(invitation.id);
+    throw error;
+  }
+  // The invitation exists even if the email cannot go out: the company still has its panel notice, link and QR.
+  const emailStatus = email ? await emailInvitation(invitation, locale) : null;
   // Only the creator ever receives the token together with the id.
-  return { invitation: viewOf(invitation), token: invitation.token };
+  return { invitation: viewOf(invitation), token: invitation.token, emailStatus };
 };
 
 // Pending invitations addressed to an email, with the token each one needs to be answered.
@@ -128,19 +176,32 @@ export const respond = (body: JsonBody) => {
   const status = statusOf(invitation);
   if (status === 'expired') throw new HttpError(410, 'La invitación venció. Pedile a la empresa que te envíe otra.');
   if (status !== 'pending') throw new HttpError(409, 'Esta invitación ya fue respondida o cancelada.');
-  if (invitation.email && invitation.email !== email) throw new HttpError(403, 'Esta invitación es para otro correo. Iniciá sesión con esa cuenta para aceptarla.');
+  if (invitation.email && invitation.email !== email)
+    throw new HttpError(403, 'Esta invitación es para otro correo. Iniciá sesión con esa cuenta para aceptarla.');
   if (email === invitation.inviterEmail) throw new HttpError(400, 'No podés aceptar una invitación que creaste vos.');
+  const before = { ...invitation };
   invitation.status = action === 'accept' ? 'accepted' : 'declined';
   invitation.respondedAt = new Date().toISOString();
   if (action === 'accept') invitation.acceptedBy = email;
-  saveState();
+  try {
+    saveState();
+  } catch (error) {
+    // Otherwise it would stay answered in memory only: the person gets an error and can never answer it again.
+    Object.assign(invitation, before);
+    if (!before.respondedAt) delete invitation.respondedAt;
+    if (!before.acceptedBy) delete invitation.acceptedBy;
+    throw error;
+  }
   return viewOf(invitation);
 };
 
 // What the inviter's team list shows: the state of the invitations it created.
 export const statuses = (body: JsonBody) => {
   const ids = Array.isArray(body['ids']) ? body['ids'].filter((id): id is string => typeof id === 'string').slice(0, MAX_STATUS_IDS) : [];
-  return ids.map((id) => store.invitations.get(id)).filter((invitation) => invitation !== undefined).map(viewOf);
+  return ids
+    .map((id) => store.invitations.get(id))
+    .filter((invitation) => invitation !== undefined)
+    .map(viewOf);
 };
 
 // Only whoever holds the token (the creator) can cancel it.
@@ -149,7 +210,13 @@ export const revoke = (body: JsonBody) => {
   if (invitation.status === 'pending') {
     invitation.status = 'revoked';
     invitation.respondedAt = new Date().toISOString();
-    saveState();
+    try {
+      saveState();
+    } catch (error) {
+      invitation.status = 'pending';
+      delete invitation.respondedAt;
+      throw error;
+    }
   }
   return viewOf(invitation);
 };

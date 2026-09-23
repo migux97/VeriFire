@@ -101,7 +101,7 @@ export function Operations({ mode }: { mode?: ScheduleType | undefined }) {
       <p className="schedule-disclaimer">{text.disclaimer}</p>
       {!mode && (
         <div className="operations-actions">
-          <a className="operation-action operation-action-primary" href="#generate">
+          <a className="operation-action operation-action-primary" href="#generate" data-issuance-mode="now">
             <i className="fa-solid fa-bolt" aria-hidden="true" /> {text.generate}
           </a>
           <button

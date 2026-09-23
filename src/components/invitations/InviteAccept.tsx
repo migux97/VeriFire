@@ -1,11 +1,13 @@
 // The page behind an invitation link or QR: what is offered, and accepting or declining it. Without a session the
 // invitation is kept for after the login, which comes back here.
 import { useEffect, useState } from 'react';
+import { useNow } from '@/components/ui/useNow';
 import { invitationMessages } from '@/i18n/invitations';
 import { storedUser } from '@/lib/client/account';
-import { rememberPendingInvite, respondInvitation, tokenFromHash, viewInvitation } from '@/lib/client/invitations';
+import { forgetPendingInvite, rememberPendingInvite, respondInvitation, tokenFromHash, viewInvitation } from '@/lib/client/invitations';
 import { userSession } from '@/lib/client/session';
 import { errorMessage } from '@/lib/errors';
+import { formatTimeLeft } from '@/lib/format';
 import type { Locale } from '@/lib/locale';
 import type { InvitationView } from '@/lib/types';
 import '@/styles/invitations.css';
@@ -23,9 +25,8 @@ export function InviteAccept({ locale = 'es' }: { locale?: Locale | undefined })
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState<'accept' | 'decline' | null>(null);
   const [result, setResult] = useState<{ text: string; tone: 'success' | 'error' } | null>(null);
-  // With the time: an invitation can last as little as an hour.
-  const formatDate = (iso: string) =>
-    new Intl.DateTimeFormat(t.intl, { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }).format(new Date(iso));
+  // An invitation lasts minutes: the page counts them down and stops offering it the moment it expires.
+  const now = useNow(state.kind === 'ready' && state.invitation.status === 'pending');
 
   useEffect(() => {
     const token = tokenFromHash();
@@ -35,8 +36,15 @@ export function InviteAccept({ locale = 'es' }: { locale?: Locale | undefined })
     }
     if (userSession.isActive()) setEmail(storedUser()?.email ?? '');
     viewInvitation(token)
-      .then((invitation) => setState({ kind: 'ready', invitation, token }))
-      .catch((error: unknown) => setState({ kind: 'error', message: errorMessage(error) }));
+      .then((invitation) => {
+        // One that can no longer be answered must not bring every later login of this tab back here.
+        if (invitation.status !== 'pending') forgetPendingInvite();
+        setState({ kind: 'ready', invitation, token });
+      })
+      .catch((error: unknown) => {
+        forgetPendingInvite();
+        setState({ kind: 'error', message: errorMessage(error) });
+      });
   }, []);
 
   const answer = async (action: 'accept' | 'decline') => {
@@ -80,7 +88,9 @@ export function InviteAccept({ locale = 'es' }: { locale?: Locale | undefined })
       </section>
     );
 
-  const { invitation } = state;
+  const expiredNow = state.invitation.status === 'pending' && Date.parse(state.invitation.expiresAt) <= now;
+  if (expiredNow) forgetPendingInvite();
+  const invitation: InvitationView = expiredNow ? { ...state.invitation, status: 'expired' } : state.invitation;
   const role = t.roles[invitation.role];
   const answered = invitation.status !== 'pending';
 
@@ -109,7 +119,8 @@ export function InviteAccept({ locale = 'es' }: { locale?: Locale | undefined })
       </dl>
       <p className={`invite-meta ${invitation.status === 'expired' ? 'is-expired' : ''}`}>
         <i className={`fa-solid ${invitation.email ? 'fa-envelope' : 'fa-link'}`} aria-hidden="true" />{' '}
-        {invitation.email ? text.forEmail(invitation.email) : text.open} · {text.expires(formatDate(invitation.expiresAt))}
+        {invitation.email ? text.forEmail(invitation.email) : text.open}
+        {invitation.status === 'pending' && <> · {text.expiresIn(formatTimeLeft(Date.parse(invitation.expiresAt) - now))}</>}
       </p>
 
       {answered && !result ? (

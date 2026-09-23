@@ -1955,7 +1955,7 @@
   position: relative;
   display: grid;
   grid-column: 1 / -1;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 4px;
   padding: 4px;
   border-radius: 12px;
@@ -2128,33 +2128,79 @@
   text-decoration: line-through;
 }
 
-.team-invite-validity {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 4px;
-  padding: 4px;
-  border-radius: 12px;
-  background: var(--vf-paper);
-}
-
-.team-invite-validity button {
-  min-height: 38px;
-  border: 0;
-  border-radius: 9px;
-  background: transparent;
-  color: var(--vf-muted);
-  font: inherit;
+.team-invite-validity-note {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--vf-warning-soft);
+  color: var(--vf-warning);
   font-size: 0.82rem;
-  font-weight: 800;
-  cursor: pointer;
-  transition:
-    background-color 260ms var(--company-ease),
-    color 260ms var(--company-ease);
+  font-weight: 700;
 }
 
-.team-invite-validity button[aria-checked='true'] {
-  background: var(--vf-ink);
-  color: var(--vf-paper);
+.invite-share.is-warning {
+  border-color: color-mix(in srgb, var(--vf-warning) 40%, var(--vf-line));
+  background: color-mix(in srgb, var(--vf-warning-soft) 55%, var(--vf-paper));
+}
+
+.invite-share.is-warning .invite-share-check {
+  background: var(--vf-warning-soft);
+  color: var(--vf-warning);
+}
+
+/* The QR is also a button: it opens the big view for the other person's phone. */
+button.invite-share-qr {
+  font: inherit;
+  cursor: zoom-in;
+  transition: transform 260ms var(--company-ease);
+}
+
+button.invite-share-qr:hover:not(:disabled) {
+  transform: scale(1.02);
+}
+
+button.invite-share-qr:disabled {
+  cursor: default;
+}
+
+.invite-qr-zoom {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgb(0 0 0 / 70%);
+  animation: company-fade 260ms var(--company-ease) both;
+}
+
+.invite-qr-zoom-card {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  width: min(460px, 100%);
+  padding: 28px;
+  border-radius: 24px;
+  background: #ffffff;
+  color: #111111;
+  text-align: center;
+  animation: company-rise 380ms var(--company-ease) both;
+}
+
+.invite-qr-zoom-card img {
+  width: min(380px, 78vw, 62vh);
+  height: auto;
+}
+
+.invite-qr-zoom-card strong {
+  font-size: 1.2rem;
+}
+
+.invite-qr-zoom-card .invite-share-countdown {
+  color: #5c5c5c;
 }
 
 .invite-share-qr .company-skeleton {
@@ -2315,6 +2361,7 @@
 
 .settings-grid > .company-role-settings,
 .settings-grid > .company-profile-settings,
+.settings-grid > .company-warranty-settings,
 .settings-grid > .settings-working {
   grid-column: 1 / -1;
 }
@@ -2324,6 +2371,132 @@
   font-size: 0.84rem;
   font-weight: 700;
   animation: company-fade 300ms var(--company-ease) both;
+}
+
+/* ---------- Product warranties ---------- */
+
+.warranty-settings-missing {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--vf-warning-soft);
+  color: var(--vf-warning);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.warranty-settings-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 28px;
+  padding-top: 16px;
+  border-top: 1px solid var(--vf-line);
+}
+
+.warranty-settings-fields {
+  display: grid;
+  align-content: start;
+  gap: 18px;
+}
+
+.warranty-months {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--vf-mist);
+}
+
+.warranty-months button {
+  min-height: 40px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--vf-muted);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    background-color 260ms var(--company-ease),
+    color 260ms var(--company-ease),
+    box-shadow 260ms var(--company-ease);
+}
+
+.warranty-months button[aria-checked='true'] {
+  background: var(--vf-paper);
+  color: var(--vf-ink);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 12%);
+}
+
+.warranty-months button:disabled {
+  cursor: not-allowed;
+}
+
+.warranty-preview {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+
+.warranty-preview-card {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--vf-line);
+  border-radius: 14px;
+  background: var(--vf-mist);
+}
+
+.warranty-preview-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: var(--vf-blush);
+  color: var(--vf-red);
+}
+
+.warranty-preview-card dl {
+  display: grid;
+  gap: 10px;
+}
+
+.warranty-preview-card dl > div {
+  display: grid;
+  gap: 2px;
+}
+
+.warranty-preview-card dt {
+  color: var(--vf-muted);
+  font-size: 0.76rem;
+}
+
+.warranty-preview-card dd {
+  overflow-wrap: anywhere;
+  color: var(--vf-ink);
+  font-weight: 800;
+}
+
+.warranty-preview-card dd.is-email {
+  color: var(--vf-red);
+}
+
+@media (max-width: 900px) {
+  .warranty-settings-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 520px) {
+  .warranty-months {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 /* ---------- Company profile ---------- */
@@ -3151,11 +3324,19 @@
     width: min(300px, 86vw);
     box-shadow: var(--company-shadow-float);
     transform: translateX(-105%);
-    transition: transform 420ms var(--company-ease);
+    /* Hidden once it slid away, so Tab does not walk through links nobody can see. */
+    visibility: hidden;
+    transition:
+      transform 420ms var(--company-ease),
+      visibility 0s linear 420ms;
   }
 
   .company-shell[data-nav-open] .company-sidebar {
     transform: none;
+    visibility: visible;
+    transition:
+      transform 420ms var(--company-ease),
+      visibility 0s;
   }
 
   .company-scrim {

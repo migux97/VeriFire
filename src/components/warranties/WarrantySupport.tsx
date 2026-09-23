@@ -1,68 +1,91 @@
+// Support for an activated product: the company that issued it and the email it set for support (Configuración →
+// Garantías de productos in its panel). Nothing else of the company is shown to the buyer.
 import { useId, useRef, useState } from 'react';
 import { Icon } from '@/components/ui/Icon';
-import { LedgerLink } from '@/components/ui/LedgerLink';
-import { downloadBlob } from '@/lib/client/download';
-import { consumerDate, getConsumerMessages, type ConsumerLocale } from '@/i18n/consumer';
+import { fillIn, getConsumerMessages, type ConsumerLocale } from '@/i18n/consumer';
 import type { Warranty } from '@/lib/types';
-import { WarrantyCoverage } from './WarrantyCoverage';
 
-export function WarrantySupport({ warranty, now, locale = 'es' }: { warranty: Warranty; now: number; locale?: ConsumerLocale }) {
-  const labels = getConsumerMessages(locale);
+export function WarrantySupport({ warranty, locale = 'es' }: { warranty: Warranty; now?: number; locale?: ConsumerLocale }) {
+  const labels = getConsumerMessages(locale).support;
   const dialog = useRef<HTMLDialogElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const id = useId();
-  const [notice, setNotice] = useState('');
-  const fields = [
-    [labels.support.product, warranty.model], [labels.support.lot, warranty.lot],
-    [labels.support.serial, warranty.token], [labels.support.owner, warranty.owner || labels.support.missing],
-    [labels.coverage.start, consumerDate(warranty.claimedAt, locale)],
-    [labels.coverage.end, consumerDate(warranty.warrantyUntil, locale)],
-    [labels.support.network, warranty.network]
-  ];
+  const [copied, setCopied] = useState(false);
+  const support = warranty.support;
+  const subject = fillIn(labels.subject, { model: warranty.model, token: warranty.token });
 
-  const download = () => {
+  const copy = async () => {
+    if (!support) return;
     try {
-      const text = [labels.support.document, `${labels.support.issued}: ${consumerDate(new Date().toISOString(), locale)}`, '',
-        ...fields.map(([key, value]) => `${key}: ${value}`),
-        ...(warranty.certificateUrl ? [`${labels.support.certificate}: ${warranty.certificateUrl}`] : [labels.support.noCertificate]),
-        '', labels.support.instructions, labels.support.note].join('\n');
-      // Only public warranty data: never include activation or transfer secrets.
-      downloadBlob(new Blob(['\uFEFF', text], { type: 'text/plain;charset=utf-8' }), `verifire-${warranty.token.replace(/[^a-zA-Z0-9_-]/g, '_')}.txt`);
-      setNotice(labels.support.downloaded);
+      await navigator.clipboard.writeText(support.email);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2200);
     } catch {
-      setNotice(labels.support.downloadError);
+      // Without clipboard access the address is still on screen to copy by hand.
     }
   };
 
   return (
     <>
-      <button ref={trigger} type="button" className="button button-primary warranty-manage" aria-haspopup="dialog"
-        onClick={() => { setNotice(''); dialog.current?.showModal(); }}>
-        <Icon name="fa-solid fa-headset" /> {labels.support.action}
+      <button
+        ref={trigger}
+        type="button"
+        className="button button-primary warranty-manage"
+        aria-haspopup="dialog"
+        onClick={() => {
+          setCopied(false);
+          dialog.current?.showModal();
+        }}
+      >
+        <Icon name="fa-solid fa-headset" /> {labels.action}
       </button>
-      <dialog ref={dialog} className="warranty-dialog" aria-labelledby={`${id}-title`} aria-describedby={`${id}-intro`}
-        onClose={() => trigger.current?.focus()}>
-        <div className="tw:flex tw:items-start tw:justify-between tw:gap-4">
-          <div><p className="eyebrow">VERIFIRE</p><h2 id={`${id}-title`}>{labels.support.title}</h2></div>
-          <button type="button" className="icon-button" aria-label={labels.support.close} onClick={() => dialog.current?.close()}>
+      <dialog ref={dialog} className="warranty-dialog support-dialog" aria-labelledby={`${id}-title`} aria-describedby={`${id}-intro`} onClose={() => trigger.current?.focus()}>
+        <div className="support-dialog-head">
+          <span className="support-dialog-icon" aria-hidden="true">
+            <i className="fa-solid fa-headset" />
+          </span>
+          <div>
+            <h2 id={`${id}-title`}>{labels.title}</h2>
+            <p className="support-dialog-product">
+              {warranty.model} · <span>{warranty.token}</span>
+            </p>
+          </div>
+          <button type="button" className="icon-button" aria-label={labels.close} onClick={() => dialog.current?.close()}>
             <Icon name="fa-solid fa-xmark" />
           </button>
         </div>
-        <p id={`${id}-intro`} className="field-hint">{labels.support.intro}</p>
-        <h3>{warranty.model}</h3>
-        <WarrantyCoverage start={warranty.claimedAt} end={warranty.warrantyUntil} now={now} locale={locale} />
-        <dl className="support-details">
-          {fields.map(([key, value]) => <div key={key}><dt>{key}</dt><dd>{value}</dd></div>)}
-        </dl>
-        <p className="support-instructions">{labels.support.instructions}</p>
-        {warranty.certificateUrl
-          ? <LedgerLink href={warranty.certificateUrl}>{labels.support.certificate}</LedgerLink>
-          : <p className="field-hint">{labels.support.noCertificate}</p>}
-        <button type="button" className="button button-primary" onClick={download}>
-          <Icon name="fa-solid fa-download" /> {labels.support.download}
-        </button>
-        <p className="field-hint">{labels.support.note}</p>
-        <p className="field-hint" role="status">{notice}</p>
+
+        {support ? (
+          <>
+            <p id={`${id}-intro`} className="field-hint">
+              {labels.intro}
+            </p>
+            <dl className="support-details">
+              <div>
+                <dt>{labels.company}</dt>
+                <dd>{support.company}</dd>
+              </div>
+              <div>
+                <dt>{labels.email}</dt>
+                <dd>
+                  <a href={`mailto:${support.email}?subject=${encodeURIComponent(subject)}`}>{support.email}</a>
+                </dd>
+              </div>
+            </dl>
+            <div className="support-dialog-actions">
+              <a className="button button-primary" href={`mailto:${support.email}?subject=${encodeURIComponent(subject)}`}>
+                <Icon name="fa-solid fa-envelope" /> {labels.write}
+              </a>
+              <button type="button" className="button button-secondary" onClick={() => void copy()}>
+                <Icon name={copied ? 'fa-solid fa-check' : 'fa-regular fa-copy'} /> {copied ? labels.copied : labels.copy}
+              </button>
+            </div>
+          </>
+        ) : (
+          <p id={`${id}-intro`} className="support-dialog-missing">
+            <Icon name="fa-solid fa-circle-info" /> {labels.noEmail}
+          </p>
+        )}
       </dialog>
     </>
   );

@@ -1,52 +1,47 @@
 // The company's team: who is in it, with which role, and the invitations on their way. An invitation is created on the
-// server, so it reaches the other person's panel (by email) or works as a link and a QR from any device.
+// server and sent one of three ways: by email (through Resend, and in the person's panel), as a link, or as a QR.
+// Every invitation expires after 3 minutes and works once.
 import { useEffect, useRef, useState, type SyntheticEvent } from 'react';
+import { createPortal } from 'react-dom';
+import { useNow } from '@/components/ui/useNow';
 import { storedUser } from '@/lib/client/account';
 import { downloadDataUrl } from '@/lib/client/download';
-import { useNow } from '@/components/ui/useNow';
-import { createInvitation, invitationLink, invitationStatuses, revokeInvitation, type ValidHours } from '@/lib/client/invitations';
+import { createInvitation, invitationLink, invitationStatuses, revokeInvitation, type InvitationEmailStatus } from '@/lib/client/invitations';
 import { notify } from '@/lib/client/notifications';
 import { readAccountData, writeAccountData } from '@/lib/client/account-data';
-import { userSession } from '@/lib/client/session';
-import { companyMemberships, updateCompanyMembershipRole, type CompanyRole } from '@/lib/client/workspace';
+import { demoModeActive, userSession } from '@/lib/client/session';
+import { updateCompanyMembershipRole, type CompanyRole } from '@/lib/client/workspace';
 import { errorMessage } from '@/lib/errors';
+import { formatTimeLeft } from '@/lib/format';
 import type { Locale } from '@/lib/locale';
 import type { InvitationView } from '@/lib/types';
 import { CompanyTextProvider, useCompanyText } from './CompanyText';
 
 type MemberStatus = 'active' | 'pending' | 'declined' | 'expired';
-type InviteMode = 'email' | 'link';
+type InviteMode = 'email' | 'link' | 'qr';
 
 interface Member {
   id: string;
   name: string;
-  // Empty for an open link nobody accepted yet.
+  // Empty for a link or QR nobody accepted yet.
   email: string;
   role: CompanyRole;
   status: MemberStatus;
-  // Set for members invited through the server: its id to follow it, its token to share it again or cancel it.
+  // Set for members invited through the server: its id to follow it, its token to show it again or cancel it.
   invitationId?: string;
   token?: string;
-  // When its link and QR stop working, and how long they were given (to create a new one just like it).
   expiresAt?: string;
-  validHours?: ValidHours;
+  kind?: InviteMode;
+  emailStatus?: InvitationEmailStatus | null;
 }
 
-const STATUS_CHECK_MS = 30_000;
+const STATUS_CHECK_MS = 15_000;
 const roles: CompanyRole[] = ['admin', 'operator', 'auditor', 'viewer'];
-const VALIDITY: ValidHours[] = [1, 24, 72, 168];
-const DEFAULT_VALIDITY: Record<InviteMode, ValidHours> = { link: 24, email: 168 };
-
-// "2 d 4 h", "5 h 12 min", "3 min 05 s": how long an invitation still works.
-const timeLeft = (ms: number) => {
-  const seconds = Math.max(0, Math.floor(ms / 1000));
-  const days = Math.floor(seconds / 86400);
-  const hours = Math.floor((seconds % 86400) / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  if (days) return `${days} d ${hours} h`;
-  if (hours) return `${hours} h ${minutes} min`;
-  return `${minutes} min ${String(seconds % 60).padStart(2, '0')} s`;
-};
+const MODES: { value: InviteMode; icon: string }[] = [
+  { value: 'email', icon: 'fa-envelope' },
+  { value: 'link', icon: 'fa-link' },
+  { value: 'qr', icon: 'fa-qrcode' }
+];
 
 const expiredLocally = (member: Member, now: number) => member.status === 'pending' && Boolean(member.expiresAt) && Date.parse(member.expiresAt ?? '') <= now;
 
@@ -66,7 +61,7 @@ export function CompanyTeamManager({ locale }: { locale?: Locale | undefined }) 
   );
 }
 
-// The link and the QR of an invitation, ready to copy, share or download.
+// The invitation just created (or reopened): the email's fate, the link, or the QR, with the time it has left.
 function InviteShare({
   member,
   companyName,
@@ -82,26 +77,44 @@ function InviteShare({
 }) {
   const t = useCompanyText();
   const text = t.team;
+  const kind: InviteMode = member.kind ?? (member.email ? 'email' : 'link');
   const link = member.token ? invitationLink(member.token) : '';
-  const now = useNow(Boolean(member.expiresAt));
-  const left = member.expiresAt ? Date.parse(member.expiresAt) - now : Infinity;
+  const now = useNow(true);
+  const left = member.expiresAt ? Date.parse(member.expiresAt) - now : 0;
   const expired = left <= 0;
   const [qr, setQr] = useState('');
   const [copied, setCopied] = useState(false);
+  const [zoom, setZoom] = useState(false);
+  const zoomDoneRef = useRef<HTMLButtonElement>(null);
+  const copiedTimer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(copiedTimer.current), []);
   const canShare = typeof navigator !== 'undefined' && 'share' in navigator;
 
   useEffect(() => {
-    if (!link) return;
+    if (kind !== 'qr' || !link) return undefined;
     let active = true;
     void import('qrcode').then((qrcode) =>
-      qrcode.toDataURL(link, { width: 480, margin: 1, errorCorrectionLevel: 'M' }).then((image) => {
+      qrcode.toDataURL(link, { width: 720, margin: 1, errorCorrectionLevel: 'M' }).then((image) => {
         if (active) setQr(image);
       })
     );
     return () => {
       active = false;
     };
-  }, [link]);
+  }, [kind, link]);
+
+  useEffect(() => {
+    if (!zoom) return undefined;
+    zoomDoneRef.current?.focus();
+    const close = (event: KeyboardEvent) => event.key === 'Escape' && setZoom(false);
+    document.addEventListener('keydown', close);
+    return () => document.removeEventListener('keydown', close);
+  }, [zoom]);
+
+  // The code is useless once expired, so the big view closes with it.
+  useEffect(() => {
+    if (expired) setZoom(false);
+  }, [expired]);
 
   const copy = async () => {
     try {
@@ -112,74 +125,136 @@ function InviteShare({
       return;
     }
     setCopied(true);
-    window.setTimeout(() => setCopied(false), 2200);
+    window.clearTimeout(copiedTimer.current);
+    copiedTimer.current = window.setTimeout(() => setCopied(false), 2200);
   };
 
+  const title = kind === 'email' ? text.emailTitle : kind === 'qr' ? text.qrTitle : text.linkTitle;
+  const lead = kind === 'email' ? text.emailStatus[member.emailStatus ?? 'sent'](member.email) : kind === 'qr' ? text.shareQr : text.shareLink;
+  const emailFailed = kind === 'email' && member.emailStatus && member.emailStatus !== 'sent';
+  const icon = kind === 'email' ? (emailFailed ? 'fa-envelope-circle-check' : 'fa-paper-plane') : kind === 'qr' ? 'fa-qrcode' : 'fa-link';
+
+  const countdown = (
+    <p className={`invite-share-countdown ${expired ? 'is-expired' : left < 60_000 ? 'is-soon' : ''}`} role={expired ? 'alert' : undefined}>
+      <i className={`fa-solid ${expired ? 'fa-circle-exclamation' : 'fa-hourglass-half'}`} aria-hidden="true" />{' '}
+      {expired ? text.expiredHelp : text.countdown(formatTimeLeft(left))}
+    </p>
+  );
+
+  const finishButtons = (
+    <>
+      {expired && (
+        <button type="button" className="company-button is-primary" disabled={regenerating} onClick={onRegenerate}>
+          <i className={`fa-solid ${regenerating ? 'fa-circle-notch fa-spin' : 'fa-rotate'}`} aria-hidden="true" />{' '}
+          {kind === 'email' ? text.resend : text.regenerate}
+        </button>
+      )}
+      <button type="button" className="company-button is-ghost" onClick={onClose}>
+        {text.done}
+      </button>
+    </>
+  );
+
   return (
-    <div className="invite-share" role="region" aria-label={text.shareTitle}>
+    <div className={`invite-share is-${kind} ${emailFailed ? 'is-warning' : ''}`} role="region" aria-label={title}>
       <div className="invite-share-head">
         <span className="invite-share-check" aria-hidden="true">
-          <i className="fa-solid fa-paper-plane" />
+          <i className={`fa-solid ${icon}`} />
         </span>
         <div>
-          <strong>{text.shareTitle}</strong>
-          <p>{member.email ? text.shareTo(member.email) : text.shareOpen}</p>
+          <strong>{title}</strong>
+          <p>{lead}</p>
         </div>
       </div>
-      <div className="invite-share-body">
-        <div className={`invite-share-qr ${expired ? 'is-expired' : ''}`}>
-          {qr ? <img src={qr} alt={text.qrAlt} width={180} height={180} /> : <span className="company-skeleton" />}
-          {expired && (
-            <span className="invite-share-expired">
-              <i className="fa-solid fa-clock-rotate-left" aria-hidden="true" />
-              {text.expiredQr}
-            </span>
-          )}
-        </div>
+
+      {kind === 'email' && (
         <div className="invite-share-actions">
-          {Number.isFinite(left) && (
-            <p className={`invite-share-countdown ${expired ? 'is-expired' : left < 60 * 60 * 1000 ? 'is-soon' : ''}`} role={expired ? 'alert' : undefined}>
-              <i className={`fa-solid ${expired ? 'fa-circle-exclamation' : 'fa-hourglass-half'}`} aria-hidden="true" />{' '}
-              {expired ? text.expiredHelp : text.countdown(timeLeft(left))}
-            </p>
-          )}
+          {countdown}
+          <div className="invite-share-buttons">{finishButtons}</div>
+        </div>
+      )}
+
+      {kind === 'link' && (
+        <div className="invite-share-actions">
+          {countdown}
           <label className="invite-share-link">
             <span className="visually-hidden">Link</span>
             <input value={link} readOnly disabled={expired} onFocus={(event) => event.currentTarget.select()} />
           </label>
-          {expired ? (
-            <div className="invite-share-buttons">
-              <button type="button" className="company-button is-primary" disabled={regenerating} onClick={onRegenerate}>
-                <i className={`fa-solid ${regenerating ? 'fa-circle-notch fa-spin' : 'fa-rotate'}`} aria-hidden="true" /> {text.regenerate}
-              </button>
-              <button type="button" className="company-button is-ghost" onClick={onClose}>
-                {text.done}
-              </button>
-            </div>
-          ) : (
-            <div className="invite-share-buttons">
-              <button type="button" className="company-button is-primary" onClick={() => void copy()}>
-                <i className={`fa-solid ${copied ? 'fa-check' : 'fa-link'}`} aria-hidden="true" /> {copied ? text.copied : text.copy}
-              </button>
-              {canShare && (
-                <button
-                  type="button"
-                  className="company-button"
-                  onClick={() => void navigator.share({ title: 'Verifire', text: text.shareText(companyName), url: link }).catch(() => {})}
-                >
-                  <i className="fa-solid fa-share-nodes" aria-hidden="true" /> {text.share}
+          <div className="invite-share-buttons">
+            {!expired && (
+              <>
+                <button type="button" className="company-button is-primary" onClick={() => void copy()}>
+                  <i className={`fa-solid ${copied ? 'fa-check' : 'fa-copy'}`} aria-hidden="true" /> {copied ? text.copied : text.copy}
                 </button>
+                {canShare && (
+                  <button
+                    type="button"
+                    className="company-button"
+                    onClick={() => void navigator.share({ title: 'Verifire', text: text.shareText(companyName), url: link }).catch(() => {})}
+                  >
+                    <i className="fa-solid fa-share-nodes" aria-hidden="true" /> {text.share}
+                  </button>
+                )}
+              </>
+            )}
+            {finishButtons}
+          </div>
+        </div>
+      )}
+
+      {kind === 'qr' && (
+        <div className="invite-share-body">
+          <button
+            type="button"
+            className={`invite-share-qr ${expired ? 'is-expired' : ''}`}
+            disabled={expired || !qr}
+            aria-label={text.fullscreen}
+            onClick={() => setZoom(true)}
+          >
+            {qr ? <img src={qr} alt={text.qrAlt} width={180} height={180} /> : <span className="company-skeleton" />}
+            {expired && (
+              <span className="invite-share-expired">
+                <i className="fa-solid fa-clock-rotate-left" aria-hidden="true" />
+                {text.expiredQr}
+              </span>
+            )}
+          </button>
+          <div className="invite-share-actions">
+            {countdown}
+            <div className="invite-share-buttons">
+              {!expired && (
+                <>
+                  <button type="button" className="company-button is-primary" disabled={!qr} onClick={() => setZoom(true)}>
+                    <i className="fa-solid fa-expand" aria-hidden="true" /> {text.fullscreen}
+                  </button>
+                  <button type="button" className="company-button" disabled={!qr} onClick={() => void downloadDataUrl(qr, text.qrFile)}>
+                    <i className="fa-solid fa-download" aria-hidden="true" /> {text.downloadQr}
+                  </button>
+                </>
               )}
-              <button type="button" className="company-button" disabled={!qr} onClick={() => void downloadDataUrl(qr, text.qrFile)}>
-                <i className="fa-solid fa-download" aria-hidden="true" /> {text.downloadQr}
-              </button>
-              <button type="button" className="company-button is-ghost" onClick={onClose}>
+              {finishButtons}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Rendered on the body: the card's entrance animation would otherwise trap a fixed layer inside the card. */}
+      {zoom &&
+        qr &&
+        createPortal(
+          <div className="company-page-portal invite-qr-zoom" role="dialog" aria-modal="true" aria-label={text.qrTitle} onClick={() => setZoom(false)}>
+            <div className="invite-qr-zoom-card" onClick={(event) => event.stopPropagation()}>
+              <img src={qr} alt={text.qrAlt} />
+              <strong>{companyName}</strong>
+              {countdown}
+              <button ref={zoomDoneRef} type="button" className="company-button" onClick={() => setZoom(false)}>
                 {text.done}
               </button>
             </div>
-          )}
-        </div>
-      </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 }
@@ -187,19 +262,19 @@ function InviteShare({
 function Team() {
   const t = useCompanyText();
   const text = t.team;
+  const locale: 'es' | 'en' = t.intl.startsWith('en') ? 'en' : 'es';
   const [members, setMembers] = useState<Member[]>([]);
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<CompanyRole>('operator');
   const [mode, setMode] = useState<InviteMode>('email');
-  const [validHours, setValidHours] = useState<ValidHours>(DEFAULT_VALIDITY.email);
   const [regenerating, setRegenerating] = useState(false);
-  // Once a minute is enough for the list; the open share panel keeps its own countdown.
-  const now = useNow(true, 60_000);
   const [notice, setNotice] = useState<{ text: string; tone: 'success' | 'error' } | null>(null);
   const [open, setOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [sharing, setSharing] = useState<string | null>(null);
   const [companyName, setCompanyName] = useState('');
+  // Invitations last minutes, so the list notices an expired one within seconds.
+  const now = useNow(true, 5_000);
   const membersRef = useRef<Member[]>([]);
   membersRef.current = members;
 
@@ -214,23 +289,12 @@ function Team() {
     setCompanyName(user.companyName ?? '');
     const owner: Member = { id: 'owner', name: user.name, email: user.email, role: 'admin', status: 'active' };
     const saved = readAccountData<Member[]>('company-team');
-    setMembers(
-      saved ?? [
-        owner,
-        ...companyMemberships(user.email).map((membership) => ({
-          id: membership.invitationId,
-          name: membership.email.split('@')[0] || membership.email,
-          email: membership.email,
-          role: membership.role,
-          status: 'active' as const
-        }))
-      ]
-    );
+    // Only the owner at first. The account's memberships are the teams it joined elsewhere, not members of this one.
+    setMembers(saved ?? [owner]);
 
     // Follows the invitations on their way: who accepted, who declined, which expired.
     const follow = async () => {
-      const current = membersRef.current;
-      const pending = current.filter((member) => member.invitationId && member.status === 'pending');
+      const pending = membersRef.current.filter((member) => member.invitationId && member.status === 'pending');
       if (!pending.length) return;
       let views: InvitationView[];
       try {
@@ -268,29 +332,33 @@ function Team() {
   }, []);
 
   // Creates the invitation on the server and adds it to the list, replacing `replaces` (an expired one) if given.
-  const send = async (normalizedEmail: string, inviteRole: CompanyRole, hours: ValidHours, replaces?: Member) => {
+  const send = async (kind: InviteMode, normalizedEmail: string, inviteRole: CompanyRole, replaces?: Member) => {
     const user = storedUser();
     if (!user) return;
-    const { invitation, token } = await createInvitation({
+    // Sample companies do not invite real people: the invitation would be real (and its email too), and turning demo
+    // mode off would erase the company's only record of it.
+    if (demoModeActive()) throw new Error(text.demoBlocked);
+    const { invitation, token, emailStatus } = await createInvitation({
       companyName: user.companyName ?? '',
       inviterName: user.name,
       inviterEmail: user.email,
-      email: normalizedEmail,
+      email: kind === 'email' ? normalizedEmail : '',
       role: inviteRole,
-      validHours: hours
+      locale
     });
     const member: Member = {
       id: invitation.id,
-      name: normalizedEmail ? normalizedEmail.split('@')[0] || normalizedEmail : text.linkMember,
-      email: normalizedEmail,
+      name: kind === 'email' ? normalizedEmail.split('@')[0] || normalizedEmail : text.linkMember,
+      email: kind === 'email' ? normalizedEmail : '',
       role: inviteRole,
       status: 'pending',
       invitationId: invitation.id,
       token,
       expiresAt: invitation.expiresAt,
-      validHours: hours
+      kind,
+      emailStatus
     };
-    const kept = membersRef.current.filter((item) => item.id !== replaces?.id && (!normalizedEmail || item.email !== normalizedEmail));
+    const kept = membersRef.current.filter((item) => item.id !== replaces?.id && (kind !== 'email' || item.email !== normalizedEmail));
     persist([...kept, member]);
     setSharing(member.id);
   };
@@ -299,7 +367,7 @@ function Team() {
     setRegenerating(true);
     setNotice(null);
     try {
-      await send(member.email, member.role, member.validHours ?? DEFAULT_VALIDITY[member.email ? 'email' : 'link'], member);
+      await send(member.kind ?? (member.email ? 'email' : 'link'), member.email, member.role, member);
     } catch (error) {
       setNotice({ text: errorMessage(error), tone: 'error' });
     } finally {
@@ -314,18 +382,22 @@ function Team() {
       setNotice({ text: text.invalidEmail, tone: 'error' });
       return;
     }
-    if (normalizedEmail && members.some((member) => member.email === normalizedEmail && member.status !== 'declined' && member.status !== 'expired')) {
+    const taken = members.some(
+      (member) =>
+        normalizedEmail &&
+        member.email === normalizedEmail &&
+        (member.status === 'active' || (member.status === 'pending' && !expiredLocally(member, Date.now())))
+    );
+    if (taken) {
       setNotice({ text: text.duplicate, tone: 'error' });
       return;
     }
     setCreating(true);
     setNotice(null);
     try {
-      // Inviting someone again replaces their previous declined or expired row.
-      await send(normalizedEmail, role, validHours);
+      await send(mode, normalizedEmail, role);
       setEmail('');
       setOpen(false);
-      if (normalizedEmail) setNotice({ text: text.invited(normalizedEmail), tone: 'success' });
     } catch (error) {
       setNotice({ text: errorMessage(error), tone: 'error' });
     } finally {
@@ -345,8 +417,8 @@ function Team() {
     persist(members.filter((item) => item.id !== id));
     if (sharing === id) setSharing(null);
     setNotice({ text: text.revoked, tone: 'success' });
-    // A pending invitation is cancelled on the server too, so its link stops working.
-    if (member?.token && member.status === 'pending') {
+    // A pending invitation is cancelled on the server too, so its link stops working at once.
+    if (member?.token && member.status === 'pending' && !expiredLocally(member, Date.now())) {
       try {
         await revokeInvitation(member.token);
       } catch {
@@ -359,6 +431,7 @@ function Team() {
     status === 'pending' ? text.pending : status === 'declined' ? text.declined : status === 'expired' ? text.expired : text.active;
   const statusClass = (status: MemberStatus) => (status === 'active' ? 'is-claimed' : status === 'pending' ? 'is-pending' : '');
   const shared = members.find((member) => member.id === sharing);
+  const kindIcon = (member: Member) => (member.kind === 'qr' ? 'fa-qrcode' : 'fa-link');
 
   return (
     <div className="team-manager">
@@ -368,11 +441,11 @@ function Team() {
           return (
             <li className={`team-manager-member ${member.status === 'declined' || member.status === 'expired' ? 'is-faded' : ''}`} key={member.id}>
               <span className={`team-avatar ${member.status === 'pending' ? 'is-pending' : ''}`} aria-hidden="true">
-                {member.email ? initials(member.name) : <i className="fa-solid fa-link" />}
+                {member.email ? initials(member.name) : <i className={`fa-solid ${kindIcon(member)}`} />}
               </span>
               <span className="team-manager-identity">
-                <strong>{member.name}</strong>
-                <small>{member.email || text.modes.link}</small>
+                <strong>{member.email || member.status === 'active' ? member.name : member.kind === 'qr' ? text.qrMember : text.linkMember}</strong>
+                <small>{member.email || text.modes[member.kind ?? 'link']}</small>
               </span>
               <span className={`status-pill ${statusClass(member.status)}`}>{statusLabel(member.status)}</span>
               <select
@@ -388,7 +461,7 @@ function Team() {
                 ))}
               </select>
               <span className="team-manager-actions">
-                {member.token && (member.status === 'pending' || (member.status === 'expired' && listed.status === 'pending')) && (
+                {member.token && listed.status === 'pending' && (
                   <button
                     className="company-icon-button is-small"
                     type="button"
@@ -396,7 +469,7 @@ function Team() {
                     aria-label={text.shareAgain(member.email || member.name)}
                     aria-expanded={sharing === member.id}
                   >
-                    <i className="fa-solid fa-qrcode" aria-hidden="true" />
+                    <i className={`fa-solid ${member.kind === 'email' ? 'fa-envelope' : kindIcon(member)}`} aria-hidden="true" />
                   </button>
                 )}
                 {member.id !== 'owner' && (
@@ -429,18 +502,9 @@ function Team() {
       {open && (
         <form className="team-manager-form" onSubmit={(event) => void invite(event)} noValidate>
           <div className="team-invite-modes" role="radiogroup" aria-label={text.modeLabel}>
-            {(['email', 'link'] as const).map((value) => (
-              <button
-                key={value}
-                type="button"
-                role="radio"
-                aria-checked={mode === value}
-                onClick={() => {
-                  setMode(value);
-                  setValidHours(DEFAULT_VALIDITY[value]);
-                }}
-              >
-                <i className={`fa-solid ${value === 'email' ? 'fa-envelope' : 'fa-qrcode'}`} aria-hidden="true" /> {text.modes[value]}
+            {MODES.map(({ value, icon }) => (
+              <button key={value} type="button" role="radio" aria-checked={mode === value} onClick={() => setMode(value)}>
+                <i className={`fa-solid ${icon}`} aria-hidden="true" /> {text.modes[value]}
               </button>
             ))}
           </div>
@@ -448,10 +512,10 @@ function Team() {
           {mode === 'email' && (
             <label>
               <span>{text.email}</span>
-              <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="persona@empresa.com" autoFocus />
+              <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder={text.emailPlaceholder} autoFocus />
             </label>
           )}
-          <label className={mode === 'link' ? 'is-wide' : ''}>
+          <label className={mode === 'email' ? '' : 'is-wide'}>
             <span>{text.role}</span>
             <select value={role} onChange={(event) => setRole(event.target.value as CompanyRole)}>
               {roles.map((value) => (
@@ -462,16 +526,9 @@ function Team() {
             </select>
             <small>{text.roleHelp[role]}</small>
           </label>
-          <div className="team-form-field is-wide">
-            <span id="invite-validity-label">{text.expiresIn}</span>
-            <div className="team-invite-validity" role="radiogroup" aria-labelledby="invite-validity-label">
-              {VALIDITY.map((hours) => (
-                <button key={hours} type="button" role="radio" aria-checked={validHours === hours} onClick={() => setValidHours(hours)}>
-                  {text.expiryOptions[hours]}
-                </button>
-              ))}
-            </div>
-          </div>
+          <p className="team-invite-validity-note">
+            <i className="fa-solid fa-shield-halved" aria-hidden="true" /> {text.validity}
+          </p>
           <div className="team-manager-form-actions">
             <button type="button" className="company-button is-ghost" onClick={() => setOpen(false)}>
               {t.common.cancel}
@@ -480,7 +537,7 @@ function Team() {
               {creating ? (
                 <i className="fa-solid fa-circle-notch fa-spin" aria-hidden="true" />
               ) : (
-                <i className={`fa-solid ${mode === 'email' ? 'fa-paper-plane' : 'fa-link'}`} aria-hidden="true" />
+                <i className={`fa-solid ${mode === 'email' ? 'fa-paper-plane' : mode === 'qr' ? 'fa-qrcode' : 'fa-link'}`} aria-hidden="true" />
               )}{' '}
               {creating ? text.creating : text.create}
             </button>

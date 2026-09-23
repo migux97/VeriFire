@@ -62,7 +62,7 @@ const views = t.views;
             <div>
               <a href="#batches" data-catalog-tab="batches" tabindex="-1">{t.nav.batches}</a>
               <a href="#products" data-catalog-tab="products" tabindex="-1">{t.nav.products}</a>
-              <a href="#generate" data-catalog-tab="generate" tabindex="-1">{t.nav.generate}</a>
+              <a href="#generate" data-catalog-tab="generate" data-issuance-mode="now" tabindex="-1">{t.nav.generate}</a>
             </div>
           </div>
         </div>
@@ -134,7 +134,7 @@ const views = t.views;
           <div class="company-subview" data-catalog-view="batches" hidden>
             <div class="company-catalog-heading">
               <h2>{t.catalogHeading.batches}</h2>
-              <a class="company-button is-primary" href="#generate">
+              <a class="company-button is-primary" href="#generate" data-issuance-mode="now">
                 <i class="fa-solid fa-plus" aria-hidden="true"></i>
                 {t.catalogHeading.create}
               </a>
@@ -205,6 +205,7 @@ const views = t.views;
   const setNavOpen = (open: boolean) => {
     shell?.toggleAttribute('data-nav-open', open);
     menuOpen?.setAttribute('aria-expanded', String(open));
+    if (open) document.querySelector<HTMLElement>('.company-menu-close')?.focus();
   };
   menuOpen?.addEventListener('click', () => setNavOpen(true));
   document.querySelectorAll('[data-nav-close]').forEach((element) => element.addEventListener('click', () => setNavOpen(false)));

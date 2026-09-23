@@ -1,3 +1,4 @@
+import type { StoredUser } from './account';
 import { readStored, writeStored } from './storage';
 
 export type CompanyRole = 'admin' | 'operator' | 'auditor' | 'viewer';
@@ -82,6 +83,23 @@ export const updateCompanyMembershipRole = (email: string, role: CompanyRole) =>
     membership.email === email.trim().toLowerCase() ? { ...membership, role } : membership
   );
   writeStored(localStorage, MEMBERSHIPS_KEY, memberships);
+};
+
+export interface Workspace {
+  companyName: string;
+  role: CompanyRole;
+  // The account's own company (it registered as a business), as opposed to a team it joined.
+  own: boolean;
+}
+
+// The company the panel works in. A business account works in its own company even when it also joined another
+// team: using that membership instead showed the other company's name and role, and locked the owner out of editing
+// its own profile and warranties. Accounts without a company of their own work in the first team they joined.
+export const currentWorkspace = (user: StoredUser | null): Workspace | null => {
+  if (!user) return null;
+  if (user.accountType === 'business') return { companyName: user.companyName ?? '', role: 'admin', own: true };
+  const membership = companyMemberships(user.email)[0];
+  return membership ? { companyName: membership.companyName, role: membership.role, own: false } : null;
 };
 
 export const companyRolePermissions = (): CompanyRolePermissions => ({

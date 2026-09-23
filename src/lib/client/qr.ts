@@ -25,6 +25,8 @@ export const takePendingTransfer = () => {
   return secret && isTransferSecret(secret) ? secret : null;
 };
 
+export const hasPendingTransfer = () => Boolean(readRaw(sessionStorage, PENDING_TRANSFER_KEY));
+
 export const keepPendingClaim = (claim: ScannedClaim) => writeRaw(sessionStorage, PENDING_QR_KEY, JSON.stringify(claim));
 
 export const hasPendingClaim = () => Boolean(readRaw(sessionStorage, PENDING_QR_KEY));

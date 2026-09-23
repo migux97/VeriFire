@@ -1,16 +1,19 @@
 // Invitations to company teams in the buyer's panel: a button in the header with how many are waiting, and the list
 // to accept or decline them. Accepting one opens the company panel.
 import { useEffect, useRef, useState } from 'react';
+import { useNow } from '@/components/ui/useNow';
 import { invitationMessages } from '@/i18n/invitations';
 import { storedUser } from '@/lib/client/account';
 import { fetchInbox, respondInvitation } from '@/lib/client/invitations';
 import { userSession } from '@/lib/client/session';
 import { errorMessage } from '@/lib/errors';
+import { formatTimeLeft } from '@/lib/format';
 import type { Locale } from '@/lib/locale';
 import type { InboxInvitation } from '@/lib/types';
 import '@/styles/invitations.css';
 
-const CHECK_MS = 60_000;
+// Invitations last 3 minutes, so they are looked for often.
+const CHECK_MS = 20_000;
 
 export function InvitationInbox({ locale = 'es' }: { locale?: Locale | undefined }) {
   const t = invitationMessages(locale);
@@ -21,7 +24,8 @@ export function InvitationInbox({ locale = 'es' }: { locale?: Locale | undefined
   const [error, setError] = useState('');
   const rootRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const formatDate = (iso: string) => new Intl.DateTimeFormat(t.intl, { day: 'numeric', month: 'short' }).format(new Date(iso));
+  // Invitations last minutes: each one shows its countdown, and an expired one leaves the list.
+  const now = useNow(invitations.length > 0);
 
   useEffect(() => {
     if (!userSession.isActive()) return undefined;
@@ -74,7 +78,8 @@ export function InvitationInbox({ locale = 'es' }: { locale?: Locale | undefined
     }
   };
 
-  const count = invitations.length;
+  const live = invitations.filter((invitation) => Date.parse(invitation.expiresAt) > now);
+  const count = live.length;
 
   return (
     <div className="invite-inbox" ref={rootRef}>
@@ -95,7 +100,7 @@ export function InvitationInbox({ locale = 'es' }: { locale?: Locale | undefined
           <strong className="invite-inbox-title">{text.title}</strong>
           {count ? (
             <ul>
-              {invitations.map((invitation) => (
+              {live.map((invitation) => (
                 <li key={invitation.id}>
                   <span className="invite-icon is-small" aria-hidden="true">
                     <i className="fa-solid fa-building" />
@@ -103,7 +108,9 @@ export function InvitationInbox({ locale = 'es' }: { locale?: Locale | undefined
                   <div>
                     <strong>{invitation.companyName}</strong>
                     <small>{text.from(invitation.inviterName, t.roles[invitation.role])}</small>
-                    <small>{text.expires(formatDate(invitation.expiresAt))}</small>
+                    <small className="invite-inbox-countdown">
+                      <i className="fa-solid fa-hourglass-half" aria-hidden="true" /> {text.expiresIn(formatTimeLeft(Date.parse(invitation.expiresAt) - now))}
+                    </small>
                     <div className="invite-inbox-actions">
                       <button type="button" className="invite-button is-primary is-small" disabled={Boolean(busy)} onClick={() => void answer(invitation, 'accept')}>
                         {busy === `${invitation.id}:accept` && <i className="fa-solid fa-circle-notch fa-spin" aria-hidden="true" />} {text.accept}

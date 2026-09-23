@@ -53,6 +53,8 @@ export interface Warranty extends PublicProduct {
   // When the owner opened a transfer link that nobody accepted yet and has not expired, and when it expires.
   transferOfferedAt: string | null;
   transferExpiresAt: string | null;
+  // The company that issued it and its support email, when the company set one.
+  support: { company: string; email: string } | null;
 }
 
 // Answer of POST /api/products, the only one that carries the secret code of a single product.
@@ -166,6 +168,8 @@ export interface InvitationView {
   expiresAt: string;
   respondedAt: string | null;
   acceptedBy: string | null;
+  // Milliseconds left when the server answered, measured with its own clock.
+  expiresInMs: number;
 }
 
 // An invitation waiting in the invitee's panel, with the token needed to answer it.
@@ -191,4 +195,6 @@ export interface PreparedTransfer {
   message: string;
   feeAccount: string;
   expiresAt: string;
+  // The time left, measured by the server: the recipient's clock may be off by minutes.
+  expiresInMs: number;
 }

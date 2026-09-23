@@ -113,7 +113,7 @@ export function CompanyOverview({ records, loading }: { records: PurchaseSummary
         <p>{text.heroText(issued.length, number(activation))}</p>
       </div>
       <div className="company-hero-actions">
-        <a className="company-button is-primary" href="#generate">
+        <a className="company-button is-primary" href="#generate" data-issuance-mode="now">
           <i className="fa-solid fa-bolt" aria-hidden="true" /> {text.quick.generate}
         </a>
         <a className="company-button" href="#generate" data-issuance-mode="payment">
@@ -133,7 +133,7 @@ export function CompanyOverview({ records, loading }: { records: PurchaseSummary
           <span className="company-eyebrow">{text.agenda.eyebrow}</span>
           <h2>{text.agenda.title}</h2>
         </div>
-        <a className="company-link" href="#generate">
+        <a className="company-link" href="#generate" data-issuance-mode="payment">
           {text.agenda.open} <i className="fa-solid fa-arrow-right" aria-hidden="true" />
         </a>
       </div>

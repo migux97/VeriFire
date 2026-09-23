@@ -25,8 +25,8 @@ import type { TeamRole } from '@/lib/types';
 import { CompanyTextProvider, useCompanyText, useHydrated } from './CompanyText';
 
 const REMINDER_CHECK_MS = 30_000;
-// Invitations other companies sent to this account, looked for once a minute.
-const INBOX_CHECK_MS = 60_000;
+// Invitations other companies sent to this account, looked for every 20 seconds (they last 3 minutes).
+const INBOX_CHECK_MS = 20_000;
 const TOAST_MS = 6500;
 
 const ICONS: Record<NoticeKind, { icon: string; tone: string }> = {
@@ -75,6 +75,7 @@ function Notifications() {
   const [highlighted, setHighlighted] = useState<ReadonlySet<string>>(new Set());
   const buttonRef = useRef<HTMLButtonElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLElement>(null);
   const unread = notices.filter((notice) => !notice.read).length;
 
   useEffect(() => {
@@ -137,6 +138,19 @@ function Notifications() {
     closeRef.current?.focus({ preventScroll: true });
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') closeDrawer();
+      // A modal drawer: Tab cycles inside it instead of wandering into the dimmed page behind.
+      if (event.key !== 'Tab') return;
+      const focusable = [...(panelRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled), a[href]') ?? [])];
+      const first = focusable[0];
+      const last = focusable.at(-1);
+      if (!first || !last) return;
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
     };
     document.addEventListener('keydown', closeOnEscape);
     return () => document.removeEventListener('keydown', closeOnEscape);
@@ -153,7 +167,9 @@ function Notifications() {
 
   const openNotice = (notice: Notice) => {
     markRead(notice.id);
-    closeDrawer(false);
+    dismissFresh(notice.id);
+    // Focus goes back to the bell unless the notice leads to another view (the view focuses its own heading).
+    closeDrawer(!notice.href || notice.href === window.location.hash);
     if (notice.href?.startsWith('#')) window.location.hash = notice.href;
     else if (notice.href) window.location.href = notice.href;
   };
@@ -180,6 +196,7 @@ function Notifications() {
 
       <div className={`notifications-scrim ${open ? 'is-open' : ''}`} aria-hidden="true" onClick={() => closeDrawer()} />
       <aside
+        ref={panelRef}
         className={`notifications-panel ${open ? 'is-open' : ''}`}
         id="company-notifications-panel"
         role="dialog"

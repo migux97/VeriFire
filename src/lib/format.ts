@@ -32,6 +32,13 @@ export const formatCountdown = (until: string, now: number) => {
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 };
 
+// "2 min 05 s" / "40 s": how long something that lasts minutes (a team invitation) still has.
+export const formatTimeLeft = (ms: number) => {
+  const seconds = Math.max(0, Math.floor(ms / 1000));
+  const minutes = Math.floor(seconds / 60);
+  return minutes ? `${minutes} min ${String(seconds % 60).padStart(2, '0')} s` : `${seconds} s`;
+};
+
 // "GABC…WXYZ": a Stellar address short enough to read, in the two places that show one.
 export const shortAddress = (address: string | undefined | null) => (address ? `${address.slice(0, 4)}…${address.slice(-4)}` : 'desconocido');
 

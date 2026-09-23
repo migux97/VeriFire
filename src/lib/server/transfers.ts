@@ -106,6 +106,7 @@ export const cancelTransfer = async (body: JsonBody, baseUrl: string): Promise<S
 // What the link offers, so the recipient sees the product before accepting, and the message to sign with its key.
 export const prepareTransfer = async (body: JsonBody): Promise<PreparedTransfer> => {
   const { product, recipient, tokenId } = await offeredProduct(body);
+  const expiresAt = openTransferOf(product)?.expiresAt ?? new Date().toISOString();
   return {
     token: product.token,
     model: product.model,
@@ -113,7 +114,8 @@ export const prepareTransfer = async (body: JsonBody): Promise<PreparedTransfer>
     message: (await chain.transferMessage(tokenId, recipient)).toString('base64'),
     // An existing account for the payment with which the Cavos kit creates a new user's account.
     feeAccount: chain.issuerAddress(),
-    expiresAt: openTransferOf(product)?.expiresAt ?? new Date().toISOString()
+    expiresAt,
+    expiresInMs: Math.max(0, new Date(expiresAt).getTime() - Date.now())
   };
 };
 
@@ -127,9 +129,18 @@ export const acceptTransfer = async (body: JsonBody, baseUrl: string): Promise<S
   }
 
   const txHash = await exclusive(product, () => chain.submitTransferAccept({ tokenId, recipient, signedXdr }));
-  const from = product.owner ?? undefined;
-  product.owner = recipient;
-  delete product.transfer;
-  recordEvent(product, { kind: 'transferred', at: new Date().toISOString(), tx: txHash, ...(from ? { from } : {}), to: recipient });
+  // The previous owner is the one who opened the link. A request that read the contract meanwhile may already have
+  // moved the product to the recipient: then its event only lacks the transaction, instead of recording a second one.
+  const from = product.transfer?.from ?? product.owner ?? undefined;
+  if (product.owner === recipient) {
+    const adopted = product.events?.findLast((event) => event.kind === 'transferred' && event.to === recipient && !event.tx);
+    if (adopted) adopted.tx = txHash;
+    delete product.transfer;
+    saveState();
+  } else {
+    product.owner = recipient;
+    delete product.transfer;
+    recordEvent(product, { kind: 'transferred', at: new Date().toISOString(), tx: txHash, ...(from ? { from } : {}), to: recipient });
+  }
   return { warranty: warrantyView(product, baseUrl) };
 };

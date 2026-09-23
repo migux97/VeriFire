@@ -21,6 +21,7 @@ import {
   shipPurchase
 } from '@/lib/client/purchases';
 import { userSession } from '@/lib/client/session';
+import { motionEnabled } from '@/lib/client/theme';
 import { errorMessage } from '@/lib/errors';
 import type { Locale } from '@/lib/locale';
 import type { CompanyBatch } from '@/lib/types';
@@ -389,7 +390,7 @@ function Batches({ pageSize, layout }: { pageSize: number; layout: 'list' | 'gri
       <Pagination page={batchPage.page} pages={batchPage.pages} onPage={(page) => {
           batchPage.setPage(page);
           // The new page starts at the top of the list, not wherever the buttons left the scroll.
-          listRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+          listRef.current?.scrollIntoView({ block: 'start', behavior: motionEnabled() ? 'smooth' : 'auto' });
         }}
         label={t.batches.pages}
         text={t.pagination}

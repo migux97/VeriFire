@@ -13,6 +13,7 @@ export const ACCOUNT_DATA = [
   'company-schedules',
   'company-profile',
   'company-role-permissions',
+  'warranty-settings',
   'issuance-templates',
   'issuance-products',
   'notification-prefs'
