@@ -1,0 +1,6 @@
+dist/
+.astro/
+node_modules/
+data/
+contracts/**/target/
+package-lock.json

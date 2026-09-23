@@ -13,6 +13,8 @@
     "start": "node --env-file-if-exists=.env ./dist/server/entry.mjs",
     "check": "astro check",
     "test": "node --test \"tests/**/*.test.mjs\"",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "contract:deploy": "node --env-file-if-exists=.env scripts/deploy-contract.ts",
     "contract:upgrade": "node --env-file-if-exists=.env scripts/upgrade-contract.ts",
     "contract:test-activation": "node --env-file-if-exists=.env scripts/test-activation.ts"
@@ -40,6 +42,8 @@
     "@types/qrcode": "^1.5.6",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
+    "prettier": "^3.9.8",
+    "prettier-plugin-astro": "^1.0.1",
     "tailwindcss": "^4.3.3",
     "typescript": "^6.0.3"
   }

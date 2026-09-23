@@ -10,7 +10,13 @@ const roleLabels: Record<CompanyRole, string> = {
   viewer: 'Solo lectura'
 };
 
-const initials = (name: string) => name.split(/\s+/).map((part) => part[0]).slice(0, 2).join('').toUpperCase() || 'VF';
+const initials = (name: string) =>
+  name
+    .split(/\s+/)
+    .map((part) => part[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase() || 'VF';
 
 interface CompanyIdentityProps {
   view?: 'workspace' | 'profile';
@@ -38,16 +44,23 @@ export function CompanyIdentity({ view = 'profile' }: CompanyIdentityProps) {
 
   return (
     <>
-      {view === 'workspace' && <div className="company-workspace">
-        <span className="company-workspace-label">Organización</span>
-        <strong>{companyName}</strong>
-        <span className="company-workspace-meta">Cuenta empresarial · {roleLabels[role]}</span>
-      </div>}
-      {view === 'profile' && <div className="company-profile-identity">
-        <span className="company-avatar">{initials(user.name)}</span>
-        <span><strong>{user.name}</strong><small>{user.email}</small></span>
-        <span className="company-profile-role">{roleLabels[role]}</span>
-      </div>}
+      {view === 'workspace' && (
+        <div className="company-workspace">
+          <span className="company-workspace-label">Organización</span>
+          <strong>{companyName}</strong>
+          <span className="company-workspace-meta">Cuenta empresarial · {roleLabels[role]}</span>
+        </div>
+      )}
+      {view === 'profile' && (
+        <div className="company-profile-identity">
+          <span className="company-avatar">{initials(user.name)}</span>
+          <span>
+            <strong>{user.name}</strong>
+            <small>{user.email}</small>
+          </span>
+          <span className="company-profile-role">{roleLabels[role]}</span>
+        </div>
+      )}
     </>
   );
 }
