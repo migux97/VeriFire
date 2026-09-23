@@ -3,11 +3,11 @@ import { parseIssuanceOptions } from '../issuance';
 import { randomUUID } from 'node:crypto';
 import { Client } from '@cosmosapp/pay_sdk';
 import type { CompanyBatch, CreatedPurchase, PublicBatch, PurchaseStatus, PurchaseSummary } from '../types';
-import { isStellarAddress, normalizeId } from '../validation';
+import { normalizeId } from '../validation';
 import { chain } from './chain';
 import { config } from './config';
 import { HttpError } from './errors';
-import { textField, type JsonBody } from './http';
+import type { JsonBody } from './http';
 import { batchUrl, qrImage, secretUrl, verificationUrl } from './links';
 import { anchorPendingProducts, isCurrentOnChain, isPendingOnChain, mintProduct, readProductFields } from './products';
 import { explorerTxUrl, isTxHash } from './stellar';
@@ -89,12 +89,9 @@ export const createBatchPayment = async (body: JsonBody): Promise<CreatedPurchas
     msg: `Verifire emisión ${quantity} tokens ${fields.model}`
   });
   const purchaseId = `PUR-${randomUUID()}`;
-  // Sent by the panel when its wallet is at hand: from then on the batch is found by signing with that wallet.
-  const owner = textField(body, 'owner').trim();
   // The payment QR is kept so a pending purchase can be reopened from the company's list of batches.
   store.purchases.set(purchaseId, {
     purchaseId, quantity, ...fields, ...(configuration ? { configuration } : {}), ...(support ? { support } : {}), total, intentId: intent.id,
-    ...(isStellarAddress(owner) ? { owner } : {}),
     createdAt: new Date().toISOString(), paymentQr: intent.qr || null, paymentUri: intent.uri || null
   });
   try {

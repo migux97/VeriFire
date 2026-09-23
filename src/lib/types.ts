@@ -55,6 +55,14 @@ export interface Warranty extends PublicProduct {
   transferExpiresAt: string | null;
   // The company that issued it and its support email, when the company set one.
   support: { company: string; email: string } | null;
+  // Who issued it, as the company chose to show itself. "Issued by", not "verified": the name is self-declared.
+  issuer: {
+    name: string;
+    logoUrl: string | null;
+    website: string | null;
+    email: string | null;
+    phone: string | null;
+  } | null;
 }
 
 // Answer of POST /api/products, the only one that carries the secret code of a single product.

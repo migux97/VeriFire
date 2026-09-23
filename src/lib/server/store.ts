@@ -81,6 +81,20 @@ export interface Purchase extends ProductFields {
   support?: SupportSettings;
 }
 
+// What a company shows to its buyers on each warranty (see brands.ts). The logo is a PNG data URL, served at
+// /api/brand/<slug>/logo.png.
+export interface Brand {
+  slug: string;
+  name: string;
+  website?: string;
+  description?: string;
+  supportEmail?: string;
+  supportPhone?: string;
+  logo?: string;
+  logoVersion?: string;
+  updatedAt: string;
+}
+
 // What a company account keeps beside its wallet, so another browser finds the same panel (see workspaces.ts).
 export interface Workspace {
   owner: string;
@@ -90,6 +104,7 @@ export interface Workspace {
   // What the company configured (team, agenda, templates, profile), each kind with the moment it was last written:
   // the newest copy wins over the one another browser sends. The server never looks inside a value.
   data?: Record<string, { value: unknown; updatedAt: string }>;
+  brand?: Brand;
   updatedAt: string;
 }
 

@@ -63,6 +63,7 @@ const es = {
     linkExpiresIn: 'El link vence en',
     linkElsewhere: 'Abriste este link desde otro navegador. Si no lo tenés, generá uno nuevo: el anterior deja de funcionar.',
     linkExpired: 'El link de transferencia venció sin que nadie lo aceptara. El producto sigue a tu nombre.',
+    issuedBy: 'Emitido por', writeIssuer: 'Escribir a la empresa', callIssuer: 'Llamar a la empresa',
     linkLabel: 'Link para el nuevo dueño',
     linkOpen: 'Transferencia abierta: el producto pasa a quien abra el link con su cuenta Verifire y lo acepte.',
     linkReady: 'Link listo. Compartilo con el nuevo dueño: el producto pasa a su cuenta cuando lo acepte.',
@@ -103,7 +104,7 @@ const es = {
   support: {
     action: 'Soporte', title: 'Soporte de tu producto', close: 'Cerrar',
     intro: 'Escribile a la empresa que fabricó tu producto. Incluí el identificador del producto y describí el problema.',
-    company: 'Empresa', email: 'Correo de soporte',
+    company: 'Empresa', email: 'Correo de soporte', phone: 'Teléfono de soporte', website: 'Sitio web', call: 'Llamar',
     write: 'Escribir al correo', copy: 'Copiar correo', copied: 'Correo copiado',
     subject: 'Garantía de {model} ({token})',
     noEmail: 'La empresa todavía no configuró un correo de soporte. Volvé a intentarlo más tarde.',
@@ -176,6 +177,7 @@ const en: Messages = {
     linkExpiresIn: 'The link expires in',
     linkElsewhere: 'You opened this link from another browser. If you do not have it, generate a new one: the previous one stops working.',
     linkExpired: 'The transfer link expired before anyone accepted it. The product is still in your name.',
+    issuedBy: 'Issued by', writeIssuer: 'Write to the company', callIssuer: 'Call the company',
     linkLabel: 'Link for the new owner',
     linkOpen: 'Transfer open: the product moves to whoever opens the link with their Verifire account and accepts it.',
     linkReady: 'Link ready. Share it with the new owner: the product moves to their account when they accept it.',
@@ -216,7 +218,7 @@ const en: Messages = {
   support: {
     action: 'Support', title: 'Support for your product', close: 'Close',
     intro: 'Write to the company that made your product. Include the product identifier and describe the problem.',
-    company: 'Company', email: 'Support email',
+    company: 'Company', email: 'Support email', phone: 'Support phone', website: 'Website', call: 'Call',
     write: 'Write an email', copy: 'Copy email', copied: 'Email copied',
     subject: 'Warranty of {model} ({token})',
     noEmail: 'The company has not set a support email yet. Please try again later.',

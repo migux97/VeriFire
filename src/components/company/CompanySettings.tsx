@@ -5,6 +5,7 @@ import { demoActive, disableDemo, enableDemo } from '@/lib/client/demo';
 import { defaultPrefs, notify, readPrefs, savePrefs, type LeadHours, type NotificationPrefs } from '@/lib/client/notifications';
 import { motionEnabled, setMotionEnabled, setTheme, themePreference, type ThemePreference } from '@/lib/client/theme';
 import { LOCALE_COOKIE, type Locale } from '@/lib/locale';
+import { CompanyBrandSettings } from './CompanyBrandSettings';
 import { CompanyProfileSettings } from './CompanyProfileSettings';
 import { CompanyRoleSettings } from './CompanyRoleSettings';
 import { CompanyWarrantySettings } from './CompanyWarrantySettings';
@@ -12,10 +13,10 @@ import { CompanyTextProvider, useCompanyText } from './CompanyText';
 
 const LOCALE_COOKIE_MAX_AGE = 365 * 24 * 60 * 60;
 
-export function CompanySettings({ locale = 'es' }: { locale?: Locale | undefined }) {
+export function CompanySettings({ locale = 'es', cavosAppId = '' }: { locale?: Locale | undefined; cavosAppId?: string }) {
   return (
     <CompanyTextProvider locale={locale}>
-      <Settings locale={locale} />
+      <Settings locale={locale} cavosAppId={cavosAppId} />
     </CompanyTextProvider>
   );
 }
@@ -72,7 +73,7 @@ function Card({ icon, title, lead, badge, children }: { icon: string; title: str
   );
 }
 
-function Settings({ locale }: { locale: Locale }) {
+function Settings({ locale, cavosAppId }: { locale: Locale; cavosAppId: string }) {
   const t = useCompanyText();
   const text = t.settings;
   const [theme, setThemeChoice] = useState<ThemePreference>('light');
@@ -139,9 +140,10 @@ function Settings({ locale }: { locale: Locale }) {
 
   return (
     <div className="settings-grid">
-      <CompanyProfileSettings />
+      <CompanyProfileSettings cavosAppId={cavosAppId} />
+      <CompanyBrandSettings cavosAppId={cavosAppId} />
 
-      <CompanyWarrantySettings />
+      <CompanyWarrantySettings cavosAppId={cavosAppId} />
 
       <Card icon="fa-palette" title={text.appearance.title} lead={text.appearance.lead}>
         <Row title={text.appearance.theme}>

@@ -2152,3 +2152,85 @@ a.network-status:hover {
   padding-inline: 16px;
   white-space: nowrap;
 }
+
+/* ---------- Issuer of a product ---------- */
+
+.issuer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--vf-line);
+  border-radius: 10px;
+  background: var(--vf-mist);
+}
+
+.issuer-mark {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--vf-blush);
+  color: var(--vf-red);
+  font-size: 0.8125rem;
+  font-weight: 900;
+}
+
+/* A logo is drawn for a light background: it always sits on a white tile, in dark mode too. */
+.issuer-mark.has-logo {
+  border: 1px solid var(--vf-line);
+  background: #ffffff;
+}
+
+.issuer-mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.issuer-text {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.issuer-text small {
+  color: var(--vf-muted);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.issuer-text strong {
+  overflow: hidden;
+  color: var(--vf-ink);
+  font-size: 0.9375rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.issuer-actions {
+  display: flex;
+  flex: none;
+  gap: 6px;
+}
+
+.issuer-actions a {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--vf-line-strong);
+  border-radius: 8px;
+  color: var(--vf-ink);
+}
+
+.issuer-actions a:hover {
+  background: var(--vf-ink);
+  color: var(--vf-paper);
+}

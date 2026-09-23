@@ -3,6 +3,7 @@
 import { useEffect, useState, type SubmitEvent } from 'react';
 import { storedUser } from '@/lib/client/account';
 import { ACCOUNT_DATA_EVENT } from '@/lib/client/account-data';
+import { refreshPublishedBrand } from '@/lib/client/brand';
 import { COMPANY_PROFILE_EVENT, readCompanyProfile } from '@/lib/client/company-profile';
 import { readWarrantySettings, saveWarrantySettings, WARRANTY_MONTH_OPTIONS, type WarrantyMonths } from '@/lib/client/warranty-settings';
 import { currentWorkspace } from '@/lib/client/workspace';
@@ -10,7 +11,7 @@ import { errorMessage } from '@/lib/errors';
 import { useCompanyText } from './CompanyText';
 
 // Rendered inside the settings island, which provides the texts.
-export function CompanyWarrantySettings() {
+export function CompanyWarrantySettings({ cavosAppId }: { cavosAppId: string }) {
   const t = useCompanyText();
   const text = t.settings.warranty;
   const [email, setEmail] = useState('');
@@ -60,6 +61,10 @@ export function CompanyWarrantySettings() {
       setEmail(normalized);
       setSaved({ email: normalized, months });
       setNotice({ text: text.saved(updated), tone: 'success' });
+      // The support email is part of the published brand: it follows, when there is one.
+      void refreshPublishedBrand(cavosAppId).catch((error: unknown) => {
+        setNotice({ text: `${t.settings.brand.refreshFailed} ${errorMessage(error)}`, tone: 'error' });
+      });
     } catch (error) {
       setNotice({ text: errorMessage(error), tone: 'error' });
     } finally {

@@ -307,6 +307,55 @@ const es = {
       missing: 'Sin configurar: tus compradores todavía no tienen un correo para pedir soporte.',
       readOnly: 'Solo un administrador puede cambiar la configuración de garantías.'
     },
+    brand: {
+      title: 'Marca para tus compradores',
+      lead: 'Lo que ve el comprador en cada garantía: tu nombre comercial, el logo, el sitio web, la descripción y cómo contactarte para soporte. La razón social, el CUIT y la dirección no se publican.',
+      preview: 'Así lo ve el comprador',
+      issuedBy: 'Emitido por',
+      write: 'Escribir',
+      call: 'Llamar',
+      status: { unpublished: 'Sin publicar', current: 'Publicada', outdated: 'Con cambios sin publicar' },
+      publishedAt: (date: string) => `Publicada el ${date}`,
+      publish: 'Publicar marca',
+      update: 'Actualizar publicación',
+      unpublish: 'Dejar de publicar',
+      working: 'Un momento...',
+      publishedDone: 'Marca publicada. Tus compradores ya la ven en cada garantía.',
+      updatedDone: 'Publicación actualizada.',
+      unpublishedDone: 'Dejaste de publicar la marca. Tus compradores vuelven a ver solo el nombre y el correo de soporte.',
+      needName: 'Guardá el nombre comercial en el perfil para poder publicar la marca.',
+      failed: 'No se pudo publicar la marca:',
+      refreshFailed: 'Se guardó el perfil, pero no se pudo actualizar la marca publicada:',
+      noSupportEmail: 'Todavía no configuraste un correo de soporte: sin él los compradores no tienen cómo escribirte.',
+      demo: 'El modo demo no publica nada: sus datos son de ejemplo.',
+      readOnly: 'Solo un administrador puede publicar la marca.',
+      toml: {
+        title: 'Identidad en Stellar (stellar.toml)',
+        lead: 'Es el archivo con el que una organización se identifica en Stellar (SEP-0001): las billeteras y los exploradores lo leen para mostrar tu nombre y tu logo. Verifire lo arma con los datos de tu perfil y lo publicás vos en tu propio sitio.',
+        included: 'Incluye',
+        omitted: 'No incluye',
+        keys: {
+          ORG_NAME: 'Nombre de la organización',
+          ORG_DBA: 'Nombre comercial',
+          ORG_URL: 'Sitio web',
+          ORG_LOGO: 'Logo',
+          ORG_DESCRIPTION: 'Descripción',
+          ORG_OFFICIAL_EMAIL: 'Correo oficial',
+          ORG_SUPPORT_EMAIL: 'Correo de soporte'
+        } as Record<string, string>,
+        reasons: { missing: 'falta completarlo', 'not-https': 'necesita una dirección https' } as Record<string, string>,
+        warnings: {
+          'website-not-https': 'El sitio web no usa https: Stellar espera una dirección segura.',
+          'email-other-domain': 'El correo oficial no es del dominio de tu sitio web, y SEP-0001 pide que lo sea.'
+        } as Record<string, string>,
+        logoHint: 'Publicá la marca para que el logo tenga una dirección pública.',
+        download: 'Descargar stellar.toml',
+        downloaded: 'Archivo descargado.',
+        whereTitle: 'Dónde publicarlo',
+        where: 'Subilo a https://tu-dominio/.well-known/stellar.toml, con HTTPS y el encabezado Access-Control-Allow-Origin: *. El dominio tiene que ser el de tu sitio web.',
+        note: 'Verifire no lo publica por vos ni lo conecta a una cuenta de Stellar: hasta que lo publiques en tu dominio, no verifica nada.'
+      }
+    },
     profile: {
       title: 'Perfil de empresa',
       lead: 'Cómo se presenta tu empresa en el panel. El nombre comercial también figura como marca en las etiquetas nuevas.',
@@ -329,6 +378,7 @@ const es = {
         website: 'Sitio web',
         email: 'Correo de contacto',
         phone: 'Teléfono',
+        supportPhone: 'Teléfono de soporte (lo ve el comprador)',
         country: 'País',
         address: 'Dirección',
         description: 'Descripción'
@@ -340,6 +390,7 @@ const es = {
         website: 'https://tuempresa.com',
         email: 'contacto@tuempresa.com',
         phone: '+54 11 1234-5678',
+        supportPhone: '+54 11 1234-5678',
         country: 'Ej. Argentina',
         address: 'Calle, número, ciudad',
         description: 'Qué fabrica o vende tu empresa, en pocas palabras.'
@@ -363,6 +414,7 @@ const es = {
       saveFailed: 'No se pudo guardar: el navegador no tiene lugar. Probá con un logo más liviano.',
       invalidName: 'Ingresá el nombre comercial.',
       invalidEmail: 'Revisá el correo de contacto.',
+      invalidPhone: 'Revisá el teléfono de soporte: usá solo números, +, espacios, guiones y puntos.',
       invalidWebsite: 'Revisá el sitio web: tiene que empezar con http:// o https://.',
       readOnly: 'Solo un administrador puede editar el perfil de la empresa.',
       counter: (used: number, max: number) => `${used}/${max}`
@@ -925,6 +977,55 @@ const en: CompanyMessages = {
       missing: 'Not set: your buyers do not have an email to ask for support yet.',
       readOnly: 'Only an administrator can change the warranty settings.'
     },
+    brand: {
+      title: 'Brand for your buyers',
+      lead: 'What the buyer sees on each warranty: your trade name, your logo, your website, a description and how to contact you for support. The legal name, the tax ID and the address are not published.',
+      preview: 'How the buyer sees it',
+      issuedBy: 'Issued by',
+      write: 'Write',
+      call: 'Call',
+      status: { unpublished: 'Not published', current: 'Published', outdated: 'Unpublished changes' },
+      publishedAt: (date: string) => `Published on ${date}`,
+      publish: 'Publish brand',
+      update: 'Update publication',
+      unpublish: 'Stop publishing',
+      working: 'One moment...',
+      publishedDone: 'Brand published. Your buyers now see it on each warranty.',
+      updatedDone: 'Publication updated.',
+      unpublishedDone: 'You stopped publishing the brand. Your buyers see only the name and the support email again.',
+      needName: 'Save the trade name in the profile to be able to publish the brand.',
+      failed: 'The brand could not be published:',
+      refreshFailed: 'The profile was saved, but the published brand could not be updated:',
+      noSupportEmail: 'You have not set a support email yet: without it buyers have no way to write to you.',
+      demo: 'Demo mode publishes nothing: its data is sample data.',
+      readOnly: 'Only an administrator can publish the brand.',
+      toml: {
+        title: 'Identity on Stellar (stellar.toml)',
+        lead: 'The file an organization identifies itself with on Stellar (SEP-0001): wallets and explorers read it to show your name and logo. Verifire builds it from your profile and you publish it on your own website.',
+        included: 'Includes',
+        omitted: 'Does not include',
+        keys: {
+          ORG_NAME: 'Organization name',
+          ORG_DBA: 'Trade name',
+          ORG_URL: 'Website',
+          ORG_LOGO: 'Logo',
+          ORG_DESCRIPTION: 'Description',
+          ORG_OFFICIAL_EMAIL: 'Official email',
+          ORG_SUPPORT_EMAIL: 'Support email'
+        } as Record<string, string>,
+        reasons: { missing: 'it is not filled in', 'not-https': 'it needs an https address' } as Record<string, string>,
+        warnings: {
+          'website-not-https': 'The website does not use https: Stellar expects a secure address.',
+          'email-other-domain': 'The official email is not on the domain of your website, and SEP-0001 asks for that.'
+        } as Record<string, string>,
+        logoHint: 'Publish the brand so the logo gets a public address.',
+        download: 'Download stellar.toml',
+        downloaded: 'File downloaded.',
+        whereTitle: 'Where to publish it',
+        where: 'Upload it to https://your-domain/.well-known/stellar.toml, over HTTPS and with the header Access-Control-Allow-Origin: *. The domain has to be the one of your website.',
+        note: 'Verifire does not publish it for you or link it to a Stellar account: until you publish it on your domain, it verifies nothing.'
+      }
+    },
     profile: {
       title: 'Company profile',
       lead: 'How your company shows up in the dashboard. The trade name is also the brand on new labels.',
@@ -947,6 +1048,7 @@ const en: CompanyMessages = {
         website: 'Website',
         email: 'Contact email',
         phone: 'Phone',
+        supportPhone: 'Support phone (shown to the buyer)',
         country: 'Country',
         address: 'Address',
         description: 'Description'
@@ -958,6 +1060,7 @@ const en: CompanyMessages = {
         website: 'https://yourcompany.com',
         email: 'contact@yourcompany.com',
         phone: '+1 555 123 4567',
+        supportPhone: '+1 555 123 4567',
         country: 'E.g. Argentina',
         address: 'Street, number, city',
         description: 'What your company makes or sells, in a few words.'
@@ -981,6 +1084,7 @@ const en: CompanyMessages = {
       saveFailed: 'It could not be saved: the browser is out of space. Try a lighter logo.',
       invalidName: 'Enter the trade name.',
       invalidEmail: 'Check the contact email.',
+      invalidPhone: 'Check the support phone: use only digits, +, spaces, hyphens and dots.',
       invalidWebsite: 'Check the website: it must start with http:// or https://.',
       readOnly: 'Only an administrator can edit the company profile.',
       counter: (used: number, max: number) => `${used}/${max}`

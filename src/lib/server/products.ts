@@ -10,6 +10,7 @@ import { singleton } from './singleton';
 import { shortAddress } from '../format';
 import { activationKeyFor, explorerTxUrl, isTxHash } from './stellar';
 import { hashSecret, saveState, store, type Product, type ProductFields, type StoredEvent } from './store';
+import { issuerOf } from './brands';
 import { DEFAULT_WARRANTY_MONTHS, supportOf } from './support';
 
 const HOUR_MS = 60 * 60 * 1000;
@@ -178,7 +179,9 @@ export const warrantyView = (product: Product, baseUrl: string): Warranty => ({
   support: (() => {
     const support = supportOf(product);
     return support ? { company: support.companyName, email: support.email } : null;
-  })()
+  })(),
+  // The same company as the buyer sees it: its name and, when it published them, its logo and how to reach it.
+  issuer: issuerOf(product, baseUrl, supportOf(product))
 });
 
 export const mintedProductView = (product: Product, baseUrl: string): MintedProduct => ({

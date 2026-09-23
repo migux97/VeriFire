@@ -14,6 +14,8 @@ export interface CompanyProfile {
   website: string;
   email: string;
   phone: string;
+  // The phone buyers may call for support. Unlike `phone`, it is shown on the warranties.
+  supportPhone: string;
   country: string;
   address: string;
   description: string;
@@ -27,6 +29,7 @@ export const emptyProfile: CompanyProfile = {
   website: '',
   email: '',
   phone: '',
+  supportPhone: '',
   country: '',
   address: '',
   description: ''

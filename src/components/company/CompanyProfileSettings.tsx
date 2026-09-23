@@ -1,6 +1,9 @@
 // "Perfil de empresa" in Configuración: the logo and the company's data, with a live preview of the sidebar card.
 import { useEffect, useRef, useState, type ChangeEvent, type DragEvent, type SubmitEvent } from 'react';
 import { storedUser } from '@/lib/client/account';
+import { refreshPublishedBrand } from '@/lib/client/brand';
+import { isPhone, isWebsite } from '@/lib/brand';
+import { errorMessage } from '@/lib/errors';
 import { companyName, emptyProfile, prepareLogo, readCompanyProfile, saveCompanyProfile, type CompanyProfile, type LogoError } from '@/lib/client/company-profile';
 import { currentWorkspace } from '@/lib/client/workspace';
 import { useCompanyText } from './CompanyText';
@@ -19,7 +22,7 @@ const initials = (name: string) =>
 type TextField = Exclude<keyof CompanyProfile, 'logo' | 'industry' | 'description'>;
 
 // Rendered inside the settings island, which provides the texts.
-export function CompanyProfileSettings() {
+export function CompanyProfileSettings({ cavosAppId }: { cavosAppId: string }) {
   const t = useCompanyText();
   const text = t.settings.profile;
   const [saved, setSaved] = useState<{ name: string; profile: CompanyProfile }>({ name: '', profile: emptyProfile });
@@ -78,12 +81,17 @@ export function CompanyProfileSettings() {
     const tradeName = name.trim();
     if (!tradeName) return setNotice({ text: text.invalidName, tone: 'error' });
     if (trimmed.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed.email)) return setNotice({ text: text.invalidEmail, tone: 'error' });
-    if (trimmed.website && !/^https?:\/\/[^\s.]+\.[^\s]+$/i.test(trimmed.website)) return setNotice({ text: text.invalidWebsite, tone: 'error' });
+    if (trimmed.website && !isWebsite(trimmed.website)) return setNotice({ text: text.invalidWebsite, tone: 'error' });
+    if (trimmed.supportPhone && !isPhone(trimmed.supportPhone)) return setNotice({ text: text.invalidPhone, tone: 'error' });
     if (!saveCompanyProfile(trimmed, tradeName)) return setNotice({ text: text.saveFailed, tone: 'error' });
     setSaved({ name: tradeName, profile: trimmed });
     setName(tradeName);
     setProfile(trimmed);
     setNotice({ text: text.saved, tone: 'success' });
+    // A brand that was already published follows what was just saved; one that was not stays private.
+    void refreshPublishedBrand(cavosAppId).catch((error: unknown) => {
+      setNotice({ text: `${t.settings.brand.refreshFailed} ${errorMessage(error)}`, tone: 'error' });
+    });
   };
 
   const field = (key: TextField, type = 'text', maxLength = 120) => (
@@ -191,6 +199,7 @@ export function CompanyProfileSettings() {
           {field('website', 'url', 200)}
           {field('email', 'email', 160)}
           {field('phone', 'tel', 40)}
+          {field('supportPhone', 'tel', 40)}
           {field('country', 'text', 80)}
           <div className="profile-field-wide">{field('address', 'text', 200)}</div>
           <label className="profile-field profile-field-wide">

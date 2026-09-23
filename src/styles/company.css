@@ -3462,3 +3462,88 @@ button.invite-share-qr:disabled {
     display: none !important;
   }
 }
+
+/* ---------- Brand for buyers ---------- */
+
+.company-brand-settings .brand-preview,
+.company-brand-settings .brand-publication,
+.company-brand-settings .brand-toml {
+  display: grid;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.company-brand-settings .brand-toml {
+  padding-top: 20px;
+  border-top: 1px solid var(--vf-line);
+}
+
+.company-brand-settings .brand-toml h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.company-brand-settings .brand-toml p {
+  margin: 0;
+  color: var(--vf-muted);
+  font-size: 0.875rem;
+  line-height: 1.55;
+}
+
+.brand-status {
+  justify-self: start;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--vf-mist);
+  color: var(--vf-muted);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.brand-status.is-current {
+  background: var(--vf-success-soft);
+  color: var(--vf-success);
+}
+
+.brand-status.is-outdated {
+  background: var(--vf-blush);
+  color: var(--vf-error);
+}
+
+.brand-warning {
+  color: var(--vf-error);
+}
+
+.brand-toml-keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.brand-key {
+  padding: 4px 10px;
+  border: 1px solid var(--vf-line);
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.brand-key.is-included {
+  border-color: var(--vf-success-line);
+  background: var(--vf-success-soft);
+  color: var(--vf-success);
+}
+
+.brand-key.is-omitted {
+  color: var(--vf-muted);
+}
+
+.brand-toml-where summary {
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 800;
+}
+
+.brand-toml-where p {
+  margin-top: 8px;
+}

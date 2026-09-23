@@ -6,7 +6,8 @@ import { ProductHistory } from '@/components/verification/ProductHistory';
 import { useNow } from '@/components/ui/useNow';
 import { formatCountdown, formatDay, formatMonth } from '@/lib/format';
 import type { Warranty } from '@/lib/types';
-import { getConsumerMessages, type ConsumerLocale, type ConsumerMessages } from '@/i18n/consumer';
+import { fillIn, getConsumerMessages, type ConsumerLocale, type ConsumerMessages } from '@/i18n/consumer';
+import { IssuerBadge } from '@/components/ui/IssuerBadge';
 
 type CardLabels = ConsumerMessages['card'];
 import { warrantyCoverage } from '@/lib/warranty-coverage';
@@ -90,6 +91,13 @@ export function WarrantyCard({ warranty, transferLink, busy, status, onOfferTran
           <h3>{warranty.model}</h3>
         </div>
       </div>
+      {warranty.issuer && (
+        <IssuerBadge
+          issuer={warranty.issuer}
+          labels={{ issuedBy: card.issuedBy, write: card.writeIssuer, call: card.callIssuer }}
+          subject={fillIn(labels.support.subject, { model: warranty.model, token: warranty.token })}
+        />
+      )}
       <WarrantyCoverage start={warranty.claimedAt} end={warranty.warrantyUntil} now={now} locale={locale} />
       <dl className="warranty-meta">
         <div>

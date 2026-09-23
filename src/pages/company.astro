@@ -147,7 +147,7 @@ const views = t.views;
             <CompanyData client:load view="products" locale={locale} />
           </div>
           <div class="company-subview" data-catalog-view="generate" hidden>
-            <CompanyIssuance client:load countries={countryOptions} pricePerToken={publicConfig.pricePerToken} cavosAppId={publicConfig.cavosAppId} locale={locale} />
+            <CompanyIssuance client:load countries={countryOptions} pricePerToken={publicConfig.pricePerToken} locale={locale} />
           </div>
         </section>
 
@@ -177,7 +177,7 @@ const views = t.views;
             <h1 id="view-settings" tabindex="-1">{views.settings.title}</h1>
             <p class="company-view-description">{views.settings.description}</p>
           </header>
-          <CompanySettings client:load locale={locale} />
+          <CompanySettings client:load locale={locale} cavosAppId={publicConfig.cavosAppId} />
         </section>
       </main>
     </div>

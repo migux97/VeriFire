@@ -3,6 +3,7 @@
 // Warranties already follow the wallet, because the contract records their owner. Purchases do not: their id is the
 // key to the secret codes of a batch, so they were kept only in the browser that bought them. Here the wallet signs a
 // nonce and the server answers with (and stores) that account's purchases and what kind of account it is.
+import type { PublicBrand } from '../brand';
 import type { AccountDataEntry } from './account-data';
 import { bytesToBase64 } from './bytes';
 import { postJson } from './api';
@@ -15,6 +16,8 @@ export interface RemoteWorkspace {
   companyName: string | null;
   // What the company configured: the team, the agenda, the templates, the profile (see account-data.ts).
   data?: Record<string, AccountDataEntry>;
+  // Its published brand, if any: the slug that names it and the public address of its logo.
+  brand: { slug: string; logoUrl: string | null } | null;
 }
 
 interface WorkspaceChanges {
@@ -23,6 +26,8 @@ interface WorkspaceChanges {
   accountType?: 'personal' | 'business';
   companyName?: string;
   data?: Record<string, AccountDataEntry>;
+  // An object publishes or replaces the brand, null takes it down, absent leaves it as it is.
+  brand?: PublicBrand | null;
 }
 
 // Signing needs the wallet, which needs the Gmail confirmed: the panel keeps working on its own copy when it cannot.

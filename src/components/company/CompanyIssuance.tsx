@@ -19,7 +19,6 @@ export const ISSUANCE_MODE_EVENT = 'verifire:issuance-mode';
 interface CompanyIssuanceProps {
   countries: CountryOption[];
   pricePerToken: string;
-  cavosAppId?: string;
   locale?: Locale | undefined;
 }
 
@@ -31,7 +30,7 @@ export function CompanyIssuance({ locale, ...props }: CompanyIssuanceProps) {
   );
 }
 
-function Issuance({ countries, pricePerToken, cavosAppId }: Omit<CompanyIssuanceProps, 'locale'>) {
+function Issuance({ countries, pricePerToken }: Omit<CompanyIssuanceProps, 'locale'>) {
   const t = useCompanyText();
   const text = t.issuance;
   const [mode, setMode] = useState<Mode>('now');
@@ -74,7 +73,7 @@ function Issuance({ countries, pricePerToken, cavosAppId }: Omit<CompanyIssuance
               <p>{text.batchDataLead}</p>
             </div>
           </div>
-          <PurchaseForm pricePerToken={pricePerToken} countries={countries} cavosAppId={cavosAppId ?? ''} batchesHref="#batches" embedded />
+          <PurchaseForm pricePerToken={pricePerToken} countries={countries} batchesHref="#batches" embedded />
         </article>
         <aside className="company-card issuance-payment-info">
           <span className="company-eyebrow">{text.infoEyebrow}</span>
