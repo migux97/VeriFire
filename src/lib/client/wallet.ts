@@ -3,7 +3,7 @@
 import type { CavosAuth, CavosStellar, Identity } from '@cavos/kit';
 import { isStellarAddress } from '../validation';
 import { storedUser, updateStoredUser } from './account';
-import { DEVICE_CODE_KEY, userSession, WALLET_KEY } from './session';
+import { DEVICE_CODE_KEY, userSession, WALLET_KEY, WALLET_UPDATED_EVENT } from './session';
 import { readStored, writeStored } from './storage';
 
 const APP_SALT = 'verifire-demo';
@@ -41,7 +41,10 @@ export const createCavosAuth = async (appId: string) => {
 };
 
 export const rememberWallet = (address: string | undefined) => {
-  if (isStellarAddress(address)) writeStored(localStorage, WALLET_KEY, { address, connectedAt: new Date().toISOString() });
+  if (isStellarAddress(address)) {
+    writeStored(localStorage, WALLET_KEY, { address, connectedAt: new Date().toISOString() });
+    window.dispatchEvent(new Event(WALLET_UPDATED_EVENT));
+  }
 };
 
 export const rememberDeviceCode = (deviceCode: string | undefined) => {

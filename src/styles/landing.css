@@ -47,13 +47,13 @@
 }
 
 .lp-button-light {
-  border-color: var(--vf-paper);
-  color: var(--vf-paper);
+  border-color: var(--vf-on-red);
+  color: var(--vf-on-red);
 }
 
 .lp-button-light:hover {
-  background: var(--vf-paper);
-  color: var(--vf-red);
+  background: var(--vf-on-red);
+  color: var(--vf-red-deep);
 }
 
 .lp-arrows {
@@ -910,7 +910,7 @@
 }
 
 .lp-band h2 {
-  color: var(--vf-paper);
+  color: var(--vf-on-red);
   font-size: clamp(2.25rem, 4.4vw, 3.75rem);
   font-weight: 900;
   line-height: 0.98;
@@ -931,7 +931,7 @@
 .lp-band-list div {
   max-width: 50ch;
   padding-top: 18px;
-  border-top: 2px solid var(--vf-paper);
+  border-top: 2px solid var(--vf-on-red);
 }
 
 .lp-band-list dt {

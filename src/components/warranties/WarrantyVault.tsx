@@ -6,6 +6,7 @@ import { ProductHistory } from '@/components/verification/ProductHistory';
 import type { TransferredWarranty, Warranty } from '@/lib/types';
 import { formatDay, plural } from '@/lib/format';
 import { WarrantyCard } from './WarrantyCard';
+import { getConsumerMessages, type ConsumerLocale } from '@/i18n/consumer';
 
 const PAGE_SIZE = 6;
 
@@ -26,6 +27,7 @@ interface WarrantyVaultProps {
   transfers: TransferControls;
   // Products this account passed on to someone else.
   transferred: TransferredWarranty[];
+  locale?: ConsumerLocale;
 }
 
 function TransferredCard({ product }: { product: TransferredWarranty }) {
@@ -50,7 +52,7 @@ function TransferredCard({ product }: { product: TransferredWarranty }) {
   );
 }
 
-export function WarrantyVault({ warranties, status, transfers, transferred }: WarrantyVaultProps) {
+export function WarrantyVault({ warranties, status, transfers, transferred, locale = 'es' }: WarrantyVaultProps) {
   const count = warranties?.length ?? 0;
   const active = usePagination(warranties ?? [], PAGE_SIZE);
   const passedOn = usePagination(transferred, PAGE_SIZE);
@@ -58,7 +60,7 @@ export function WarrantyVault({ warranties, status, transfers, transferred }: Wa
   return (
     <section className="vault" aria-labelledby="vault-title">
       <div className="vault-header">
-        <h2 id="vault-title">Mis Garantías Activas</h2>
+        <h2 id="vault-title">{getConsumerMessages(locale).coverage.vault}</h2>
         <span className="vault-count">{count ? `${count} ${plural(count, 'producto', 'productos')}` : ''}</span>
       </div>
       <p className="vault-status" role="status" aria-live="polite" hidden={status === null}>{status}</p>
@@ -67,6 +69,7 @@ export function WarrantyVault({ warranties, status, transfers, transferred }: Wa
           <WarrantyCard
             key={warranty.token}
             warranty={warranty}
+            locale={locale}
             transferLink={warranty.transferExpiresAt ? transfers.links[warranty.token] ?? null : null}
             busy={transfers.busyToken !== null}
             status={transfers.statuses[warranty.token] ?? null}

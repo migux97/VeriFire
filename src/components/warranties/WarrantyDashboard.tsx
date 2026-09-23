@@ -24,6 +24,7 @@ import { isStellarAddress } from '@/lib/validation';
 import { DeviceEnrollForm } from './DeviceEnrollForm';
 import { QrScanPanel } from './QrScanPanel';
 import { WarrantyVault, type TransferControls } from './WarrantyVault';
+import type { ConsumerLocale } from '@/i18n/consumer';
 
 // While a transfer link is open, the list is checked this often, so the owner sees when someone accepts it.
 const TRANSFER_POLL_MS = 8000;
@@ -32,9 +33,10 @@ const DETECTED_MESSAGE = 'QR del producto detectado. Tocá "Activar Garantía Of
 
 interface WarrantyDashboardProps {
   cavosAppId: string;
+  locale?: ConsumerLocale;
 }
 
-export function WarrantyDashboard({ cavosAppId }: WarrantyDashboardProps) {
+export function WarrantyDashboard({ cavosAppId, locale = 'es' }: WarrantyDashboardProps) {
   const [message, setMessage] = useState<Message | null>(null);
   const [scannedClaim, setScannedClaim] = useState<ScannedClaim | null>(null);
   const [claiming, setClaiming] = useState(false);
@@ -52,6 +54,9 @@ export function WarrantyDashboard({ cavosAppId }: WarrantyDashboardProps) {
   const now = useNow(incoming !== null);
   const incomingExpired = incoming !== null && new Date(incoming.transfer.expiresAt).getTime() <= now;
   const walletAddress = useRef('');
+  // Answers of loads started before the last change to the list are stale: a slow poll must not undo what an action
+  // (a link just opened, a warranty just activated) already wrote on screen.
+  const loadRequest = useRef(0);
   const claimButtonRef = useRef<HTMLButtonElement>(null);
 
   const showMessage = (text: string, tone: MessageTone) => setMessage({ text, tone });
@@ -63,9 +68,11 @@ export function WarrantyDashboard({ cavosAppId }: WarrantyDashboardProps) {
   // quiet: a background check, which neither shows "Cargando" nor replaces the list with an error.
   const loadWarranties = async ({ quiet = false } = {}) => {
     if (!quiet) setVaultStatus('Cargando tus garantías...');
+    const request = ++loadRequest.current;
     try {
       walletAddress.current ||= await resolveWalletAddress(cavosAppId);
       const data = await getJson<WarrantiesResponse>(`/api/warranties?owner=${encodeURIComponent(walletAddress.current)}`, 'No se pudieron cargar tus garantías.');
+      if (request !== loadRequest.current) return data;
       setWarranties(data.warranties);
       setTransferred(data.transferred);
       // Links this browser opened can be shared again; the secret of a link lives only here.
@@ -76,10 +83,13 @@ export function WarrantyDashboard({ cavosAppId }: WarrantyDashboardProps) {
       setVaultStatus(null);
       return data;
     } catch (error) {
-      if (!quiet) setVaultStatus(errorMessage(error));
+      if (!quiet && request === loadRequest.current) setVaultStatus(errorMessage(error));
       return null;
     }
   };
+
+  // What is on screen is newer than any load in flight.
+  const listChanged = () => { loadRequest.current += 1; };
 
   // An open link is accepted in someone else's browser: check until it happens and tell the owner right away.
   const openOffers = warranties?.filter((warranty) => warranty.transferExpiresAt).map((warranty) => warranty.token).join(',') ?? '';
@@ -190,6 +200,7 @@ export function WarrantyDashboard({ cavosAppId }: WarrantyDashboardProps) {
     setBusyToken(token);
     try {
       const warranty = await task(await ownerAddress(), (progress) => setStatus(progress, 'info'));
+      listChanged();
       setWarranties((current) => current?.map((candidate) => (candidate.token === token ? warranty : candidate)) ?? current);
       setStatus(done, 'success');
     } catch (error) {
@@ -341,9 +352,12 @@ export function WarrantyDashboard({ cavosAppId }: WarrantyDashboardProps) {
           Escaneá el QR de la etiqueta interna o raspadita del empaque original. También podés subir una imagen del QR o pegarla con <kbd>Ctrl</kbd> + <kbd>V</kbd>. Cada QR puede activarse una única vez.
         </p>
         <QrScanPanel
+          locale={locale}
+          disabled={claiming}
           onDetected={applyScannedText}
           onMessage={setMessage}
           onScanStart={() => setScannedClaim(null)}
+          onManualClaim={setScannedClaim}
         />
         <Toast message={message} onClose={() => setMessage(null)} />
         {repair && (storedDeviceCode()
@@ -368,7 +382,7 @@ export function WarrantyDashboard({ cavosAppId }: WarrantyDashboardProps) {
         </form>
       </section>
 
-      <WarrantyVault warranties={warranties} status={vaultStatus} transfers={transfers} transferred={transferred} />
+      <WarrantyVault warranties={warranties} status={vaultStatus} transfers={transfers} transferred={transferred} locale={locale} />
     </>
   );
 }

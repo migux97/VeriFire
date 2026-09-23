@@ -39,13 +39,18 @@ export function PurchaseForm({ countries, batchesHref = '/batches', embedded = f
   const [country, setCountry] = useState('');
   const purchaseId = useRef('');
   const pollTimer = useRef<number | undefined>(undefined);
+  // Set when the form closes: a poll that was mid-request must not schedule the next one.
+  const stopped = useRef(false);
   const regions = useMemo(() => groupByRegion(countries), [countries]);
   // Printed on the labels ("Argentina · LATAM"), as the server composes it.
   const destination = countries.find((option) => option.code === country)?.destination;
 
   useEffect(() => {
     if (userSession.isActive()) migrateLegacyPurchase();
-    return () => window.clearTimeout(pollTimer.current);
+    return () => {
+      stopped.current = true;
+      window.clearTimeout(pollTimer.current);
+    };
   }, []);
 
   const pollPurchase = async () => {
@@ -69,7 +74,7 @@ export function PurchaseForm({ countries, batchesHref = '/batches', embedded = f
       if (polled !== purchaseId.current) return;
       setPaymentStatus(errorMessage(error));
     }
-    pollTimer.current = window.setTimeout(() => void pollPurchase(), POLL_MS);
+    if (!stopped.current) pollTimer.current = window.setTimeout(() => void pollPurchase(), POLL_MS);
   };
 
   const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {

@@ -80,6 +80,8 @@ export function BatchList() {
   const items = useRef(new Map<string, HTMLElement>());
   const pollTimer = useRef<number | undefined>(undefined);
   const pollTicks = useRef(0);
+  // Set when the panel closes: a poll that was mid-request must not schedule the next one.
+  const stopped = useRef(false);
 
   const visibleIds = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -118,7 +120,7 @@ export function BatchList() {
   // activation counters follow what customers scan.
   const schedulePolling = () => {
     window.clearTimeout(pollTimer.current);
-    if (!$purchaseIds.get().length) return;
+    if (stopped.current || !$purchaseIds.get().length) return;
     pollTimer.current = window.setTimeout(async () => {
       pollTicks.current += 1;
       const ids = $purchaseIds.get();
@@ -135,7 +137,10 @@ export function BatchList() {
     $purchaseIds.set(ids);
     setLoaded(true);
     void Promise.all(ids.map(refreshSummary)).then(schedulePolling);
-    return () => window.clearTimeout(pollTimer.current);
+    return () => {
+      stopped.current = true;
+      window.clearTimeout(pollTimer.current);
+    };
     // Runs once per page load; polling reads the stores directly.
   }, []);
 

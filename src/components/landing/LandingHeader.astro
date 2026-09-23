@@ -1,10 +1,11 @@
-﻿---
+---
 import BrandLogo from '@/components/layout/BrandLogo.astro';
+import { ProfileMenu } from '@/components/warranties/ProfileMenu';
 import { getRelativeLocaleUrl } from 'astro:i18n';
 import { getLandingMessages } from '@/i18n/landing';
 import { getTechnicalLandingCopy } from '@/i18n/technical-landing';
 const locale = Astro.currentLocale ?? 'es';
-const { nav: shared } = getLandingMessages(locale);
+const { nav: shared, profile } = getLandingMessages(locale);
 const { nav, account } = getTechnicalLandingCopy(locale);
 ---
 <header class="lp-header lp-technical-header">
@@ -17,13 +18,18 @@ const { nav, account } = getTechnicalLandingCopy(locale);
   </nav>
   <div class="lp-header-actions">
     <nav class="lp-language" aria-label={shared.language}>
-      <a href={getRelativeLocaleUrl('es')} lang="es" hreflang="es" aria-label="Español" aria-current={locale === 'es' ? 'page' : undefined}>ES</a>
-      <a href={getRelativeLocaleUrl('en')} lang="en" hreflang="en" aria-label="English" aria-current={locale === 'en' ? 'page' : undefined}>EN</a>
+      <a href={getRelativeLocaleUrl('es')} lang="es" hreflang="es" aria-current={locale === 'es' ? 'page' : undefined}>ES</a>
+      <a href={getRelativeLocaleUrl('en')} lang="en" hreflang="en" aria-current={locale === 'en' ? 'page' : undefined}>EN</a>
     </nav>
     <a class="lp-button lp-button-solid lp-header-cta" href="/verify"><i class="fa-solid fa-qrcode" aria-hidden="true"></i>{nav.scan}</a>
   </div>
-  <div class="lp-header-account">
+  {/* Visitors get the account links; a session opened in another tab gets its panel and its profile (see SessionGate). */}
+  <div class="lp-header-account lp-guest-actions">
     <a class="lp-header-login" href="/login">{account.login}</a>
     <a class="lp-button lp-button-outline lp-header-register" href="/login?modo=registro">{account.register}</a>
+  </div>
+  <div class="lp-header-account lp-session-actions">
+    <a class="lp-button lp-button-outline lp-header-register" href="/app">{shared.dashboard}</a>
+    <ProfileMenu client:load labels={profile} />
   </div>
 </header>

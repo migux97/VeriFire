@@ -1,7 +1,8 @@
 import { useEffect, useState, type SyntheticEvent } from 'react';
 import { companyMemberships, createCompanyInvitation, updateCompanyMembershipRole, type CompanyRole } from '@/lib/client/workspace';
 import { storedUser } from '@/lib/client/account';
-import { userSession } from '@/lib/client/session';
+import { accountKey, userSession } from '@/lib/client/session';
+import { readStored, writeStored } from '@/lib/client/storage';
 
 type Role = 'admin' | 'operator' | 'auditor' | 'viewer';
 type MemberStatus = 'active' | 'pending';
@@ -14,7 +15,7 @@ interface Member {
   status: MemberStatus;
 }
 
-const storageKey = (email: string) => `verifire-company-team:${email.toLowerCase()}`;
+const storageKey = () => accountKey('company-team');
 const roleLabels: Record<Role, string> = {
   admin: 'Administrador',
   operator: 'Operador',
@@ -41,11 +42,10 @@ export function CompanyTeamManager() {
   useEffect(() => {
     const user = storedUser();
     if (!user || !userSession.isActive()) return;
-    const teamKey = storageKey(user.email);
     try {
-      const saved = localStorage.getItem(teamKey);
+      const saved = readStored<Member[]>(localStorage, storageKey());
       if (saved) {
-        setMembers(JSON.parse(saved) as Member[]);
+        setMembers(saved);
         return;
       }
       const memberships = companyMemberships(user.email);
@@ -57,8 +57,7 @@ export function CompanyTeamManager() {
 
   const persist = (next: Member[]) => {
     setMembers(next);
-    const email = userSession.email();
-    localStorage.setItem(storageKey(email), JSON.stringify(next));
+    writeStored(localStorage, storageKey(), next);
   };
 
   const invite = (event: SyntheticEvent<HTMLFormElement>) => {

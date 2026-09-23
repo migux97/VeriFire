@@ -15,6 +15,8 @@ const HOUR_MS = 60 * 60 * 1000;
 // Public checks of one product counted in its history: one per half day, the latest ones only.
 const VERIFIED_EVERY_MS = 12 * HOUR_MS;
 const MAX_VERIFIED_EVENTS = 30;
+// Rejected attempts are recorded from an address nobody had to prove owning, so they are capped like the checks are.
+const MAX_REJECTED_EVENTS = 20;
 // A transfer link can be accepted for TRANSFER_LINK_MS. The contract enforces the same time (TRANSFER_LINK_SECONDS in its lib.rs).
 export const TRANSFER_LINK_MS = 15 * 60 * 1000;
 
@@ -39,7 +41,12 @@ export const findProduct = (token: unknown) => store.products.get(normalizeId(to
 
 // Registered in the contract this server uses now, not only in one that a later deploy replaced.
 export const isCurrentOnChain = (product: Product): product is Product & { chain: NonNullable<Product['chain']> } =>
-  Boolean(product.chain && config.contractId && (product.chain.contractId ?? config.previousContractId ?? config.contractId) === config.contractId);
+  Boolean(product.chain
+    && Number.isInteger(product.chain.tokenId)
+    && config.contractId
+    // A product registered before the contract id was stored belongs to the replaced contract, when there is one: with
+    // no way to tell, it is registered again instead of pointing at whatever token carries that id now.
+    && (product.chain.contractId ?? (config.previousContractId ? config.previousContractId : null)) === config.contractId);
 
 export const shortAddress = (address: string | undefined | null) => (address ? `${address.slice(0, 4)}…${address.slice(-4)}` : 'desconocido');
 const txUrlOf = (tx: string | undefined) => (isTxHash(tx) ? explorerTxUrl(tx) : null);
@@ -81,6 +88,15 @@ export const recordEvent = (product: Product, event: StoredEvent) => {
   saveState();
 };
 
+// A note in the history, for pages that must answer even when the state cannot be written.
+const recordEventQuietly = (product: Product, event: StoredEvent) => {
+  try {
+    recordEvent(product, event);
+  } catch (error) {
+    console.error(`No se pudo registrar el evento ${event.kind} de ${product.token}:`, error);
+  }
+};
+
 // Each public check of the product, at most one every VERIFIED_EVERY_MS so reloading the page adds nothing.
 export const recordVerification = (product: Product) => {
   const events = product.events ?? [];
@@ -88,14 +104,18 @@ export const recordVerification = (product: Product) => {
   if (last && Date.now() - new Date(last.at).getTime() < VERIFIED_EVERY_MS) return;
   const verified = events.filter((event) => event.kind === 'verified');
   if (verified.length >= MAX_VERIFIED_EVENTS) product.events = events.filter((event) => event !== verified[0]);
-  recordEvent(product, { kind: 'verified', at: new Date().toISOString() });
+  recordEventQuietly(product, { kind: 'verified', at: new Date().toISOString() });
 };
 
 // Someone with the secret QR tried to activate a product that already has an owner: a sign of a copied label.
 // Once a day per account, since a single attempt goes through several requests.
 export const recordRejectedClaim = (product: Product, claimant: string) => {
-  const recent = product.events?.some((event) => event.kind === 'rejected' && event.by === claimant && Date.now() - new Date(event.at).getTime() < 24 * HOUR_MS);
-  if (!recent) recordEvent(product, { kind: 'rejected', at: new Date().toISOString(), by: claimant });
+  const events = product.events ?? [];
+  const recent = events.some((event) => event.kind === 'rejected' && event.by === claimant && Date.now() - new Date(event.at).getTime() < 24 * HOUR_MS);
+  if (recent) return;
+  const rejected = events.filter((event) => event.kind === 'rejected');
+  if (rejected.length >= MAX_REJECTED_EVENTS) product.events = events.filter((event) => event !== rejected[0]);
+  recordEventQuietly(product, { kind: 'rejected', at: new Date().toISOString(), by: claimant });
 };
 
 export const publicProductView = (product: Product): PublicProduct => ({

@@ -10,6 +10,13 @@ import '@/styles/auth.css';
   bodyClass="workspace-page"
   session="protected"
 >
+  <script>
+    import { guardSession } from '@/lib/client/session';
+
+    // Without this the page only hides itself behind SessionGate and never leaves for the login.
+    guardSession();
+  </script>
+
   <main class="workspace-shell">
     <a class="workspace-brand" href="/"><span>V</span> verifire</a>
     <WorkspaceChooser client:load />

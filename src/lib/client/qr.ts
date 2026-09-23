@@ -1,5 +1,5 @@
 // Reading the QR codes of a product: links, camera frames and images.
-import { readStored } from './storage';
+import { readRaw, readStored, removeStored, writeRaw } from './storage';
 
 // What a secret QR carries. It is sent to the server on activation and never shown.
 export type ScannedClaim = { qr: string } | { secret: string };
@@ -33,18 +33,18 @@ export const captureClaimLink = () => {
   window.history.replaceState({}, document.title, window.location.pathname);
 };
 
-export const keepPendingTransfer = (secret: string) => sessionStorage.setItem(PENDING_TRANSFER_KEY, secret);
+export const keepPendingTransfer = (secret: string) => writeRaw(sessionStorage, PENDING_TRANSFER_KEY, secret);
 
 // The transfer link kept across the login, removed as it is read.
 export const takePendingTransfer = () => {
-  const secret = sessionStorage.getItem(PENDING_TRANSFER_KEY);
-  sessionStorage.removeItem(PENDING_TRANSFER_KEY);
+  const secret = readRaw(sessionStorage, PENDING_TRANSFER_KEY);
+  removeStored(sessionStorage, PENDING_TRANSFER_KEY);
   return secret && TRANSFER_SECRET.test(secret) ? secret : null;
 };
 
-export const keepPendingClaim = (claim: ScannedClaim) => sessionStorage.setItem(PENDING_QR_KEY, JSON.stringify(claim));
+export const keepPendingClaim = (claim: ScannedClaim) => writeRaw(sessionStorage, PENDING_QR_KEY, JSON.stringify(claim));
 
-export const hasPendingClaim = () => Boolean(sessionStorage.getItem(PENDING_QR_KEY));
+export const hasPendingClaim = () => Boolean(readRaw(sessionStorage, PENDING_QR_KEY));
 
 const isScannedClaim = (value: unknown): value is ScannedClaim =>
   typeof value === 'object' && value !== null
@@ -54,7 +54,7 @@ const isScannedClaim = (value: unknown): value is ScannedClaim =>
 export const takePendingClaim = (): ScannedClaim | 'invalid' | null => {
   if (!hasPendingClaim()) return null;
   const claim = readStored<unknown>(sessionStorage, PENDING_QR_KEY);
-  sessionStorage.removeItem(PENDING_QR_KEY);
+  removeStored(sessionStorage, PENDING_QR_KEY);
   return isScannedClaim(claim) ? claim : 'invalid';
 };
 
@@ -65,6 +65,23 @@ export const parseScannedQr = (text: string): { claim: ScannedClaim | null; publ
   } catch {
     return { claim: null, publicToken: null, transfer: null };
   }
+};
+
+// Manual entry accepts the printed private code, an opaque QR key, or the complete activation URL.
+// This only checks the format. Ownership and authenticity are checked by the existing activation flow.
+export const parseManualCode = (text: string): ScannedClaim | null => {
+  const value = text.trim();
+  if (!value || value.length > 2048) return null;
+  const validSecret = (secret: string) => /^VF-SECRET-(?:[0-9A-F]{20}|DEMO-\d{3})$/i.test(secret);
+  const validKey = (key: string) => /^[A-Za-z0-9_-]{13}[AQgw]$/.test(key)
+    || /^\.[A-Za-z0-9_-]{1,256}$/.test(key);
+  const claim = parseScannedQr(value).claim;
+  if (claim) {
+    if ('secret' in claim) return validSecret(claim.secret) ? { secret: claim.secret.toUpperCase() } : null;
+    return validKey(claim.qr) ? claim : null;
+  }
+  if (validSecret(value)) return { secret: value.toUpperCase() };
+  return validKey(value) ? { qr: value } : null;
 };
 
 // BarcodeDetector is not in TypeScript's DOM library yet.

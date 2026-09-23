@@ -6,6 +6,10 @@ import { ProductHistory } from '@/components/verification/ProductHistory';
 import { useNow } from '@/components/ui/useNow';
 import { formatCountdown, formatDay, formatMonth } from '@/lib/format';
 import type { Warranty } from '@/lib/types';
+import { getConsumerMessages, type ConsumerLocale } from '@/i18n/consumer';
+import { warrantyCoverage } from '@/lib/warranty-coverage';
+import { WarrantyCoverage } from './WarrantyCoverage';
+import { WarrantySupport } from './WarrantySupport';
 
 interface WarrantyCardProps {
   warranty: Warranty;
@@ -15,6 +19,7 @@ interface WarrantyCardProps {
   status: Message | null;
   onOfferTransfer: () => void;
   onCancelTransfer: () => void;
+  locale?: ConsumerLocale;
 }
 
 // The open link as text and as a QR, for the new owner to open or scan from their own panel.
@@ -58,9 +63,11 @@ function TransferLink({ link }: { link: string }) {
   );
 }
 
-export function WarrantyCard({ warranty, transferLink, busy, status, onOfferTransfer, onCancelTransfer }: WarrantyCardProps) {
-  const active = warranty.warrantyUntil !== null && new Date(warranty.warrantyUntil).getTime() > Date.now();
-  const now = useNow(warranty.transferExpiresAt !== null);
+export function WarrantyCard({ warranty, transferLink, busy, status, onOfferTransfer, onCancelTransfer, locale = 'es' }: WarrantyCardProps) {
+  const labels = getConsumerMessages(locale);
+  const now = useNow(true, warranty.transferExpiresAt !== null ? 1000 : 60_000);
+  const coverage = warrantyCoverage(warranty.claimedAt, warranty.warrantyUntil, now);
+  const active = coverage?.state === 'active';
   // The link expires on its own: it is checked against the ticking clock.
   const offered = warranty.transferExpiresAt !== null && new Date(warranty.transferExpiresAt).getTime() > now;
   const expired = warranty.transferExpiresAt !== null && !offered;
@@ -71,11 +78,12 @@ export function WarrantyCard({ warranty, transferLink, busy, status, onOfferTran
         <div className="warranty-thumb" aria-hidden="true"><Icon name="fa-solid fa-box-open" /></div>
         <div className="warranty-top">
           <span className={`warranty-badge${active ? '' : ' is-expired'}`}>
-            <Icon name={`fa-solid ${active ? 'fa-shield-halved' : 'fa-clock-rotate-left'}`} /> {active ? 'Garantía vigente' : 'Cobertura vencida'}
+            <Icon name={`fa-solid ${active ? 'fa-shield-halved' : 'fa-clock-rotate-left'}`} /> {coverage ? labels.coverage[coverage.state] : labels.coverage.unknown}
           </span>
           <h3>{warranty.model}</h3>
         </div>
       </div>
+      <WarrantyCoverage start={warranty.claimedAt} end={warranty.warrantyUntil} now={now} locale={locale} />
       <dl className="warranty-meta">
         <div>
           <dt>Fecha de reclamo</dt>
@@ -89,7 +97,7 @@ export function WarrantyCard({ warranty, transferLink, busy, status, onOfferTran
           {warranty.certificateUrl && (
             <dd>
               <LedgerLink href={warranty.certificateUrl} title="Transacción pública que certificó esta garantía en el contrato Verifire (Stellar testnet)">
-                Ver certificado en Stellar
+                {labels.support.certificate}
               </LedgerLink>
             </dd>
           )}
@@ -103,6 +111,7 @@ export function WarrantyCard({ warranty, transferLink, busy, status, onOfferTran
         </details>
       )}
 
+      <WarrantySupport warranty={warranty} now={now} locale={locale} />
       {warranty.transferable && (
         <div className="warranty-transfer">
           {offered ? (

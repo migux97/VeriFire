@@ -1,7 +1,9 @@
 import { useEffect, useState, type SubmitEvent } from 'react';
+import { accountKey } from '@/lib/client/session';
+import { readStored, writeStored } from '@/lib/client/storage';
 type ScheduleType = 'batch' | 'payment';
 interface ScheduleItem { id: string; type: ScheduleType; title: string; detail: string; date: string; }
-const STORAGE_KEY = 'verifire-company-schedules';
+const storageKey = () => accountKey('company-schedules', 'verifire-company-schedules');
 const formatDate = (value: string) => new Intl.DateTimeFormat('es-AR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(value));
 export function CompanyOperations({ mode }: { mode?: ScheduleType }) {
   const [schedules, setSchedules] = useState<ScheduleItem[]>([]);
@@ -12,7 +14,7 @@ export function CompanyOperations({ mode }: { mode?: ScheduleType }) {
   useEffect(() => {
     const load = () => {
       try {
-        const saved: unknown = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]');
+        const saved: unknown = readStored<unknown>(localStorage, storageKey()) ?? [];
         if (Array.isArray(saved)) setSchedules(saved.filter((item): item is ScheduleItem => item && typeof item.id === 'string' && !item.id.startsWith('sample-') && (item.type === 'batch' || item.type === 'payment') && typeof item.title === 'string' && typeof item.detail === 'string' && typeof item.date === 'string' && Number.isFinite(Date.parse(item.date))));
       } catch { setNotice('No se pudo leer la agenda de este navegador.'); }
     };
@@ -22,7 +24,7 @@ export function CompanyOperations({ mode }: { mode?: ScheduleType }) {
     return () => { window.removeEventListener('company-schedules-changed', load); window.removeEventListener('storage', load); };
   }, []);
   const save = (next: ScheduleItem[]) => {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); setSchedules(next); window.dispatchEvent(new Event('company-schedules-changed')); return true; }
+    try { if (!writeStored(localStorage, storageKey(), next)) throw new Error('storage'); setSchedules(next); window.dispatchEvent(new Event('company-schedules-changed')); return true; }
     catch { setNotice('No se pudo guardar. Revisá el almacenamiento del navegador.'); return false; }
   };
   const createSchedule = (event: SubmitEvent<HTMLFormElement>) => {

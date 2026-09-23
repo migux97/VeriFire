@@ -3,6 +3,11 @@ import { companyMemberships } from '@/lib/client/workspace';
 import { useEffect, useState, type SubmitEvent } from 'react';
 import type { CountryOption } from '@/lib/types';
 import type { IssuanceOptions } from '@/lib/issuance';
+import { accountKey } from '@/lib/client/session';
+import { readStored, writeStored } from '@/lib/client/storage';
+
+const templatesKey = () => accountKey('issuance-templates', 'verifire-issuance-templates');
+const productsKey = () => accountKey('issuance-products', 'verifire-issuance-products');
 interface Draft extends IssuanceOptions { model: string; lot: string; country: string; quantity: number; }
 interface Saved { name: string; draft: Draft; }
 const blank: Draft = { model: '', lot: '', country: '', quantity: 3, brand: '', labelText: '', labelStyle: 'standard' };
@@ -23,10 +28,10 @@ export function IssuanceConfigurator({ countries, submitting, onSubmit, pricePer
     setDraft((old) => ({ ...old, brand: company }));
     try {
       const read = (key: string): Saved[] => {
-        const data: unknown = JSON.parse(localStorage.getItem(key) ?? '[]');
+        const data: unknown = readStored<unknown>(localStorage, key) ?? [];
         return Array.isArray(data) ? data.filter((entry): entry is Saved => entry && typeof entry.name === 'string' && entry.draft && Object.keys(blank).every((key) => typeof entry.draft[key] === typeof blank[key as keyof Draft])) : [];
       };
-      setSaved(read('verifire-issuance-templates')); setProducts(read('verifire-issuance-products'));
+      setSaved(read(templatesKey())); setProducts(read(productsKey()));
     } catch { setNotice('No se pudieron leer las configuraciones guardadas.'); }
   }, []);
   const persist = (product: boolean) => {
@@ -34,7 +39,7 @@ export function IssuanceConfigurator({ countries, submitting, onSubmit, pricePer
     if (!title) { setNotice(product ? 'Ingresá un modelo para guardar el producto.' : 'Ingresá un nombre para la plantilla.'); return; }
     const list = product ? products : saved;
     const next = [{ name: title, draft: { ...draft, lot: '' } }, ...list.filter((item) => item.name !== title)].slice(0, 50);
-    try { localStorage.setItem(product ? 'verifire-issuance-products' : 'verifire-issuance-templates', JSON.stringify(next)); (product ? setProducts : setSaved)(next); setNotice('Guardado en este navegador.'); }
+    try { if (!writeStored(localStorage, product ? productsKey() : templatesKey(), next)) throw new Error('storage'); (product ? setProducts : setSaved)(next); setNotice('Guardado en este navegador.'); }
     catch { setNotice('No se pudo guardar la configuración.'); }
   };
   const validate = () => {

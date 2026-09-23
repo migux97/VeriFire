@@ -4,7 +4,7 @@
   --vf-red-press: #c1261b;
   --vf-ink: #202124;
 }
-:root[data-theme='dark'] .landing-page { --vf-ink: #f4f4f4; }
+:root[data-theme='dark'] .landing-page { --vf-ink: #f4f4f4; --vf-red: #ef3b33; --vf-red-deep: #e3261f; --vf-red-press: #c81d17; }
 .lp-technical-header { gap: 20px; }
 .lp-technical-header .lp-nav { margin-inline: auto; gap: 18px; font-size: .875rem; }
 .lp-header-actions { display: flex; align-items: center; gap: 14px; flex: none; }

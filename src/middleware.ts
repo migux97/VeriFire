@@ -12,7 +12,7 @@ const LEGACY_PATHS: Record<string, string> = {
   '/batch.html': '/batch',
   '/verify.html': '/verify',
   // Browsers ask for /favicon.ico on their own, even with a <link rel="icon">.
-  '/favicon.ico': '/favicon.svg'
+  '/favicon.ico': '/favicon.png'
 };
 
 const legacyPaths = defineMiddleware((context, next) => {

@@ -1,7 +1,7 @@
 import type { IssuanceOptions } from '../issuance';
 // Products, batches and purchases, kept in memory and saved to a JSON file after every change.
 import { createHash } from 'node:crypto';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { config } from './config';
 import { singleton } from './singleton';
@@ -97,12 +97,19 @@ const createState = () => {
     purchases: new Map<string, Purchase>()
   };
 
+  const readSaved = (file: string) => JSON.parse(readFileSync(file, 'utf8')) as SavedState;
   let saved: SavedState;
   try {
-    saved = JSON.parse(readFileSync(config.dataFile, 'utf8')) as SavedState;
+    saved = readSaved(config.dataFile);
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') return state;
-    throw new Error(`No se pudo leer ${config.dataFile}. Revisalo o borralo antes de iniciar el servidor.`, { cause: error });
+    // A file cut in half by a crash during a write: the copy left by the previous save is still whole.
+    try {
+      saved = readSaved(`${config.dataFile}.bak`);
+      console.warn(`${config.dataFile} está dañado: se cargó la copia anterior ${config.dataFile}.bak.`);
+    } catch {
+      throw new Error(`No se pudo leer ${config.dataFile}. Revisalo o borralo antes de iniciar el servidor.`, { cause: error });
+    }
   }
   for (const product of saved.products ?? []) state.products.set(product.token, product);
   for (const batch of saved.batches ?? []) {
@@ -125,10 +132,17 @@ export const saveState = () => {
     batches: [...store.batches.values()].map((batch) => ({ ...batch, tokens: batch.tokens.map((product) => product.token) })),
     purchases: [...store.purchases.values()]
   };
+  // Written beside the file and renamed over it: a rename is atomic, so a crash leaves either the previous state or
+  // the new one, never half of either. The previous file is kept as .bak for the case where the disk itself lied.
+  const temporary = `${config.dataFile}.tmp`;
   try {
     mkdirSync(dirname(config.dataFile), { recursive: true });
-    writeFileSync(config.dataFile, JSON.stringify(saved, null, 2));
+    writeFileSync(temporary, JSON.stringify(saved, null, 2));
+    if (existsSync(config.dataFile)) renameSync(config.dataFile, `${config.dataFile}.bak`);
+    renameSync(temporary, config.dataFile);
   } catch (error) {
+    // The caller answers the request anyway, so what it just promised the user has to be visible in the log.
     console.error('No se pudo guardar el estado de Verifire:', error);
+    throw new Error('No se pudo guardar el cambio. Intentá de nuevo en unos segundos.', { cause: error });
   }
 };
