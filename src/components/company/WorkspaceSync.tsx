@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { storedUser, updateStoredUser } from '@/lib/client/account';
+import { companyMemberships } from '@/lib/client/workspace';
 import { addPurchaseIds, PURCHASES_CHANGED_EVENT, savedPurchaseIds } from '@/lib/client/purchases';
 import { userSession } from '@/lib/client/session';
 import { resolveWalletAddress } from '@/lib/client/wallet';
@@ -21,9 +22,12 @@ export function WorkspaceSync({ cavosAppId }: { cavosAppId: string }) {
       try {
         const owner = await resolveWalletAddress(cavosAppId);
         const account = storedUser();
+        // Company access is either the kind of account or an invitation accepted in this browser; both make the
+        // account a company one everywhere else.
+        const company = account?.accountType === 'business' || Boolean(account && companyMemberships(account.email).length);
         const remote = await syncWorkspace(cavosAppId, owner, {
           purchaseIds: savedPurchaseIds(),
-          ...(account?.accountType ? { accountType: account.accountType } : {}),
+          ...(company ? { accountType: 'business' as const } : {}),
           ...(account?.companyName ? { companyName: account.companyName } : {})
         });
         addPurchaseIds(remote.purchaseIds);
