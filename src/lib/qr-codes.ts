@@ -1,19 +1,11 @@
-// What the QR codes of a product carry, and how a scanned or typed code is read. Pure: no browser, no server, so the
-// rules live in one place and are covered by tests (see tests/manual-code.test.mjs).
+// What the QR codes of a product carry, and how a scanned one is read. Pure: no browser, no server, so the rules
+// live in one place and are covered by tests (see tests/qr-codes.test.mjs).
 
 // What a secret QR carries. It is sent to the server on activation and never shown.
 export type ScannedClaim = { qr: string } | { secret: string };
 
 // Secret of a transfer link (/app#t=...): random bytes in base64url, created by the owner's browser.
 const TRANSFER_SECRET = /^[A-Za-z0-9_-]{16,64}$/;
-// The printed code inside the package.
-const SECRET_CODE = /^VF-SECRET-(?:[0-9A-F]{20}|DEMO-\d{3})$/i;
-// The opaque key of a secret QR: base64url of 10 bytes, or the shorter dotted form of the first labels.
-const QR_KEY = /^[A-Za-z0-9_-]{13}[AQgw]$/;
-const DOTTED_QR_KEY = /^\.[A-Za-z0-9_-]{1,256}$/;
-// Longer than any code Verifire prints: whatever it is, it is not one.
-const MAX_CODE_LENGTH = 2048;
-
 export const isTransferSecret = (value: string) => TRANSFER_SECRET.test(value);
 
 export const transferFromLink = (hash: string): string | null => {
@@ -38,19 +30,4 @@ export const parseScannedQr = (text: string): { claim: ScannedClaim | null; publ
   } catch {
     return { claim: null, publicToken: null, transfer: null };
   }
-};
-
-// Manual entry accepts the printed private code, an opaque QR key, or the complete activation URL.
-// This only checks the format. Ownership and authenticity are checked by the existing activation flow.
-export const parseManualCode = (text: string): ScannedClaim | null => {
-  const value = text.trim();
-  if (!value || value.length > MAX_CODE_LENGTH) return null;
-  const validKey = (key: string) => QR_KEY.test(key) || DOTTED_QR_KEY.test(key);
-  const claim = parseScannedQr(value).claim;
-  if (claim) {
-    if ('secret' in claim) return SECRET_CODE.test(claim.secret) ? { secret: claim.secret.toUpperCase() } : null;
-    return validKey(claim.qr) ? claim : null;
-  }
-  if (SECRET_CODE.test(value)) return { secret: value.toUpperCase() };
-  return validKey(value) ? { qr: value } : null;
 };

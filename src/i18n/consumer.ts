@@ -5,15 +5,8 @@ const es = {
     title: 'Verifire | Mis garantías',
     description: 'Escaneá el QR de tus productos para activar su garantía oficial y consultá tus certificados de autenticidad.'
   },
-  wallet: { address: 'Dirección de tu wallet', unavailable: 'Wallet no disponible', copy: 'Copiar dirección', copied: 'Dirección copiada', copyError: 'No se pudo copiar la dirección', network: 'Stellar Testnet' },
   scan: {
     camera: 'Abrir cámara', upload: 'Subir imagen del QR', preview: 'Vista de la cámara', close: 'Cerrar cámara',
-    manual: 'Ingresar código manual', label: 'Código privado de activación', validate: 'Validar código',
-    hint: 'Ingresá el código de la etiqueta interna o pegá el enlace del QR privado. El número de serie y el QR público no activan la garantía.',
-    placeholder: 'VF-SECRET-… o enlace del QR privado',
-    invalid: 'Ingresá un código privado o un enlace de activación de Verifire válido.',
-    public: 'Este es el QR público. Para activar la garantía necesitás el código de la etiqueta interna.',
-    ready: 'Formato del código reconocido. Tocá «Activar Garantía Oficial» para comprobarlo y registrar la garantía a tu nombre.',
     asking: 'Pidiendo permiso para usar la cámara...',
     aim: 'Apuntá la cámara al QR de la etiqueta.',
     reading: 'Leyendo la imagen...',
@@ -121,15 +114,8 @@ const en: Messages = {
     title: 'Verifire | My warranties',
     description: 'Scan the QR of your products to activate their official warranty and check your certificates of authenticity.'
   },
-  wallet: { address: 'Your wallet address', unavailable: 'Wallet unavailable', copy: 'Copy address', copied: 'Address copied', copyError: 'Could not copy the address', network: 'Stellar Testnet' },
   scan: {
     camera: 'Open camera', upload: 'Upload QR image', preview: 'Camera preview', close: 'Close camera',
-    manual: 'Enter code manually', label: 'Private activation code', validate: 'Validate code',
-    hint: 'Enter the code from the inner label or paste the private QR link. The serial number and public QR cannot activate a warranty.',
-    placeholder: 'VF-SECRET-… or private QR link',
-    invalid: 'Enter a valid Verifire private code or activation link.',
-    public: 'This is the public QR. You need the code from the inner label to activate your warranty.',
-    ready: 'Code format recognized. Choose “Activate Official Warranty” to verify it and register the warranty in your name.',
     asking: 'Asking for permission to use the camera...',
     aim: 'Point the camera at the QR on the label.',
     reading: 'Reading the image...',

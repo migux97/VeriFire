@@ -352,7 +352,6 @@ export function WarrantyDashboard({ cavosAppId, locale = 'es' }: WarrantyDashboa
           onDetected={applyScannedText}
           onMessage={setMessage}
           onScanStart={() => setScannedClaim(null)}
-          onManualClaim={setScannedClaim}
         />
         <Toast message={message} onClose={() => setMessage(null)} />
         {repair && (storedDeviceCode()
