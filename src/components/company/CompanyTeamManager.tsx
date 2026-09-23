@@ -1,8 +1,8 @@
 import { useEffect, useState, type SyntheticEvent } from 'react';
 import { companyMemberships, createCompanyInvitation, updateCompanyMembershipRole, type CompanyRole } from '@/lib/client/workspace';
 import { storedUser } from '@/lib/client/account';
-import { accountKey, userSession } from '@/lib/client/session';
-import { readStored, writeStored } from '@/lib/client/storage';
+import { readAccountData, writeAccountData } from '@/lib/client/account-data';
+import { userSession } from '@/lib/client/session';
 import type { Locale } from '@/lib/locale';
 import { CompanyTextProvider, useCompanyText } from './CompanyText';
 
@@ -16,7 +16,6 @@ interface Member {
   status: MemberStatus;
 }
 
-const storageKey = () => accountKey('company-team');
 const roles: CompanyRole[] = ['admin', 'operator', 'auditor', 'viewer'];
 
 const initials = (name: string) =>
@@ -49,7 +48,7 @@ function Team() {
     if (!user || !userSession.isActive()) return;
     const owner: Member = { id: 'owner', name: user.name, email: user.email, role: 'admin', status: 'active' };
     try {
-      const saved = readStored<Member[]>(localStorage, storageKey());
+      const saved = readAccountData<Member[]>('company-team');
       if (saved) {
         setMembers(saved);
         return;
@@ -72,7 +71,7 @@ function Team() {
 
   const persist = (next: Member[]) => {
     setMembers(next);
-    writeStored(localStorage, storageKey(), next);
+    writeAccountData('company-team', next);
   };
 
   const invite = (event: SyntheticEvent<HTMLFormElement>) => {

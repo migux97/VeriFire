@@ -1,3 +1,4 @@
+import { ACCOUNT_DATA_EVENT } from '@/lib/client/account-data';
 import { useEffect, useState } from 'react';
 import { storedUser, type StoredUser } from '@/lib/client/account';
 import { COMPANY_PROFILE_EVENT, readCompanyProfile } from '@/lib/client/company-profile';
@@ -52,7 +53,11 @@ function Identity({ view }: { view: 'workspace' | 'profile' }) {
     load();
     setRole(membership?.role || 'admin');
     window.addEventListener(COMPANY_PROFILE_EVENT, load);
-    return () => window.removeEventListener(COMPANY_PROFILE_EVENT, load);
+    window.addEventListener(ACCOUNT_DATA_EVENT, load);
+    return () => {
+      window.removeEventListener(COMPANY_PROFILE_EVENT, load);
+      window.removeEventListener(ACCOUNT_DATA_EVENT, load);
+    };
   }, []);
 
   if (!user) return <span className={view === 'workspace' ? 'company-workspace is-loading' : 'company-profile-identity is-loading'} aria-hidden="true" />;

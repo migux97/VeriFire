@@ -17,7 +17,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       signature: textField(body, 'signature'),
       publicKey: textField(body, 'publicKey').trim()
     });
-    const hasChanges = ['purchaseIds', 'removedPurchaseIds', 'accountType', 'companyName'].some((key) => body[key] !== undefined);
+    const hasChanges = ['purchaseIds', 'removedPurchaseIds', 'accountType', 'companyName', 'data'].some((key) => body[key] !== undefined);
     return json(hasChanges ? mergeWorkspace(owner, body) : workspaceView(owner));
   } catch (error) {
     return errorResponse(error, 500, 'No se pudo sincronizar tu cuenta de empresa.', 'Workspace error:');

@@ -4,11 +4,10 @@ import { companyMemberships } from '@/lib/client/workspace';
 import { useEffect, useState, type SubmitEvent } from 'react';
 import type { CountryOption } from '@/lib/types';
 import type { IssuanceOptions } from '@/lib/issuance';
-import { accountKey } from '@/lib/client/session';
-import { readStored, writeStored } from '@/lib/client/storage';
+import { readAccountData, writeAccountData } from '@/lib/client/account-data';
 
-const templatesKey = () => accountKey('issuance-templates', 'verifire-issuance-templates');
-const productsKey = () => accountKey('issuance-products', 'verifire-issuance-products');
+const savedTemplates = () => readAccountData<unknown>('issuance-templates', 'verifire-issuance-templates');
+const savedProducts = () => readAccountData<unknown>('issuance-products', 'verifire-issuance-products');
 interface Draft extends IssuanceOptions {
   model: string;
   lot: string;
@@ -46,8 +45,7 @@ export function IssuanceConfigurator({
     setCompanyName(company);
     setDraft((old) => ({ ...old, brand: company }));
     try {
-      const read = (key: string): Saved[] => {
-        const data: unknown = readStored<unknown>(localStorage, key) ?? [];
+      const read = (data: unknown): Saved[] => {
         return Array.isArray(data)
           ? data.filter(
               (entry): entry is Saved =>
@@ -58,8 +56,8 @@ export function IssuanceConfigurator({
             )
           : [];
       };
-      setSaved(read(templatesKey()));
-      setProducts(read(productsKey()));
+      setSaved(read(savedTemplates() ?? []));
+      setProducts(read(savedProducts() ?? []));
     } catch {
       setNotice(t.readFailed);
     }
@@ -73,7 +71,7 @@ export function IssuanceConfigurator({
     const list = product ? products : saved;
     const next = [{ name: title, draft: { ...draft, lot: '' } }, ...list.filter((item) => item.name !== title)].slice(0, 50);
     try {
-      if (!writeStored(localStorage, product ? productsKey() : templatesKey(), next)) throw new Error('storage');
+      if (!writeAccountData(product ? 'issuance-products' : 'issuance-templates', next)) throw new Error('storage');
       (product ? setProducts : setSaved)(next);
       setNotice(t.saved);
     } catch {

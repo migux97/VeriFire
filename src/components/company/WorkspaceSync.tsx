@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { accountDataSnapshot, applyAccountData } from '@/lib/client/account-data';
 import { storedUser, updateStoredUser } from '@/lib/client/account';
 import { companyMemberships } from '@/lib/client/workspace';
 import { addPurchaseIds, PURCHASES_CHANGED_EVENT, savedPurchaseIds } from '@/lib/client/purchases';
@@ -27,10 +28,13 @@ export function WorkspaceSync({ cavosAppId }: { cavosAppId: string }) {
         const company = account?.accountType === 'business' || Boolean(account && companyMemberships(account.email).length);
         const remote = await syncWorkspace(cavosAppId, owner, {
           purchaseIds: savedPurchaseIds(),
+          // The team, the agenda, the templates and the profile: whatever is newer wins, in both directions.
+          data: accountDataSnapshot(),
           ...(company ? { accountType: 'business' as const } : {}),
           ...(account?.companyName ? { companyName: account.companyName } : {})
         });
         addPurchaseIds(remote.purchaseIds);
+        applyAccountData(remote.data);
         // A company account stays a company account on every device.
         updateStoredUser({
           ...(remote.accountType ? { accountType: remote.accountType } : {}),

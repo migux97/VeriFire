@@ -1,9 +1,8 @@
 // The company's public profile, edited in Configuración: logo, legal and contact data. Kept in this browser per
 // account, outside the demo data. The trade name stays in the account (StoredUser.companyName), where the rest of the
 // panel and the label configurator already read it.
+import { readAccountData, writeAccountData } from './account-data';
 import { storedUser, updateStoredUser } from './account';
-import { userSession } from './session';
-import { readStored, writeStored } from './storage';
 
 export interface CompanyProfile {
   // A square PNG as a data URL, or '' without a logo.
@@ -39,15 +38,13 @@ const LOGO_SIZE = 256;
 const MAX_LOGO_BYTES = 5 * 1024 * 1024;
 const LOGO_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml', 'image/gif'];
 
-const profileKey = () => `verifire:company-profile:${userSession.email().toLowerCase()}`;
-
-export const readCompanyProfile = (): CompanyProfile => ({ ...emptyProfile, ...(readStored<Partial<CompanyProfile>>(localStorage, profileKey()) ?? {}) });
+export const readCompanyProfile = (): CompanyProfile => ({ ...emptyProfile, ...(readAccountData<Partial<CompanyProfile>>('company-profile') ?? {}) });
 
 export const companyName = () => storedUser()?.companyName ?? '';
 
 // False when the browser would not store it (a full quota, most likely because of the logo).
 export const saveCompanyProfile = (profile: CompanyProfile, name: string) => {
-  if (!writeStored(localStorage, profileKey(), profile)) return false;
+  if (!writeAccountData('company-profile', profile)) return false;
   updateStoredUser({ companyName: name });
   window.dispatchEvent(new Event(COMPANY_PROFILE_EVENT));
   return true;

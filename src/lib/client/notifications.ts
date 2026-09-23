@@ -1,6 +1,7 @@
 // Notifications of the company panel: a confirmed payment, a created batch, and the dates of the agenda coming up.
 // Kept in this browser per account (inside the demo data while demo mode is on). A notice stores its kind and its
 // values, not its text, so it reads in whatever language the panel is in when it is shown.
+import { readAccountData, writeAccountData } from './account-data';
 import { atom } from 'nanostores';
 import { accountKey, userSession } from './session';
 import { readSchedules } from './schedules';
@@ -40,7 +41,6 @@ const DUE_WINDOW_MS = 3 * 24 * 60 * 60 * 1000;
 const noticesKey = () => accountKey('notifications');
 const logKey = () => accountKey('notification-log');
 // The preferences are the person's, not the demo's: they are kept outside the demo data.
-const prefsKey = () => `verifire:notification-prefs:${userSession.email().toLowerCase()}`;
 
 export const $notices = atom<Notice[]>([]);
 // Notices that arrived while the page is open, shown for a few seconds as a toast.
@@ -63,9 +63,9 @@ const saveNotices = (notices: Notice[]) => {
 
 export const loadNotices = () => $notices.set(readNotices());
 
-export const readPrefs = (): NotificationPrefs => ({ ...defaultPrefs, ...(readStored<Partial<NotificationPrefs>>(localStorage, prefsKey()) ?? {}) });
+export const readPrefs = (): NotificationPrefs => ({ ...defaultPrefs, ...(readAccountData<Partial<NotificationPrefs>>('notification-prefs') ?? {}) });
 
-export const savePrefs = (prefs: NotificationPrefs) => writeStored(localStorage, prefsKey(), prefs);
+export const savePrefs = (prefs: NotificationPrefs) => writeAccountData('notification-prefs', prefs);
 
 const allowed = (kind: NoticeKind, prefs: NotificationPrefs) => {
   if (kind === 'paymentSucceeded') return prefs.payments;

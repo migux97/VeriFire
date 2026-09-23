@@ -8,6 +8,9 @@ import { HttpError } from './errors';
 import { saveState, store, type Workspace } from './store';
 
 const MAX_PURCHASES = 500;
+// A team, an agenda and a logo fit well inside this; the body of a request is capped at 64 KiB anyway.
+const MAX_DATA_BYTES = 48 * 1024;
+const MAX_DATA_KINDS = 40;
 
 export const findWorkspace = (owner: string): Workspace | undefined => store.workspaces.get(owner);
 
@@ -25,8 +28,28 @@ export const workspaceView = (owner: string) => {
     purchaseIds,
     // A wallet that bought a batch is a company: its panel is offered on every device it signs in from.
     accountType: workspace?.accountType ?? (purchaseIds.length ? ('business' as const) : null),
-    companyName: workspace?.companyName ?? null
+    companyName: workspace?.companyName ?? null,
+    data: workspace?.data ?? {}
   };
+};
+
+// Each kind of configured data is kept with the moment the browser wrote it, and only a newer copy replaces it.
+const mergeData = (current: Workspace['data'], incoming: unknown): Workspace['data'] => {
+  if (!incoming || typeof incoming !== 'object' || Array.isArray(incoming)) return current;
+  const merged: NonNullable<Workspace['data']> = { ...(current ?? {}) };
+  for (const [name, entry] of Object.entries(incoming as Record<string, unknown>)) {
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) continue;
+    const { value, updatedAt } = entry as { value?: unknown; updatedAt?: unknown };
+    if (value === undefined || typeof updatedAt !== 'string' || Number.isNaN(Date.parse(updatedAt))) continue;
+    const mine = merged[name];
+    if (mine && mine.updatedAt >= updatedAt) continue;
+    merged[name] = { value, updatedAt };
+  }
+  if (Object.keys(merged).length > MAX_DATA_KINDS) throw new HttpError(400, 'Demasiada configuración para una sola cuenta.');
+  if (JSON.stringify(merged).length > MAX_DATA_BYTES) {
+    throw new HttpError(413, 'La configuración de la empresa es demasiado grande. Probá con un logo más liviano.');
+  }
+  return merged;
 };
 
 const text = (value: unknown, limit: number) => {
@@ -42,6 +65,7 @@ export const mergeWorkspace = (owner: string, changes: {
   removedPurchaseIds?: unknown;
   accountType?: unknown;
   companyName?: unknown;
+  data?: unknown;
 }) => {
   const current = findWorkspace(owner);
   const incoming = Array.isArray(changes.purchaseIds) ? changes.purchaseIds.filter((id): id is string => typeof id === 'string') : [];
@@ -66,12 +90,14 @@ export const mergeWorkspace = (owner: string, changes: {
     : current?.accountType;
   const companyName = changes.companyName === undefined ? current?.companyName : text(changes.companyName, 80);
   const purchaseIds = workspaceView(owner).purchaseIds;
+  const data = mergeData(current?.data, changes.data);
 
   store.workspaces.set(owner, {
     owner,
     purchaseIds,
     ...(accountType ? { accountType } : {}),
     ...(companyName ? { companyName } : {}),
+    ...(data && Object.keys(data).length ? { data } : {}),
     updatedAt: new Date().toISOString()
   });
   saveState();

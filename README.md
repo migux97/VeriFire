@@ -86,10 +86,17 @@ directamente con Node.
 
 ## Notas del servidor
 
-- Las garantías siguen a la wallet porque el contrato guarda a su dueño. Lo de la empresa (sus compras y si la cuenta
-  es empresarial) se guarda junto a esa wallet con `POST /api/workspace`, y entrar desde otro navegador recupera los
-  mismos lotes. Leerlo o escribirlo exige firmar un nonce con la wallet (`src/lib/server/wallet-auth.ts`), porque el id
-  de una compra abre los códigos secretos de su lote.
+- Las garantías siguen a la wallet porque el contrato guarda a su dueño. Lo de la empresa se guarda junto a esa wallet
+  con `POST /api/workspace`, así que entrar desde otro navegador recupera los mismos lotes y la misma configuración.
+  Leerlo o escribirlo exige firmar un nonce con la wallet (`src/lib/server/wallet-auth.ts`), porque el id de una compra
+  abre los códigos secretos de su lote.
+- Cada compra guarda de qué wallet es, y una compra anterior a esto queda a nombre de la cuenta la primera vez que un
+  navegador que tiene su id sincroniza.
+- Lo que la empresa configura (equipo, agenda, plantillas de emisión, perfil, permisos y avisos) viaja con la cuenta:
+  se escribe con `writeAccountData` (`src/lib/client/account-data.ts`) y de cada cosa gana la copia más nueva. **Para que
+  una función nueva acompañe a la cuenta alcanza con agregar su nombre a `ACCOUNT_DATA` y guardar con ese helper.** No
+  se sincroniza lo que es de este navegador: el secreto de un link de transferencia abierto y las notas de qué avisos
+  ya se mostraron acá.
 
 - El estado se guarda escribiendo un archivo temporal y renombrándolo sobre el actual, y el anterior queda como
   `<DATA_FILE>.bak`. Si el archivo principal aparece dañado al arrancar, se carga esa copia.

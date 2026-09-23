@@ -74,6 +74,9 @@ export interface Workspace {
   purchaseIds: string[];
   accountType?: 'personal' | 'business';
   companyName?: string;
+  // What the company configured (team, agenda, templates, profile), each kind with the moment it was last written:
+  // the newest copy wins over the one another browser sends. The server never looks inside a value.
+  data?: Record<string, { value: unknown; updatedAt: string }>;
   updatedAt: string;
 }
 

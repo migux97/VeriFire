@@ -1,3 +1,4 @@
+import { ACCOUNT_DATA_EVENT } from '@/lib/client/account-data';
 import { useEffect, useState, type SubmitEvent } from 'react';
 import { relativeTime } from '@/i18n/company';
 import { downloadBlob } from '@/lib/client/download';
@@ -40,9 +41,11 @@ export function Operations({ mode }: { mode?: ScheduleType | undefined }) {
     };
     load();
     window.addEventListener(SCHEDULES_CHANGED_EVENT, load);
+    window.addEventListener(ACCOUNT_DATA_EVENT, load);
     window.addEventListener('storage', load);
     return () => {
       window.removeEventListener(SCHEDULES_CHANGED_EVENT, load);
+      window.removeEventListener(ACCOUNT_DATA_EVENT, load);
       window.removeEventListener('storage', load);
     };
   }, []);
