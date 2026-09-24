@@ -46,7 +46,7 @@ const signature = activationKeypair.sign(message); // BytesN<64>
 El QR del producto debe contener una URL pública como:
 
 ```text
-https://TU-DOMINIO/verify?token=VF-001
+https://TU-DOMINIO/verify?token=<código público del producto>
 ```
 
 La web leerá `token` y mostrará modelo, lote, destino y estado `SEALED`. Las etiquetas impresas con `verify.html?token=...` siguen funcionando: redirigen a `/verify`. El QR público nunca contiene el secreto interno. Nunca se debe aceptar una clave privada de la cuenta en el navegador.

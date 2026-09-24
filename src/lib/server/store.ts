@@ -147,22 +147,14 @@ interface SavedState {
 
 export const hashSecret = (secret: string) => createHash('sha256').update(secret).digest('hex');
 
+const SAMPLE_SECRET_HASH = hashSecret('VF-SECRET-DEMO-001');
+
 const createState = () => {
   const state = {
-    nextTokenId: 2,
+    nextTokenId: 1,
     nextBatchId: 1,
-    products: new Map<string, Product>([
-      ['VF-001', {
-        tokenId: 1,
-        token: 'VF-001',
-        model: 'Smartwatch X9 Pro',
-        lot: '1043',
-        destination: 'Argentina · LATAM',
-        secretHash: hashSecret('VF-SECRET-DEMO-001'),
-        claimed: false,
-        owner: null
-      }]
-    ]),
+    // Only real products: every one of them comes from a paid batch.
+    products: new Map<string, Product>(),
     batches: new Map<string, Batch>(),
     purchases: new Map<string, Purchase>(),
     workspaces: new Map<string, Workspace>(),
@@ -187,7 +179,12 @@ const createState = () => {
       throw new Error(`No se pudo leer ${config.dataFile}. Revisalo o borralo antes de iniciar el servidor.`, { cause: error });
     }
   }
-  for (const product of saved.products ?? []) state.products.set(product.token, product);
+  for (const product of saved.products ?? []) {
+    // The invented sample product earlier versions created on their own (VF-001, "Smartwatch X9 Pro") is dropped
+    // unless someone activated it.
+    if (product.token === 'VF-001' && !product.secretCode && !product.claimed && product.secretHash === SAMPLE_SECRET_HASH) continue;
+    state.products.set(product.token, product);
+  }
   for (const batch of saved.batches ?? []) {
     const tokens = batch.tokens.map((token) => state.products.get(token)).filter((product) => product !== undefined);
     state.batches.set(batch.batchId, { ...batch, tokens });

@@ -6,6 +6,7 @@
 // secret codes of its batch, so this list is never handed out to whoever asks.
 import { buildBrand } from './brands';
 import { HttpError } from './errors';
+import { withoutSampleEntries } from '../sample-data';
 import { saveState, store, type Workspace } from './store';
 
 const MAX_PURCHASES = 500;
@@ -13,7 +14,33 @@ const MAX_PURCHASES = 500;
 const MAX_DATA_BYTES = 48 * 1024;
 const MAX_DATA_KINDS = 40;
 
-export const findWorkspace = (owner: string): Workspace | undefined => store.workspaces.get(owner);
+// Drops the demo's invented entries that reached the account (see sample-data.ts). The date stays: removing them is not
+// an edit, so a newer copy from a browser still replaces it (browsers drop them too, see account-data.ts).
+const withoutSamples = (data: Workspace['data']): Workspace['data'] => {
+  if (!data) return data;
+  let cleaned: NonNullable<Workspace['data']> | null = null;
+  for (const [name, entry] of Object.entries(data)) {
+    const value = withoutSampleEntries(entry.value);
+    if (!value) continue;
+    cleaned ??= { ...data };
+    cleaned[name] = { value, updatedAt: entry.updatedAt };
+  }
+  return cleaned ?? data;
+};
+
+export const findWorkspace = (owner: string): Workspace | undefined => {
+  const workspace = store.workspaces.get(owner);
+  const data = withoutSamples(workspace?.data);
+  if (workspace && data && data !== workspace.data) {
+    workspace.data = data;
+    try {
+      saveState();
+    } catch {
+      // Cleaned again the next time it is read.
+    }
+  }
+  return workspace;
+};
 
 // Newest first, the way the panel lists them.
 const purchasesOf = (owner: string) => [...store.purchases.values()]
@@ -48,11 +75,12 @@ const mergeData = (current: Workspace['data'], incoming: unknown): Workspace['da
     if (mine && mine.updatedAt >= updatedAt) continue;
     merged[name] = { value, updatedAt };
   }
-  if (Object.keys(merged).length > MAX_DATA_KINDS) throw new HttpError(400, 'Demasiada configuración para una sola cuenta.');
-  if (JSON.stringify(merged).length > MAX_DATA_BYTES) {
+  const clean = withoutSamples(merged) ?? merged;
+  if (Object.keys(clean).length > MAX_DATA_KINDS) throw new HttpError(400, 'Demasiada configuración para una sola cuenta.');
+  if (JSON.stringify(clean).length > MAX_DATA_BYTES) {
     throw new HttpError(413, 'La configuración de la empresa es demasiado grande. Probá con un logo más liviano.');
   }
-  return merged;
+  return clean;
 };
 
 const text = (value: unknown, limit: number) => {
