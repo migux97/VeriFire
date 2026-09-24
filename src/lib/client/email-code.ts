@@ -7,6 +7,9 @@ import type { CavosAuth } from '@cavos/kit';
 // returns there and the server redirects it to the login page, query included.
 export const googleCallbackUrl = () => `${window.location.origin}/index.html`;
 
+// What a return from Cavos (Google, or a link from an email) comes back for: kept in this browser before leaving.
+export const PENDING_CAVOS_AUTH_KEY = 'verifirePendingCavosAuth';
+
 const authErrorMessages: [RegExp, () => string][] = [
   [/redirect_uri is not registered/i, () => `Cavos rechazó la URL de retorno. Agregá ${googleCallbackUrl()} en las Callback URLs de tu app en el panel de Cavos.`],
   [/code_expired/i, () => 'El código venció. Pedí uno nuevo.'],
@@ -30,6 +33,20 @@ const nonceHolder = (auth: CavosAuth) => auth as unknown as { pendingNonce: Emai
 export const sendEmailCode = async (auth: CavosAuth, email: string): Promise<EmailCodeNonce> => {
   await auth.sendOtp(email);
   return nonceHolder(auth).pendingNonce;
+};
+
+// The link Cavos emails to recover an account. Unlike the 6-digit code, it signs in through Firebase, whose proof is the
+// one Cavos' recovery enclave accepts. Cavos sends the link back to the page that asked for it and only accepts the
+// registered callback address, so the request is made as if from there; the server sends that address to the login.
+export const sendRecoveryLink = async (auth: CavosAuth, email: string) => {
+  const current = window.location.href;
+  window.history.replaceState(window.history.state, '', '/index.html');
+  try {
+    // The kit reads the address as the request starts, before its first await: it is safe to put the real one back.
+    await auth.sendMagicLink(email);
+  } finally {
+    window.history.replaceState(window.history.state, '', current);
+  }
 };
 
 export const verifyEmailCode = (auth: CavosAuth, nonce: EmailCodeNonce, email: string, code: string) => {

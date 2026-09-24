@@ -28,9 +28,7 @@ export default defineConfig({
   session: false,
   // Cavos keeps each wallet's signing key per site address, and existing accounts were created on this port.
   server: {
-    port: 5501,
-    // The dev server also answers through an ngrok tunnel (npm run tunnel), to scan the QR labels from a phone.
-    allowedHosts: ['.ngrok-free.app', '.ngrok-free.dev', '.ngrok.app', '.ngrok.dev']
+    port: 5501
   },
   fonts: [
     {

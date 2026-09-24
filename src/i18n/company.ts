@@ -5,6 +5,24 @@ import type { Locale } from '@/lib/locale';
 
 const es = {
   intl: 'es-AR',
+  createCompany: {
+    metaTitle: 'Verifire | Registrar tu empresa',
+    eyebrow: 'Cuenta de empresa',
+    title: 'Registrá tu empresa',
+    lead: 'Con una empresa vas a poder comprar lotes de etiquetas, seguir sus activaciones y sumar a tu equipo. Seguís usando la misma cuenta para tus propias garantías.',
+    name: 'Nombre comercial de la empresa',
+    namePlaceholder: 'Ej. Andes Manufacturing',
+    nameHint: 'Es el nombre que ven tus compradores. La razón social, el CUIT y el logo los completás después en Configuración.',
+    industry: 'Rubro',
+    optional: 'Opcional',
+    submit: 'Crear empresa',
+    later: 'Ahora no, ir a mis garantías',
+    needName: 'Ingresá el nombre comercial de tu empresa.',
+    saveFailed: 'No se pudo guardar la empresa en este navegador. Intentá de nuevo.',
+    already: 'Tu cuenta ya tiene una empresa. Te llevamos a su panel.',
+    member: 'Sos parte del equipo de {company}. Si además tenés tu propia empresa, podés registrarla acá.',
+    creating: 'Creando tu empresa…'
+  },
   meta: {
     title: 'Verifire | Panel empresa',
     description: 'Panel operativo para gestionar productos, lotes y verificaciones de Verifire.'
@@ -686,6 +704,24 @@ export type CompanyMessages = typeof es;
 
 const en: CompanyMessages = {
   intl: 'en-US',
+  createCompany: {
+    metaTitle: 'Verifire | Register your company',
+    eyebrow: 'Company account',
+    title: 'Register your company',
+    lead: 'With a company you can buy batches of labels, follow their activations and add your team. You keep using the same account for your own warranties.',
+    name: 'Company trade name',
+    namePlaceholder: 'E.g. Andes Manufacturing',
+    nameHint: 'It is the name your buyers see. The legal name, the tax ID and the logo are completed later in Settings.',
+    industry: 'Industry',
+    optional: 'Optional',
+    submit: 'Create company',
+    later: 'Not now, go to my warranties',
+    needName: 'Enter your company’s trade name.',
+    saveFailed: 'The company could not be saved in this browser. Try again.',
+    already: 'Your account already has a company. Taking you to its dashboard.',
+    member: 'You are part of the {company} team. If you also have your own company, you can register it here.',
+    creating: 'Creating your company…'
+  },
   meta: {
     title: 'Verifire | Company dashboard',
     description: 'Operations dashboard to manage Verifire products, batches and verifications.'

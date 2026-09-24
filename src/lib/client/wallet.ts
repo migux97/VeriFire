@@ -5,6 +5,7 @@ import { errorMessage } from '../errors';
 import { isStellarAddress } from '../validation';
 import { storedUser, updateStoredUser } from './account';
 import { DEVICE_CODE_KEY, userSession, WALLET_KEY, WALLET_UPDATED_EVENT } from './session';
+import { enrollSocialRecovery, recoverWithSocial } from './social-recovery';
 import { readStored, writeStored } from './storage';
 
 const APP_SALT = 'verifire-demo';
@@ -171,11 +172,54 @@ export const keyBackupState = async (appId: string, auth: CavosAuth, identity: I
   return factor === true && wallet.status === 'ready' ? 'ready' : 'create';
 };
 
+// A new password for the account: the copy of its key kept in Stellar is saved again with it, so the old password stops
+// opening it. Only a browser that already holds the key can do that (ok: false otherwise): the copy in Stellar is sealed
+// with the old password, which Verifire never knew. Devices already enabled keep working.
+// Thrown when the current password given to open the key on this device is not the account's.
+export const WRONG_CURRENT_PASSWORD = 'Esa no es tu contraseña actual. Escribí la que usás hoy para entrar a Verifire.';
+
+// currentCode: the device code of the current password, when the user gave it to open the key on this device.
+export const resetKeyPassword = async (appId: string, auth: CavosAuth, identity: Identity, deviceCode: string, currentCode?: string) => {
+  const wallet = await openCavosWallet(appId, auth, identity);
+  // A device that does not hold the key opens it through Cavos' recovery enclave, when the account was sealed there,
+  // or with the current password, which also opens the copy kept in Stellar.
+  if (wallet.status === 'needs-device-approval') {
+    if (currentCode) {
+      try {
+        await wallet.approveThisDeviceWithRecovery(currentCode);
+      } catch (error) {
+        const message = errorMessage(error);
+        throw new Error(/wrong factor|not enrolled/i.test(message) ? WRONG_CURRENT_PASSWORD : message);
+      }
+    } else if (!(await recoverWithSocial(appId, auth, wallet))) {
+      // needsCurrent: a copy sealed with the password exists in Stellar, so the current password can open it.
+      return { address: wallet.address, ok: false as const, needsCurrent: (await hasDeviceFactor(wallet.address)) !== false };
+    }
+  }
+  await wallet.setupRecovery(deviceCode);
+  await enrollSocialRecovery(appId, auth, wallet);
+  if (wallet.status === 'undeployed') await createAccountOnChain(wallet);
+  rememberWallet(wallet.address);
+  rememberDeviceCode(deviceCode);
+  return { address: wallet.address, ok: true as const, needsCurrent: false };
+};
+
+// Seals the account's key in Cavos' recovery enclave, from the link of the "Activá la recuperación" card. Only a browser
+// that holds the key can do it.
+export const enableAnywhereRecovery = async (appId: string, auth: CavosAuth, identity: Identity) => {
+  const wallet = await openCavosWallet(appId, auth, identity);
+  if (wallet.status === 'needs-device-approval') return { address: wallet.address, result: 'other-device' as const };
+  return { address: wallet.address, result: (await enrollSocialRecovery(appId, auth, wallet)) ? 'enabled' as const : 'failed' as const };
+};
+
 export const connectCavosWallet = async (appId: string, auth: CavosAuth, identity: Identity, deviceCode?: string) => {
   const wallet = await openCavosWallet(appId, auth, identity);
   rememberWallet(wallet.address);
   rememberDeviceCode(deviceCode);
   const device = deviceCode ? await authorizeDevice(wallet, deviceCode) : { ok: false, error: '' };
+  // A device that holds the key right after a fresh login seals it in Cavos' recovery enclave (once), so the account
+  // can be recovered from any other device later. Nothing happens while the app has not turned it on.
+  if (device.ok || wallet.status === 'ready') await enrollSocialRecovery(appId, auth, wallet);
   // The password opens the account's key on every device: one that does not is a wrong password, not a device issue.
   return { address: wallet.address, deviceFactor: device.ok, deviceError: device.error, wrongPassword: Boolean(device.wrongPassword) };
 };

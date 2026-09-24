@@ -2562,3 +2562,90 @@ a.network-status:hover {
     animation: none;
   }
 }
+
+/* "Inicio" in the buyer's header: on narrow phones only the house is shown. */
+@media (max-width: 420px) {
+  .app-home-button span {
+    display: none;
+  }
+}
+
+/* "Activá la recuperación de tu cuenta" at the top of the buyer's panel, until the account's key is sealed. */
+.recovery-card {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 20px 22px;
+  border: 1px solid var(--vf-blush-line);
+  border-left: 4px solid var(--vf-red);
+  border-radius: 12px;
+  background: var(--vf-paper);
+}
+
+.recovery-card h2 {
+  margin: 0 0 4px;
+  color: var(--vf-ink);
+  font-size: 1.125rem;
+}
+
+.recovery-card p {
+  margin: 0;
+  color: var(--vf-muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.recovery-card-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: var(--vf-blush);
+  color: var(--vf-red);
+  font-size: 1.2rem;
+}
+
+.recovery-card .button {
+  white-space: nowrap;
+}
+
+.recovery-card-error {
+  margin-top: 6px !important;
+  color: var(--vf-error) !important;
+}
+
+.recovery-card.is-done {
+  border-color: var(--vf-success-line);
+  border-left-color: var(--vf-success);
+}
+
+.recovery-card.is-done .recovery-card-icon {
+  background: var(--vf-success-soft);
+  color: var(--vf-success);
+}
+
+.recovery-card-close {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--vf-muted);
+  cursor: pointer;
+}
+
+@media (max-width: 640px) {
+  .recovery-card {
+    grid-template-columns: auto 1fr;
+  }
+
+  .recovery-card .button {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+}

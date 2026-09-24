@@ -7,7 +7,6 @@
   },
   "scripts": {
     "dev": "astro dev",
-    "tunnel": "ngrok http 5501",
     "build": "astro check && npm test && astro build",
     "preview": "astro preview",
     "start": "node --env-file-if-exists=.env ./dist/server/entry.mjs",

@@ -28,8 +28,13 @@ import { countryOptions } from '@/lib/server/countries';
   </main>
 
   <script>
-    import { guardSession } from '@/lib/client/session';
+    import { storedUser } from '@/lib/client/account';
+    import { CREATE_COMPANY_PATH } from '@/lib/client/company-signup';
+    import { guardSession, userSession } from '@/lib/client/session';
+    import { currentWorkspace } from '@/lib/client/workspace';
 
     guardSession();
+    // Buying batches is done for a company: an account without one registers it first.
+    if (userSession.isActive() && !currentWorkspace(storedUser())) window.location.replace(CREATE_COMPANY_PATH);
   </script>
 </BaseLayout>

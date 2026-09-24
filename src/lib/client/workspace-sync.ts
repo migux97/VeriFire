@@ -21,6 +21,8 @@ export interface RemoteWorkspace {
 }
 
 interface WorkspaceChanges {
+  // The email of the account: the server keeps only a keyed hash of it, to know it already has an account.
+  email?: string;
   purchaseIds?: string[];
   removedPurchaseIds?: string[];
   accountType?: 'personal' | 'business';

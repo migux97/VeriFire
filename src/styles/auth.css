@@ -602,3 +602,212 @@
     grid-column: auto !important;
   }
 }
+
+/* ---------- Registrar una empresa (/create-company) ---------- */
+.workspace-shell:has(.create-company) {
+  align-content: center;
+  gap: 24px;
+}
+.create-company {
+  width: min(100%, 520px);
+  padding: 42px;
+  border: 1px solid var(--vf-line);
+  border-radius: 6px;
+  background: var(--vf-paper);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.08);
+}
+.create-company-mark {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  margin-bottom: 20px;
+  border-radius: 4px;
+  background: var(--vf-blush);
+  color: var(--vf-red);
+  font-size: 1.15rem;
+}
+.create-company .company-eyebrow {
+  color: var(--vf-red);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.create-company h1 {
+  margin-top: 8px;
+  font-size: clamp(1.75rem, 4vw, 2.35rem);
+}
+.create-company-lead,
+.create-company-note {
+  margin-top: 12px;
+  color: var(--vf-muted);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+.create-company-note {
+  padding: 10px 12px;
+  border-left: 3px solid var(--vf-info);
+  background: var(--vf-info-soft);
+  color: var(--vf-text);
+}
+.create-company-form {
+  display: grid;
+  gap: 18px;
+  margin-top: 26px;
+}
+.create-company-form label {
+  display: grid;
+  gap: 8px;
+  color: var(--vf-ink);
+  font-size: 0.9375rem;
+  font-weight: 700;
+}
+.create-company-form label em {
+  margin-left: 4px;
+  color: var(--vf-muted);
+  font-style: normal;
+  font-weight: 500;
+}
+.create-company-form input,
+.create-company-form select {
+  width: 100%;
+  min-height: 52px;
+  padding: 0 16px;
+  border: 1.5px solid var(--vf-line-strong);
+  border-radius: 4px;
+  background: var(--vf-paper);
+  color: var(--vf-ink);
+  font-family: var(--vf-font);
+  font-size: 1rem;
+  font-weight: 600;
+}
+.create-company-form input:focus,
+.create-company-form select:focus {
+  border-color: var(--vf-ink);
+  outline: none;
+  box-shadow: inset 0 0 0 1px var(--vf-ink);
+}
+.create-company-form small {
+  color: var(--vf-muted);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.45;
+}
+.create-company-form .button {
+  width: 100%;
+  min-height: 52px;
+}
+.create-company-error {
+  margin: 0;
+  color: var(--vf-error);
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+.create-company-later {
+  justify-self: center;
+  color: var(--vf-muted);
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+.create-company-later:hover {
+  color: var(--vf-ink);
+}
+/* The registration says the company comes next when the visitor came to register one. */
+.auth-step-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0;
+  padding: 12px 14px;
+  border-left: 3px solid var(--vf-red);
+  background: var(--vf-blush);
+  color: var(--vf-text);
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.45;
+}
+.auth-step-note i {
+  margin-top: 2px;
+  color: var(--vf-red);
+}
+@media (max-width: 600px) {
+  .create-company {
+    padding: 28px 22px;
+  }
+}
+/* The registration found that the email already has an account: it offers the login instead. */
+.auth-existing {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px solid var(--vf-blush-line);
+  border-left: 4px solid var(--vf-red);
+  border-radius: 4px;
+  background: var(--vf-blush);
+  color: var(--vf-text);
+}
+.auth-existing strong {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--vf-ink);
+  font-size: 1rem;
+}
+.auth-existing strong i {
+  color: var(--vf-red);
+}
+.auth-existing p {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+.auth-existing p b {
+  color: var(--vf-ink);
+  overflow-wrap: anywhere;
+}
+.auth-existing-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.auth-existing-actions .button {
+  flex: 1 1 200px;
+  min-height: 46px;
+}
+/* "¿Olvidaste tu contraseña?" under the password of the login, and the head of its own form. */
+.auth-forgot {
+  justify-self: end;
+  margin-top: -6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--vf-red);
+  font-family: var(--vf-font);
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.auth-forgot:hover {
+  text-decoration: underline;
+}
+.auth-reset-head {
+  display: grid;
+  gap: 10px;
+}
+.auth-reset-head h2 {
+  font-size: 1.6rem;
+}
+.auth-reset-head p {
+  margin: 0;
+  color: var(--vf-muted);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+/* The login offers to take a password changed on another device. */
+.auth-changed {
+  border-left-color: var(--vf-info);
+  border-color: var(--vf-line);
+  background: var(--vf-info-soft);
+}

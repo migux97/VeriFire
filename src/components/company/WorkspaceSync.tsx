@@ -32,6 +32,7 @@ export function WorkspaceSync({ cavosAppId }: { cavosAppId: string }) {
         // come back everywhere as the admin of an empty company, losing the team it joined.
         const company = account?.accountType === 'business';
         const remote = await syncWorkspace(cavosAppId, owner, {
+          ...(account?.email ? { email: account.email } : {}),
           purchaseIds: savedPurchaseIds(),
           // Removed from the list here: the server stops listing them, so the next sync does not bring them back.
           removedPurchaseIds: forgottenPurchaseIds(),

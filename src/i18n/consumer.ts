@@ -5,6 +5,19 @@ const es = {
     title: 'Verifire | Mis garantías',
     description: 'Escaneá el QR de tus productos para activar su garantía oficial y consultá tus certificados de autenticidad.'
   },
+  topbar: { home: 'Inicio', homeLabel: 'Volver a la página principal' },
+  recovery: {
+    title: 'Activá la recuperación de tu cuenta',
+    lead: 'Hacelo una sola vez y vas a poder recuperar tu cuenta, tus garantías y tu wallet desde cualquier navegador o dispositivo, aunque olvides tu contraseña. Te mandamos un enlace a tu correo: abrilo en este navegador.',
+    sent: 'Te enviamos un enlace a {email}. Abrilo en este mismo navegador para terminar de activarla.',
+    action: 'Activar recuperación',
+    resend: 'Reenviar enlace',
+    resendIn: 'Reenviar en {seconds} s',
+    failed: 'No se pudo enviar el enlace.',
+    doneTitle: 'Recuperación activada',
+    doneText: 'Si olvidás tu contraseña, vas a poder recuperar tu cuenta desde cualquier navegador o dispositivo con un enlace a tu correo.',
+    close: 'Cerrar'
+  },
   scan: {
     camera: 'Abrir cámara', upload: 'Subir imagen del QR', preview: 'Vista de la cámara', close: 'Cerrar cámara',
     asking: 'Pidiendo permiso para usar la cámara...',
@@ -140,6 +153,19 @@ const en: Messages = {
   meta: {
     title: 'Verifire | My warranties',
     description: 'Scan the QR of your products to activate their official warranty and check your certificates of authenticity.'
+  },
+  topbar: { home: 'Home', homeLabel: 'Back to the home page' },
+  recovery: {
+    title: 'Turn on account recovery',
+    lead: 'Do it once and you will be able to recover your account, your warranties and your wallet from any browser or device, even if you forget your password. We send a link to your email: open it in this browser.',
+    sent: 'We sent a link to {email}. Open it in this same browser to finish turning it on.',
+    action: 'Turn on recovery',
+    resend: 'Resend link',
+    resendIn: 'Resend in {seconds} s',
+    failed: 'The link could not be sent.',
+    doneTitle: 'Recovery is on',
+    doneText: 'If you forget your password, you will be able to recover your account from any browser or device with a link to your email.',
+    close: 'Close'
   },
   scan: {
     camera: 'Open camera', upload: 'Upload QR image', preview: 'Camera preview', close: 'Close camera',

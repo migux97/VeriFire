@@ -29,13 +29,18 @@ El puerto 5501 es fijo a propósito: Cavos guarda la llave de firma de cada wall
 | `npm test` | Tests de la lógica pura (`node --test`, sin dependencias) |
 | `npm run format` | Formatea el código con Prettier (`npm run format:check` solo revisa) |
 | `npm run build` | Chequeo de tipos, tests y build de producción en `dist/` |
-| `npm run tunnel` | Expone el servidor local con ngrok, para probar desde el celular |
 | `npm start` | Servidor de producción (lee `.env` al arrancar) |
 | `npm run contract:deploy` | Despliega el contrato en testnet y guarda sus datos en `.env` |
 | `npm run contract:upgrade` | Reemplaza el código del contrato conservando su dirección y sus datos |
 | `npm run contract:test-activation` | Prueba de punta a punta de la activación contra testnet |
 
 Todas las variables de `.env` se leen en tiempo de ejecución, así que el mismo build sirve para cualquier configuración.
+
+## Producción
+
+Verifire corre en un servidor propio con HTTPS, que se administra con Bitvise SSH Client. La guía, los scripts de
+instalación y actualización, la configuración de Caddy y el servicio de systemd están en una carpeta aparte, fuera de
+este repositorio (`VeriFire-servidor`), junto con el perfil de acceso al servidor, que no debe subirse a GitHub.
 
 ## Idiomas
 

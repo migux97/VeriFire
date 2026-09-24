@@ -4,6 +4,7 @@ import { errorResponse, json, readJsonBody, textField } from '@/lib/server/http'
 import { rateLimit } from '@/lib/server/rate-limit';
 import { assertWalletOwner } from '@/lib/server/wallet-auth';
 import { mergeWorkspace, workspaceView } from '@/lib/server/workspaces';
+import { recordAccount } from '@/lib/server/accounts';
 
 // Step two: with the signed nonce, the account's batches and its kind are read, and whatever the browser knows is
 // merged into them. A purchase id opens the secret codes of its batch, so nothing here answers without that proof.
@@ -18,6 +19,8 @@ export const POST: APIRoute = async ({ request, clientAddress, url }) => {
       signature: textField(body, 'signature'),
       publicKey: textField(body, 'publicKey').trim()
     });
+    // The email of the account, so a second registration with it is sent to the login instead (see accounts.ts).
+    recordAccount(body['email'], owner);
     const hasChanges = ['purchaseIds', 'removedPurchaseIds', 'accountType', 'companyName', 'data', 'brand'].some((key) => body[key] !== undefined);
     const view = hasChanges ? mergeWorkspace(owner, body) : workspaceView(owner);
     // The logo has an address that does not change, on the domain this app is served from.

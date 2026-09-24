@@ -3,6 +3,7 @@ import { Icon } from '@/components/ui/Icon';
 import { ACCOUNT_UPDATED_EVENT, storedUser, type StoredUser } from '@/lib/client/account';
 import { leaveSession } from '@/lib/client/session';
 import { currentTheme, setTheme, THEME_EVENT } from '@/lib/client/theme';
+import { CREATE_COMPANY_PATH, hasOwnCompany } from '@/lib/client/company-signup';
 import { companyMemberships } from '@/lib/client/workspace';
 import { getLandingMessages, type LandingMessages } from '@/i18n/landing';
 
@@ -86,6 +87,9 @@ export function ProfileMenu({ labels = getLandingMessages().profile }: { labels?
         </button>
         {companyAccess && <button className="profile-action" type="button" onClick={() => { window.location.href = '/company'; }}>
           <Icon name="fa-solid fa-building" /> {labels.company}
+        </button>}
+        {user && !hasOwnCompany(user) && <button className="profile-action" type="button" onClick={() => { window.location.href = CREATE_COMPANY_PATH; }}>
+          <Icon name="fa-solid fa-plus" /> {labels.createCompany}
         </button>}
         <button className="profile-action" type="button" onClick={() => leaveSession('cerrada')}>
           <Icon name="fa-solid fa-arrow-right-from-bracket" /> {labels.logout}

@@ -1,6 +1,6 @@
 import type { IssuanceOptions } from '../issuance';
 // Products, batches and purchases, kept in memory and saved to a JSON file after every change.
-import { createHash } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { copyFileSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { config } from './config';
@@ -143,6 +143,15 @@ interface SavedState {
   invitations?: Invitation[];
   // Old public code -> current code, for products renamed because their code was taken in the contract.
   productAliases?: Record<string, string>;
+  // Emails that already have an account, as keyed hashes (see accounts.ts), and the secret key of those hashes.
+  accounts?: Record<string, RegisteredAccount>;
+  accountsKey?: string;
+}
+
+// An email that has an account: the wallet that said so, signing, and when.
+export interface RegisteredAccount {
+  owner: string;
+  at: string;
 }
 
 export const hashSecret = (secret: string) => createHash('sha256').update(secret).digest('hex');
@@ -159,7 +168,10 @@ const createState = () => {
     purchases: new Map<string, Purchase>(),
     workspaces: new Map<string, Workspace>(),
     invitations: new Map<string, Invitation>(),
-    productAliases: new Map<string, string>()
+    productAliases: new Map<string, string>(),
+    accounts: new Map<string, RegisteredAccount>(),
+    // Created once and kept with the data: without it, the hash of a guessed email could be checked against the file.
+    accountsKey: randomBytes(32).toString('hex')
   };
 
   const readSaved = (file: string) => JSON.parse(readFileSync(file, 'utf8')) as SavedState;
@@ -200,6 +212,8 @@ const createState = () => {
   for (const workspace of saved.workspaces ?? []) state.workspaces.set(workspace.owner, workspace);
   for (const invitation of saved.invitations ?? []) state.invitations.set(invitation.id, invitation);
   for (const [previous, current] of Object.entries(saved.productAliases ?? {})) state.productAliases.set(previous, current);
+  for (const [key, account] of Object.entries(saved.accounts ?? {})) state.accounts.set(key, account);
+  if (saved.accountsKey) state.accountsKey = saved.accountsKey;
   state.nextTokenId = Math.max(state.nextTokenId, Number(saved.nextTokenId) || 0);
   state.nextBatchId = Math.max(state.nextBatchId, Number(saved.nextBatchId) || 0);
   return state;
@@ -210,6 +224,8 @@ export const store = singleton('store', createState);
 // since; they start empty instead of breaking every request that reads them.
 store.invitations ??= new Map<string, Invitation>();
 store.productAliases ??= new Map<string, string>();
+store.accounts ??= new Map<string, RegisteredAccount>();
+store.accountsKey ??= randomBytes(32).toString('hex');
 
 // On Windows, replacing a file fails for a moment while another program has it open (the antivirus, the search
 // indexer, an editor showing it). A few short retries get past it instead of failing the user's change.
@@ -235,7 +251,9 @@ export const saveState = () => {
     purchases: [...store.purchases.values()],
     workspaces: [...store.workspaces.values()],
     invitations: [...store.invitations.values()],
-    productAliases: Object.fromEntries(store.productAliases)
+    productAliases: Object.fromEntries(store.productAliases),
+    accounts: Object.fromEntries(store.accounts),
+    accountsKey: store.accountsKey
   };
   // Written beside the file and renamed over it: a rename replaces the file atomically, so a crash leaves either the
   // previous state or the new one, never half of either and never no file at all. The previous state is copied to .bak
