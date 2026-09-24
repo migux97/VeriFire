@@ -9,11 +9,10 @@ import { PaymentWarning } from '@/components/ui/PaymentWarning';
 import type { Message } from '@/components/ui/StatusMessage';
 import { Toast } from '@/components/ui/Toast';
 import { WalletPayButton } from './WalletPayButton';
-import { isDemoPurchase } from '@/lib/client/demo';
 import { createPurchase, fetchPurchase, migrateLegacyPurchase, savePurchase } from '@/lib/client/purchases';
 import { saveBatchPhoto } from '@/lib/client/photo';
 import { supportForNewBatch } from '@/lib/client/warranty-settings';
-import { demoModeActive, userSession } from '@/lib/client/session';
+import { userSession } from '@/lib/client/session';
 import { errorMessage } from '@/lib/errors';
 import type { CountryOption, CreatedPurchase } from '@/lib/types';
 
@@ -43,7 +42,6 @@ export function PurchaseForm({ countries, batchesHref = '/batches', embedded = f
   const [country, setCountry] = useState('');
   // The photo of the batch of the simple form; the configurator keeps its own.
   const [photo, setPhoto] = useState('');
-  const [demo, setDemo] = useState(false);
   const purchaseId = useRef('');
   const pollTimer = useRef<number | undefined>(undefined);
   // Set when the form closes: a poll that was mid-request must not schedule the next one.
@@ -53,7 +51,6 @@ export function PurchaseForm({ countries, batchesHref = '/batches', embedded = f
   const destination = countries.find((option) => option.code === country)?.destination;
 
   useEffect(() => {
-    setDemo(demoModeActive());
     if (userSession.isActive()) migrateLegacyPurchase();
     return () => {
       stopped.current = true;
@@ -105,7 +102,6 @@ export function PurchaseForm({ countries, batchesHref = '/batches', embedded = f
           quantity: Number(formData.get('quantity')),
           ...(formData.get('configuration') ? { configuration: JSON.parse(String(formData.get('configuration'))) } : {})
         },
-        countries.find((option) => option.code === chosen)?.destination ?? chosen,
         t.purchase.createFailed
       );
 
@@ -114,7 +110,7 @@ export function PurchaseForm({ countries, batchesHref = '/batches', embedded = f
       // The photo of the batch, if one was chosen. The purchase stands without it: it can be added from Mis lotes.
       const photo = String(formData.get('photo') ?? '');
       let photoFailed = false;
-      if (photo && !isDemoPurchase(purchase.purchaseId)) {
+      if (photo) {
         try {
           await saveBatchPhoto(purchase.purchaseId, photo, t.photo.uploadFailed);
         } catch {
@@ -173,7 +169,7 @@ export function PurchaseForm({ countries, batchesHref = '/batches', embedded = f
           </p>
           <label htmlFor="token-quantity">Cantidad de tokens</label>
           <input id="token-quantity" name="quantity" type="number" min={1} max={500} defaultValue={3} required />
-          <PhotoPicker value={photo} onChange={setPhoto} disabled={demo} />
+          <PhotoPicker value={photo} onChange={setPhoto} />
           <button className="button button-primary" type="submit" disabled={submitting}>
             {submitting ? 'Preparando pago…' : 'Generar lote y pagar'}
           </button>
@@ -184,9 +180,9 @@ export function PurchaseForm({ countries, batchesHref = '/batches', embedded = f
         <div className="verify-details is-available">
           <strong>{t.purchase.payTitle(payment.amount, payment.asset || 'XLM', payment.quantity)}</strong>
           <span>{t.purchase.payNote}</span>
-          <PaymentWarning as="span" text={isDemoPurchase(payment.purchaseId) ? t.purchase.demoWarning : t.purchase.warning} />
+          <PaymentWarning as="span" text={t.purchase.warning} />
           {payment.qr && <img src={payment.qr} alt={t.purchase.qrAlt} width={240} height={240} />}
-          {payment.uri && !isDemoPurchase(payment.purchaseId) && (
+          {payment.uri && (
             <WalletPayButton
               purchaseId={payment.purchaseId}
               uri={payment.uri}

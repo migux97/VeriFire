@@ -1,7 +1,6 @@
-// Configuración of the company panel: look, language, animations, notifications, demo mode and role permissions.
+// Configuración of the company panel: look, language, animations, notifications and role permissions.
 // Every choice is kept in this browser.
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
-import { demoActive, disableDemo, enableDemo } from '@/lib/client/demo';
 import { defaultPrefs, notify, readPrefs, savePrefs, type LeadHours, type NotificationPrefs } from '@/lib/client/notifications';
 import { motionEnabled, setMotionEnabled, setTheme, themePreference, type ThemePreference } from '@/lib/client/theme';
 import { LOCALE_COOKIE, type Locale } from '@/lib/locale';
@@ -81,7 +80,6 @@ function Settings({ locale, cavosAppId }: { locale: Locale; cavosAppId: string }
   const [systemReduced, setSystemReduced] = useState(false);
   const [prefs, setPrefs] = useState<NotificationPrefs>(defaultPrefs);
   const [permission, setPermission] = useState<NotificationPermission | 'unsupported'>('default');
-  const [demo, setDemo] = useState(false);
   const [working, setWorking] = useState('');
 
   useEffect(() => {
@@ -90,7 +88,6 @@ function Settings({ locale, cavosAppId }: { locale: Locale; cavosAppId: string }
     setSystemReduced(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false);
     setPrefs(readPrefs());
     setPermission(typeof Notification === 'undefined' ? 'unsupported' : Notification.permission);
-    setDemo(demoActive());
   }, []);
 
   const chooseTheme = (value: ThemePreference) => {
@@ -121,21 +118,6 @@ function Settings({ locale, cavosAppId }: { locale: Locale; cavosAppId: string }
     const result = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission();
     setPermission(result);
     updatePrefs({ browser: result === 'granted' });
-  };
-
-  // The switch moves at once; the data is written in the next frame, after the change is painted, and the page reloads
-  // so every island of the panel reads it again.
-  const chooseDemo = (value: boolean, reset = false) => {
-    setDemo(value);
-    setWorking(text.demo.working);
-    requestAnimationFrame(() =>
-      window.setTimeout(() => {
-        if (value || reset) enableDemo();
-        else disableDemo();
-        window.location.hash = value ? '#dashboard' : '#settings';
-        window.location.reload();
-      }, 120)
-    );
   };
 
   return (
@@ -209,32 +191,9 @@ function Settings({ locale, cavosAppId }: { locale: Locale; cavosAppId: string }
         </div>
       </Card>
 
-      <Card icon="fa-flask" title={text.demo.title} lead={text.demo.lead} badge={text.demo.badge}>
-        <Row title={text.demo.toggle} help={demo ? text.demo.on : undefined}>
-          <Switch checked={demo} disabled={Boolean(working)} onChange={(value) => chooseDemo(value)} label={text.demo.toggle} />
-        </Row>
-        {working === text.demo.working && (
-          <p className="settings-working" role="status">
-            <i className="fa-solid fa-circle-notch fa-spin" aria-hidden="true" /> {working}
-          </p>
-        )}
-        {demo && (
-          <div className="settings-actions">
-            <button
-              className="company-button"
-              type="button"
-              disabled={Boolean(working)}
-              onClick={() => chooseDemo(true, true)}
-            >
-              <i className="fa-solid fa-rotate" aria-hidden="true" /> {text.demo.reset}
-            </button>
-          </div>
-        )}
-      </Card>
-
       <CompanyRoleSettings />
 
-      {working && working !== text.demo.working && (
+      {working && (
         <p className="settings-working" role="status">
           <i className="fa-solid fa-circle-notch fa-spin" aria-hidden="true" /> {working}
         </p>

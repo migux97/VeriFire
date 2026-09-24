@@ -4,7 +4,6 @@
 import type { PublicBrand } from '../brand';
 import { readAccountData, writeAccountData } from './account-data';
 import { companyName, readCompanyProfile } from './company-profile';
-import { demoModeActive } from './session';
 import { readWarrantySettings } from './warranty-settings';
 import { resolveWalletAddress } from './wallet';
 import { syncWorkspace } from './workspace-sync';
@@ -54,9 +53,8 @@ export const brandStatus = async (): Promise<BrandStatus> => {
   return published.digest === (await digestOf(currentBrand())) ? 'current' : 'outdated';
 };
 
-// Publishes (or updates) the brand. Answers what the server now holds, or null in demo mode, whose data is not real.
+// Publishes (or updates) the brand. Answers what the server now holds.
 export const publishBrand = async (appId: string): Promise<PublishedBrand | null> => {
-  if (demoModeActive()) return null;
   const brand = currentBrand();
   const owner = await resolveWalletAddress(appId);
   const remote = await syncWorkspace(appId, owner, { brand });
@@ -73,7 +71,6 @@ export const publishBrand = async (appId: string): Promise<PublishedBrand | null
 
 // Takes the brand down: buyers go back to seeing only the name and email set for support.
 export const unpublishBrand = async (appId: string) => {
-  if (demoModeActive()) return;
   const owner = await resolveWalletAddress(appId);
   await syncWorkspace(appId, owner, { brand: null });
   writeAccountData('brand-public', { unpublished: true });

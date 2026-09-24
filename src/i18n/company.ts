@@ -264,7 +264,6 @@ const es = {
     shareAgain: (who: string) => `Compartir invitación de ${who}`,
     linkMember: 'Invitación por link',
     qrMember: 'Invitación por QR',
-    demoBlocked: 'En modo demo no se envían invitaciones reales. Desactivá el modo demo en Configuración para invitar a tu equipo.',
     declined: 'Rechazada',
     expired: 'Vencida',
     revokeFailed: 'No se pudo cancelar la invitación en el servidor. Se quitó de tu lista.'
@@ -327,7 +326,6 @@ const es = {
       failed: 'No se pudo publicar la marca:',
       refreshFailed: 'Se guardó el perfil, pero no se pudo actualizar la marca publicada:',
       noSupportEmail: 'Todavía no configuraste un correo de soporte: sin él los compradores no tienen cómo escribirte.',
-      demo: 'El modo demo no publica nada: sus datos son de ejemplo.',
       readOnly: 'Solo un administrador puede publicar la marca.',
       toml: {
         title: 'Identidad en Stellar (stellar.toml)',
@@ -449,15 +447,6 @@ const es = {
       browserDenied: 'El navegador bloqueó las notificaciones. Habilitalas desde la configuración del sitio.',
       browserUnsupported: 'Este navegador no admite notificaciones.',
       test: 'Enviar notificación de prueba'
-    },
-    demo: {
-      title: 'Modo demo',
-      badge: 'Temporal',
-      lead: 'Completa la cuenta con compras, lotes, agenda, equipo y notificaciones de ejemplo para probar la visualización y la edición. Los datos de ejemplo quedan aparte: tus datos reales no se tocan.',
-      toggle: 'Activar modo demo',
-      on: 'El modo demo está activo. Al desactivarlo se borran todos los datos de ejemplo.',
-      reset: 'Restablecer datos de ejemplo',
-      working: 'Preparando los datos…'
     }
   },
   notifications: {
@@ -507,15 +496,8 @@ const es = {
         title: 'Invitación rechazada',
         body: (p: Record<string, string>) => `${p['who'] ?? ''} rechazó la invitación a ${p['company'] ?? ''}.`
       },
-      demo: { title: 'Modo demo activado', body: () => 'Estás viendo datos de ejemplo. Podés desactivarlo desde Configuración.' },
       test: { title: 'Notificación de prueba', body: () => 'Así vas a ver los avisos de pagos, lotes y vencimientos.' }
     }
-  },
-  demo: {
-    banner: 'Modo demo activo: estás viendo datos de ejemplo.',
-    turnOff: 'Desactivar',
-    paymentQr: 'DEMO: ejemplo sin validez. No realiza pagos.',
-    labelQr: 'DEMO: ejemplo sin validez. No activa productos.'
   },
   batches: {
     title: 'Lotes',
@@ -613,7 +595,6 @@ const es = {
     myBatches: 'Ver mis lotes',
     warning:
       'Pagá una sola vez: este QR es una transferencia real y se puede volver a pagar, pero un segundo pago no genera otro lote.',
-    demoWarning: 'Modo demo: este QR no es un pago real. El pago se confirma solo en unos segundos.',
     wallet: {
       action: 'Pagar con wallet',
       busy: 'Esperando la wallet...',
@@ -640,7 +621,6 @@ const es = {
     saving: 'Guardando la foto…',
     saved: 'Foto guardada.',
     removed: 'Foto quitada.',
-    demo: 'En el modo demostración no se guardan fotos.',
     uploadFailed: 'El lote se creó, pero no se pudo guardar la foto. Agregala desde Mis lotes.',
     errors: {
       type: 'Usá una imagen JPG, PNG o WebP.',
@@ -968,7 +948,6 @@ const en: CompanyMessages = {
     shareAgain: (who: string) => `Share the invitation for ${who}`,
     linkMember: 'Invitation by link',
     qrMember: 'Invitation by QR',
-    demoBlocked: 'Demo mode does not send real invitations. Turn demo mode off in Settings to invite your team.',
     declined: 'Declined',
     expired: 'Expired',
     revokeFailed: 'The invitation could not be cancelled on the server. It was removed from your list.'
@@ -1031,7 +1010,6 @@ const en: CompanyMessages = {
       failed: 'The brand could not be published:',
       refreshFailed: 'The profile was saved, but the published brand could not be updated:',
       noSupportEmail: 'You have not set a support email yet: without it buyers have no way to write to you.',
-      demo: 'Demo mode publishes nothing: its data is sample data.',
       readOnly: 'Only an administrator can publish the brand.',
       toml: {
         title: 'Identity on Stellar (stellar.toml)',
@@ -1153,15 +1131,6 @@ const en: CompanyMessages = {
       browserDenied: 'The browser blocked notifications. Allow them from the site settings.',
       browserUnsupported: 'This browser does not support notifications.',
       test: 'Send a test notification'
-    },
-    demo: {
-      title: 'Demo mode',
-      badge: 'Temporary',
-      lead: 'Fills the account with sample purchases, batches, agenda, team and notifications to try the charts and editing. Sample data is kept apart: your real data is not touched.',
-      toggle: 'Turn on demo mode',
-      on: 'Demo mode is on. Turning it off deletes all the sample data.',
-      reset: 'Reset sample data',
-      working: 'Preparing the data…'
     }
   },
   notifications: {
@@ -1211,15 +1180,8 @@ const en: CompanyMessages = {
         title: 'Invitation declined',
         body: (p: Record<string, string>) => `${p['who'] ?? ''} declined the invitation to ${p['company'] ?? ''}.`
       },
-      demo: { title: 'Demo mode on', body: () => 'You are looking at sample data. You can turn it off in Settings.' },
       test: { title: 'Test notification', body: () => 'This is how payment, batch and due date notices look.' }
     }
-  },
-  demo: {
-    banner: 'Demo mode is on: you are looking at sample data.',
-    turnOff: 'Turn off',
-    paymentQr: 'DEMO: sample only. It makes no payment.',
-    labelQr: 'DEMO: sample only. It activates no product.'
   },
   batches: {
     title: 'Batches',
@@ -1316,7 +1278,6 @@ const en: CompanyMessages = {
     seeBatches: 'See payments and batches',
     myBatches: 'See my batches',
     warning: 'Pay only once: this QR is a real transfer and can be paid again, but a second payment does not issue another batch.',
-    demoWarning: 'Demo mode: this QR is not a real payment. It is confirmed on its own in a few seconds.',
     wallet: {
       action: 'Pay with wallet',
       busy: 'Waiting for the wallet...',
@@ -1343,7 +1304,6 @@ const en: CompanyMessages = {
     saving: 'Saving the photo…',
     saved: 'Photo saved.',
     removed: 'Photo removed.',
-    demo: 'Demo mode does not save photos.',
     uploadFailed: 'The batch was created, but the photo could not be saved. Add it from My batches.',
     errors: {
       type: 'Use a JPG, PNG or WebP image.',

@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react';
 import { ACCOUNT_DATA_WRITTEN_EVENT, accountDataSnapshot, applyAccountData } from '@/lib/client/account-data';
-import { demoModeActive } from '@/lib/client/session';
 import { storedUser, updateStoredUser } from '@/lib/client/account';
 import { addPurchaseIds, forgottenPurchaseIds, PURCHASES_CHANGED_EVENT, savedPurchaseIds } from '@/lib/client/purchases';
 import { userSession } from '@/lib/client/session';
@@ -20,8 +19,6 @@ export function WorkspaceSync({ cavosAppId }: { cavosAppId: string }) {
     if (!userSession.isActive()) return undefined;
 
     const sync = async () => {
-      // The demo's sample data (its agenda, its batches) must never replace the account's real data on the server.
-      if (demoModeActive()) return;
       // One at a time: the list of purchases is merged on the server, so a second call would only repeat the work.
       if (running.current) {
         again.current = true;
@@ -66,10 +63,8 @@ export function WorkspaceSync({ cavosAppId }: { cavosAppId: string }) {
 
     const onPurchasesChanged = () => void sync();
     // A template, the team, the profile...: sent a moment after the last change, so a burst of edits is one sync.
-    // The demo's data stays in this browser.
     let savedTimer: number | undefined;
     const onDataWritten = () => {
-      if (demoModeActive()) return;
       window.clearTimeout(savedTimer);
       savedTimer = window.setTimeout(() => void sync(), 1500);
     };

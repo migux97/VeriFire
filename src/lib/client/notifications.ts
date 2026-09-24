@@ -1,5 +1,5 @@
 // Notifications of the company panel: a confirmed payment, a created batch, and the dates of the agenda coming up.
-// Kept in this browser per account (inside the demo data while demo mode is on). A notice stores its kind and its
+// Kept in this browser per account. A notice stores its kind and its
 // values, not its text, so it reads in whatever language the panel is in when it is shown.
 import { readAccountData, writeAccountData } from './account-data';
 import { atom } from 'nanostores';
@@ -17,7 +17,6 @@ export type NoticeKind =
   | 'teamInvite'
   | 'inviteAccepted'
   | 'inviteDeclined'
-  | 'demo'
   | 'test';
 
 export interface Notice {
@@ -51,7 +50,6 @@ const DUE_WINDOW_MS = 3 * 24 * 60 * 60 * 1000;
 
 const noticesKey = () => accountKey('notifications');
 const logKey = () => accountKey('notification-log');
-// The preferences are the person's, not the demo's: they are kept outside the demo data.
 
 export const $notices = atom<Notice[]>([]);
 // Notices that arrived while the page is open, shown for a few seconds as a toast.
@@ -59,7 +57,8 @@ export const $freshNotices = atom<Notice[]>([]);
 
 const isNotice = (value: unknown): value is Notice => {
   const notice = value as Partial<Notice> | null;
-  return Boolean(notice) && typeof notice?.id === 'string' && typeof notice.kind === 'string' && typeof notice.at === 'string';
+  // Notices of the removed demo mode ("demo") are dropped: the panel has no text for them any more.
+  return Boolean(notice) && typeof notice?.id === 'string' && typeof notice.kind === 'string' && (notice.kind as string) !== 'demo' && typeof notice.at === 'string';
 };
 
 const readNotices = () => {

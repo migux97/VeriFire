@@ -57,7 +57,7 @@ export function PhotoPicker({ value, onChange, disabled = false }: PhotoPickerPr
       </div>
       <input ref={input} type="file" accept="image/jpeg,image/png,image/webp" hidden disabled={disabled} onChange={(event) => void pick(event.currentTarget.files?.[0])} />
       <input type="hidden" name="photo" value={value} />
-      <small className="field-hint">{disabled ? text.demo : text.hint}</small>
+      <small className="field-hint">{text.hint}</small>
       {error && <p role="alert" className="field-hint photo-picker-error">{error}</p>}
     </div>
   );

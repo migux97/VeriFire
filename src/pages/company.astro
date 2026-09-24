@@ -2,7 +2,6 @@
 import { BatchList } from '@/components/batches/BatchList';
 import { CompanyCatalogSummary } from '@/components/company/CompanyCatalogSummary';
 import { CompanyData } from '@/components/company/CompanyData';
-import { CompanyDemoBanner } from '@/components/company/CompanyDemoBanner';
 import { CompanyIdentity } from '@/components/company/CompanyIdentity';
 import { CompanyIssuance } from '@/components/company/CompanyIssuance';
 import { CompanyNotifications } from '@/components/company/CompanyNotifications';
@@ -109,7 +108,6 @@ const views = t.views;
         </div>
       </header>
 
-      <CompanyDemoBanner client:load locale={locale} />
       <WorkspaceSync client:load cavosAppId={publicConfig.cavosAppId} />
 
       <main class="company-content">

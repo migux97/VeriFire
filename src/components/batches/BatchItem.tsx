@@ -4,7 +4,6 @@ import { Icon } from '@/components/ui/Icon';
 import { LedgerLink } from '@/components/ui/LedgerLink';
 import type { CompanyMessages } from '@/i18n/company';
 import type { PurchaseSummary } from '@/lib/types';
-import { isDemoPurchase } from '@/lib/client/demo';
 import type { SummaryEntry } from '@/stores/batches';
 import { BatchPhoto } from './BatchPhoto';
 
@@ -123,7 +122,7 @@ export function BatchItem({ purchaseId, summary, open, detail, itemRef, isBusy, 
               button('forget', text.forget, 'fa-xmark')
             ]}
         </div>
-        {summary.batchId && !isDemoPurchase(purchaseId) && <BatchPhoto purchaseId={purchaseId} photoUrl={summary.photoUrl} onSaved={onPhotoSaved} />}
+        {summary.batchId && <BatchPhoto purchaseId={purchaseId} photoUrl={summary.photoUrl} onSaved={onPhotoSaved} />}
         {summary.issuanceTxUrl && <LedgerLink href={summary.issuanceTxUrl}>{text.ledger}</LedgerLink>}
       </>
     );

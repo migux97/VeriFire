@@ -7,7 +7,6 @@ import type { PublicBrand } from '@/lib/brand';
 import { currentBrand, brandStatus, publishBrand, readPublishedBrand, unpublishBrand, type BrandStatus, type PublishedBrand } from '@/lib/client/brand';
 import { COMPANY_PROFILE_EVENT, emptyProfile, readCompanyProfile } from '@/lib/client/company-profile';
 import { downloadBlob } from '@/lib/client/download';
-import { demoModeActive } from '@/lib/client/session';
 import { storedUser } from '@/lib/client/account';
 import { currentWorkspace } from '@/lib/client/workspace';
 import { errorMessage } from '@/lib/errors';
@@ -30,7 +29,6 @@ export function CompanyBrandSettings({ cavosAppId }: { cavosAppId: string }) {
   const [published, setPublished] = useState<PublishedBrand | null>(null);
   const [status, setStatus] = useState<BrandStatus>('unpublished');
   const [editable, setEditable] = useState(false);
-  const [demo, setDemo] = useState(false);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
 
@@ -43,7 +41,6 @@ export function CompanyBrandSettings({ cavosAppId }: { cavosAppId: string }) {
       setProfile(readCompanyProfile());
       setPublished(readPublishedBrand());
       setEditable(Boolean(currentWorkspace(storedUser())?.own));
-      setDemo(demoModeActive());
       void brandStatus().then((next) => active && setStatus(next));
     };
     load();
@@ -102,7 +99,7 @@ export function CompanyBrandSettings({ cavosAppId }: { cavosAppId: string }) {
     setNotice({ text: text.toml.downloaded, tone: 'success' });
   };
 
-  const canPublish = editable && !demo && !busy && brand.name.trim().length > 0;
+  const canPublish = editable && !busy && brand.name.trim().length > 0;
   const issuer = {
     name: brand.name.trim() || t.identity.unconfigured,
     logoUrl: brand.logo || null,
@@ -123,7 +120,6 @@ export function CompanyBrandSettings({ cavosAppId }: { cavosAppId: string }) {
         </div>
       </div>
       {!editable && <p className="company-data-empty">{text.readOnly}</p>}
-      {demo && <p className="company-data-empty">{text.demo}</p>}
 
       <div className="brand-preview">
         <span className="profile-label">{text.preview}</span>
@@ -141,7 +137,7 @@ export function CompanyBrandSettings({ cavosAppId }: { cavosAppId: string }) {
             <i className={`fa-solid ${busy ? 'fa-circle-notch fa-spin' : 'fa-bullhorn'}`} aria-hidden="true" /> {busy ? text.working : status === 'unpublished' ? text.publish : text.update}
           </button>
           {status !== 'unpublished' && (
-            <button type="button" className="company-button is-ghost" disabled={!editable || demo || busy} onClick={() => void takeDown()}>
+            <button type="button" className="company-button is-ghost" disabled={!editable || busy} onClick={() => void takeDown()}>
               {text.unpublish}
             </button>
           )}

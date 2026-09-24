@@ -4,24 +4,12 @@
 import type { IssuanceOptions } from '../issuance';
 import type { CreatedPurchase, PurchaseStatus, PurchaseSummary } from '../types';
 import { getJson, postJson } from './api';
-import {
-  createDemoPurchase,
-  demoPurchase,
-  demoPurchaseDetail,
-  demoPurchaseIds,
-  forgetDemoPurchase,
-  isDemoPurchase,
-  shipDemoPurchase
-} from './demo';
 import { notify } from './notifications';
-import { accountKey, demoModeActive, userSession } from './session';
+import { accountKey, userSession } from './session';
 import { readStored, writeStored } from './storage';
 
 const LEGACY_PURCHASE_KEY = 'verifireLastPurchase';
 const purchasesKey = () => `verifireCompanyPurchases:${userSession.email().toLowerCase()}`;
-
-// TEMPORARY demo: while demo mode is on, the panel reads and writes sample purchases instead of the real ones.
-const inDemo = (purchaseId?: string) => demoModeActive() && (purchaseId === undefined || isDemoPurchase(purchaseId));
 
 // Last known state of each purchase, to notify only what changes: a payment confirmed, a batch created.
 interface KnownState {
@@ -57,9 +45,9 @@ const trackPurchase = (status: PurchaseStatus) => {
   return status;
 };
 
-export const savedPurchaseIds = (): string[] => (inDemo() ? demoPurchaseIds() : realPurchaseIds());
+export const savedPurchaseIds = (): string[] => realPurchaseIds();
 
-// The company's real purchases, even while demo mode shows the sample ones (settings sent to the server use these).
+// The company's purchases, as this browser keeps them.
 export const realPurchaseIds = (): string[] => {
   const list = readStored<unknown>(localStorage, purchasesKey());
   if (!Array.isArray(list)) return [];
@@ -82,15 +70,12 @@ export const PURCHASES_CHANGED_EVENT = 'verifire:purchases-changed';
 // A purchase created here starts as unpaid, so its payment and its batch are notified when they arrive.
 export const savePurchase = (purchaseId: string) => {
   writeStored(localStorage, statesKey(), { ...readStates(), [purchaseId]: { paid: false, batch: false } });
-  // Always from the real list: savedPurchaseIds() answers the sample ids while demo mode is on (maybe turned on in
-  // another tab), and writing those here would replace every real purchase id, the only key to their batches.
-  if (!inDemo(purchaseId)) writePurchaseIds([purchaseId, ...realPurchaseIds().filter((id) => id !== purchaseId)]);
+  writePurchaseIds([purchaseId, ...realPurchaseIds().filter((id) => id !== purchaseId)]);
   window.dispatchEvent(new Event(PURCHASES_CHANGED_EVENT));
 };
 
 // Purchases the account already had, brought from the server: what this browser knows is kept, nothing is replaced.
 export const addPurchaseIds = (purchaseIds: string[]) => {
-  if (inDemo()) return;
   const known = savedPurchaseIds();
   const forgotten = forgottenPurchaseIds();
   const missing = purchaseIds.filter((purchaseId) => !known.includes(purchaseId) && !forgotten.includes(purchaseId));
@@ -108,7 +93,6 @@ export const forgottenPurchaseIds = (): string[] => {
 };
 
 export const forgetPurchase = (purchaseId: string) => {
-  if (inDemo(purchaseId)) return forgetDemoPurchase(purchaseId);
   writePurchaseIds(realPurchaseIds().filter((id) => id !== purchaseId));
   writeStored(localStorage, forgottenKey(), [...forgottenPurchaseIds().filter((id) => id !== purchaseId), purchaseId]);
   window.dispatchEvent(new Event(PURCHASES_CHANGED_EVENT));
@@ -116,7 +100,6 @@ export const forgetPurchase = (purchaseId: string) => {
 
 // The panel used to keep only the last purchase under its own key; it moves into the list once.
 export const migrateLegacyPurchase = () => {
-  if (inDemo()) return;
   const legacy = readStored<{ purchaseId?: unknown }>(localStorage, LEGACY_PURCHASE_KEY);
   if (typeof legacy?.purchaseId === 'string' && !realPurchaseIds().includes(legacy.purchaseId)) savePurchase(legacy.purchaseId);
   try {
@@ -129,18 +112,14 @@ export const migrateLegacyPurchase = () => {
 // The summary of a purchase: enough to list and count batches, with no secret code and no QR image.
 export const fetchPurchase = async (purchaseId: string) =>
   trackPurchase(
-    inDemo(purchaseId)
-      ? await demoPurchase(purchaseId)
-      : await getJson<PurchaseStatus>(`/api/purchases/${encodeURIComponent(purchaseId)}`, 'No se pudo consultar la compra.')
+    await getJson<PurchaseStatus>(`/api/purchases/${encodeURIComponent(purchaseId)}`, 'No se pudo consultar la compra.')
   );
 
 // The batch with the secret code and the QR images of every product. Asked for with the id in the body, never in the
 // URL: the id is the only key to those codes and it cannot be rotated.
 export const fetchPurchaseDetail = async (purchaseId: string) =>
   trackPurchase(
-    inDemo(purchaseId)
-      ? await demoPurchaseDetail(purchaseId)
-      : await postJson<PurchaseStatus>('/api/purchases/detail', { purchaseId }, 'No se pudo consultar la compra.')
+    await postJson<PurchaseStatus>('/api/purchases/detail', { purchaseId }, 'No se pudo consultar la compra.')
   );
 
 export interface PurchaseRequest {
@@ -153,13 +132,9 @@ export interface PurchaseRequest {
   support?: { companyName: string; email: string; warrantyMonths: number };
 }
 
-// Creates the Cosmos Pay payment of a new batch. `destination` is how the labels will read it, used by demo mode.
-export const createPurchase = (request: PurchaseRequest, destination: string, fallbackError: string) =>
-  inDemo()
-    ? createDemoPurchase({ model: request.model, lot: request.lot, quantity: request.quantity, destination, ...(request.configuration ? { configuration: request.configuration } : {}) })
-    : postJson<CreatedPurchase>('/api/purchases', request, fallbackError);
+// Creates the Cosmos Pay payment of a new batch.
+export const createPurchase = (request: PurchaseRequest, fallbackError: string) =>
+  postJson<CreatedPurchase>('/api/purchases', request, fallbackError);
 
 export const shipPurchase = (purchaseId: string, fallbackError: string) =>
-  inDemo(purchaseId)
-    ? shipDemoPurchase(purchaseId)
-    : postJson<{ purchase: PurchaseSummary }>(`/api/purchases/${encodeURIComponent(purchaseId)}/ship`, {}, fallbackError);
+  postJson<{ purchase: PurchaseSummary }>(`/api/purchases/${encodeURIComponent(purchaseId)}/ship`, {}, fallbackError);

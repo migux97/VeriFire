@@ -1,5 +1,5 @@
-// The company's public profile, edited in Configuración: logo, legal and contact data. Kept in this browser per
-// account, outside the demo data. The trade name stays in the account (StoredUser.companyName), where the rest of the
+// The company's public profile, edited in Configuración: logo, legal and contact data. Kept with the account
+// (see account-data.ts). The trade name stays in the account (StoredUser.companyName), where the rest of the
 // panel and the label configurator already read it.
 import { readAccountData, writeAccountData } from './account-data';
 import { userSession } from './session';

@@ -9,7 +9,7 @@ import { downloadDataUrl } from '@/lib/client/download';
 import { createInvitation, invitationLink, invitationStatuses, revokeInvitation, type InvitationEmailStatus } from '@/lib/client/invitations';
 import { notify } from '@/lib/client/notifications';
 import { readAccountData, writeAccountData } from '@/lib/client/account-data';
-import { demoModeActive, userSession } from '@/lib/client/session';
+import { userSession } from '@/lib/client/session';
 import { updateCompanyMembershipRole, type CompanyRole } from '@/lib/client/workspace';
 import { errorMessage } from '@/lib/errors';
 import { formatTimeLeft } from '@/lib/format';
@@ -337,7 +337,6 @@ function Team() {
     if (!user) return;
     // Sample companies do not invite real people: the invitation would be real (and its email too), and turning demo
     // mode off would erase the company's only record of it.
-    if (demoModeActive()) throw new Error(text.demoBlocked);
     const { invitation, token, emailStatus } = await createInvitation({
       companyName: user.companyName ?? '',
       inviterName: user.name,
