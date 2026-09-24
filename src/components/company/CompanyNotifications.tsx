@@ -39,7 +39,6 @@ const ICONS: Record<NoticeKind, { icon: string; tone: string }> = {
   teamInvite: { icon: 'fa-envelope-open-text', tone: 'info' },
   inviteAccepted: { icon: 'fa-user-check', tone: 'success' },
   inviteDeclined: { icon: 'fa-user-xmark', tone: 'warning' },
-  demo: { icon: 'fa-flask', tone: 'info' },
   test: { icon: 'fa-bell', tone: 'info' }
 };
 

@@ -11,7 +11,9 @@ export function WarrantySupport({ warranty, locale = 'es' }: { warranty: Warrant
   const trigger = useRef<HTMLButtonElement>(null);
   const id = useId();
   const [copied, setCopied] = useState(false);
-  const support = warranty.support;
+  // What the company published for its buyers is what counts; the email set for the batch is the fallback.
+  const issuer = warranty.issuer;
+  const support = issuer?.email ? { company: issuer.name, email: issuer.email } : warranty.support;
   const subject = fillIn(labels.subject, { model: warranty.model, token: warranty.token });
 
   const copy = async () => {
@@ -71,11 +73,34 @@ export function WarrantySupport({ warranty, locale = 'es' }: { warranty: Warrant
                   <a href={`mailto:${support.email}?subject=${encodeURIComponent(subject)}`}>{support.email}</a>
                 </dd>
               </div>
+              {issuer?.phone && (
+                <div>
+                  <dt>{labels.phone}</dt>
+                  <dd>
+                    <a href={`tel:${issuer.phone.replace(/[^+\d]/g, '')}`}>{issuer.phone}</a>
+                  </dd>
+                </div>
+              )}
+              {issuer?.website && (
+                <div>
+                  <dt>{labels.website}</dt>
+                  <dd>
+                    <a href={issuer.website} target="_blank" rel="noopener noreferrer">
+                      {issuer.website.replace(/^https?:\/\//i, '')}
+                    </a>
+                  </dd>
+                </div>
+              )}
             </dl>
             <div className="support-dialog-actions">
               <a className="button button-primary" href={`mailto:${support.email}?subject=${encodeURIComponent(subject)}`}>
                 <Icon name="fa-solid fa-envelope" /> {labels.write}
               </a>
+              {issuer?.phone && (
+                <a className="button button-secondary" href={`tel:${issuer.phone.replace(/[^+\d]/g, '')}`}>
+                  <Icon name="fa-solid fa-phone" /> {labels.call}
+                </a>
+              )}
               <button type="button" className="button button-secondary" onClick={() => void copy()}>
                 <Icon name={copied ? 'fa-solid fa-check' : 'fa-regular fa-copy'} /> {copied ? labels.copied : labels.copy}
               </button>

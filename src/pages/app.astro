@@ -6,6 +6,7 @@ import { WorkspaceSync } from '@/components/company/WorkspaceSync';
 import LanguageMenu from '@/components/ui/LanguageMenu.astro';
 import { ProfileMenu } from '@/components/warranties/ProfileMenu';
 import { WarrantyDashboard } from '@/components/warranties/WarrantyDashboard';
+import { RecoveryCard } from '@/components/warranties/RecoveryCard';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import { publicConfig } from '@/lib/server/config';
 import { getConsumerMessages } from '@/i18n/consumer';
@@ -26,12 +27,16 @@ const { profile, nav } = getLandingMessages(locale);
   session="protected"
 >
   <AppTopbar>
+    <a class="wallet-button app-home-button" href={locale === 'en' ? '/en' : '/'} aria-label={copy.topbar.homeLabel} data-leave-app>
+      <i class="fa-solid fa-house" aria-hidden="true"></i> <span>{copy.topbar.home}</span>
+    </a>
     <LanguageMenu locale={locale} label={nav.language} mode="query" />
     <InvitationInbox client:load locale={locale} />
     <ProfileMenu client:load labels={profile} />
   </AppTopbar>
 
   <main class="container dashboard">
+    <RecoveryCard client:load cavosAppId={publicConfig.cavosAppId} locale={locale} />
     <WarrantyDashboard client:load cavosAppId={publicConfig.cavosAppId} locale={locale} />
     <WorkspaceSync client:load cavosAppId={publicConfig.cavosAppId} />
   </main>
@@ -40,10 +45,13 @@ const { profile, nav } = getLandingMessages(locale);
 
   <script>
     import { captureClaimLink } from '@/lib/client/qr';
-    import { guardSession } from '@/lib/client/session';
+    import { guardSession, IN_APP_KEY } from '@/lib/client/session';
+    import { removeStored } from '@/lib/client/storage';
 
     // A secret QR link opened without a session is kept for after the login.
     captureClaimLink();
     guardSession();
+    // The home page sends back here whoever is inside the app in this tab: going there on purpose leaves the app.
+    document.querySelector('[data-leave-app]')?.addEventListener('click', () => removeStored(sessionStorage, IN_APP_KEY));
   </script>
 </BaseLayout>

@@ -10,6 +10,8 @@ const es = {
     batchDescription: 'Verificación pública de un lote de productos Verifire.'
   },
   header: { network: 'Verificación pública', eyebrow: 'QR público del producto', batchEyebrow: 'QR público del lote' },
+  issuer: { issuedBy: 'Emitido por', write: 'Escribir a la empresa', call: 'Llamar a la empresa' },
+  photoAlt: 'Foto de {model}',
   product: {
     title: 'Verificá tu producto',
     lead: 'Escaneá el QR de la caja o ingresá el código público del producto.',
@@ -31,7 +33,7 @@ const es = {
     transferLink: 'Ese es un link de transferencia: abrilo desde tu panel de Verifire para aceptar el producto.',
     unknown: 'No reconocimos ese QR como un QR de Verifire.'
   },
-  form: { label: 'O ingresá el código público del producto', placeholder: 'Ej. VF-001', submit: 'Verificar', note: 'No hace falta iniciar sesión: esta página solo muestra información pública del producto.' },
+  form: { label: 'O ingresá el código público del producto', placeholder: 'Ej. VF-7K3M9Q2A', submit: 'Verificar', note: 'No hace falta iniciar sesión: esta página solo muestra información pública del producto.' },
   batch: {
     unavailableTitle: 'Lote no disponible',
     lead: 'Escaneá el QR público del lote para ver sus productos.',
@@ -53,6 +55,8 @@ const en: Messages = {
     batchDescription: 'Public check of a batch of Verifire products.'
   },
   header: { network: 'Public verification', eyebrow: 'Public product QR', batchEyebrow: 'Public batch QR' },
+  issuer: { issuedBy: 'Issued by', write: 'Write to the company', call: 'Call the company' },
+  photoAlt: 'Photo of {model}',
   product: {
     title: 'Check your product',
     lead: 'Scan the QR on the box or enter the public code of the product.',
@@ -74,7 +78,7 @@ const en: Messages = {
     transferLink: 'That is a transfer link: open it from your Verifire panel to accept the product.',
     unknown: 'We did not recognise that QR as a Verifire QR.'
   },
-  form: { label: 'Or enter the public code of the product', placeholder: 'e.g. VF-001', submit: 'Check', note: 'No account needed: this page only shows public information about the product.' },
+  form: { label: 'Or enter the public code of the product', placeholder: 'e.g. VF-7K3M9Q2A', submit: 'Check', note: 'No account needed: this page only shows public information about the product.' },
   batch: {
     unavailableTitle: 'Batch unavailable',
     lead: 'Scan the public QR of the batch to see its products.',

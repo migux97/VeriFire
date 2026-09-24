@@ -7,7 +7,8 @@ import type { Message, MessageTone } from '@/components/ui/StatusMessage';
 import { Toast } from '@/components/ui/Toast';
 import { useNow } from '@/components/ui/useNow';
 import { storedUser, updateStoredUser } from '@/lib/client/account';
-import { activateWarranty } from '@/lib/client/activation';
+import { activateWarranty, previewClaim } from '@/lib/client/activation';
+import { setShowcase } from '@/lib/client/showcase';
 import { ApiError, getJson } from '@/lib/client/api';
 import { verifyPassword, deviceCodeFor } from '@/lib/client/password';
 import {
@@ -21,11 +22,12 @@ import {
 import { DeviceNotReadyError, EmailCodeRequiredError, enableSigning, hasDeviceFactor, resolveWalletAddress, storedDeviceCode } from '@/lib/client/wallet';
 import { errorMessage } from '@/lib/errors';
 import { formatCountdown } from '@/lib/format';
-import type { TransferredWarranty, Warranty, WarrantiesResponse } from '@/lib/types';
+import type { ClaimPreview, TransferredWarranty, Warranty, WarrantiesResponse } from '@/lib/types';
 import { isStellarAddress } from '@/lib/validation';
 import { DeviceEnrollForm } from './DeviceEnrollForm';
 import { QrScanPanel } from './QrScanPanel';
-import { WarrantyVault, type TransferControls } from './WarrantyVault';
+import { ShowcaseConsent } from './ShowcaseConsent';
+import { WarrantyVault, type ShowcaseControls, type TransferControls } from './WarrantyVault';
 import { fillIn, getConsumerMessages, type ConsumerLocale } from '@/i18n/consumer';
 
 // While a transfer link is open, the list is checked this often, so the owner sees when someone accepts it.
@@ -42,6 +44,11 @@ export function WarrantyDashboard({ cavosAppId, locale = 'es' }: WarrantyDashboa
   const [message, setMessage] = useState<Message | null>(null);
   const [scannedClaim, setScannedClaim] = useState<ScannedClaim | null>(null);
   const [claiming, setClaiming] = useState(false);
+  // What the scanned product looks like and whether the buyer agreed to show it on the home page (never by default).
+  const [preview, setPreview] = useState<ClaimPreview | null>(null);
+  const [previewing, setPreviewing] = useState(false);
+  const [showcaseChoice, setShowcaseChoice] = useState(false);
+  const [showcaseBusy, setShowcaseBusy] = useState<string | null>(null);
   const [warranties, setWarranties] = useState<Warranty[] | null>(null);
   const [transferred, setTransferred] = useState<TransferredWarranty[]>([]);
   const [vaultStatus, setVaultStatus] = useState<string | null>(claimCopy.loading);
@@ -67,6 +74,23 @@ export function WarrantyDashboard({ cavosAppId, locale = 'es' }: WarrantyDashboa
 
   useEffect(() => {
     if (scannedClaim) claimButtonRef.current?.focus();
+  }, [scannedClaim]);
+
+  // A new QR asks again: the choice belongs to one product and starts unticked.
+  useEffect(() => {
+    setShowcaseChoice(false);
+    setPreview(null);
+    if (!scannedClaim) return undefined;
+    let current = true;
+    setPreviewing(true);
+    void previewClaim(scannedClaim).then((next) => {
+      if (!current) return;
+      setPreview(next);
+      setPreviewing(false);
+    });
+    return () => {
+      current = false;
+    };
   }, [scannedClaim]);
 
   // quiet: a background check, which neither shows "Cargando" nor replaces the list with an error.
@@ -254,6 +278,46 @@ export function WarrantyDashboard({ cavosAppId, locale = 'es' }: WarrantyDashboa
     })
   };
 
+  // Showing a product on the home page needs the warning first; hiding it does not. The wallet signs either.
+  const showcase: ShowcaseControls = {
+    busyToken: showcaseBusy,
+    onToggle: (token, visible) => {
+      const run = async () => {
+        setRepair(null);
+        setShowcaseBusy(token);
+        try {
+          const warranty = await setShowcase(cavosAppId, await ownerAddress(), token, visible);
+          listChanged();
+          setWarranties((current) => current?.map((candidate) => (candidate.token === token ? warranty : candidate)) ?? current);
+          showMessage(visible ? card.showcase.shown : card.showcase.hidden, 'success');
+        } catch (error) {
+          if (error instanceof EmailCodeRequiredError) {
+            leaveForEmailCode();
+            return;
+          }
+          offerRepair(error, run);
+          showMessage(errorMessage(error), 'error');
+        } finally {
+          setShowcaseBusy(null);
+        }
+      };
+      if (!visible) {
+        void run();
+        return;
+      }
+      setConfirmation({
+        title: card.showcase.confirmTitle,
+        message: card.showcase.confirmMessage,
+        confirmLabel: card.showcase.confirmYes,
+        cancelLabel: card.keep,
+        onConfirm: () => {
+          setConfirmation(null);
+          void run();
+        }
+      });
+    }
+  };
+
   const applyScannedText = (text: string) => {
     const { claim, publicToken, transfer } = parseScannedQr(text);
     if (transfer) {
@@ -284,7 +348,7 @@ export function WarrantyDashboard({ cavosAppId, locale = 'es' }: WarrantyDashboa
     showMessage(claimCopy.working, 'info');
     try {
       const owner = walletAddress.current || await resolveWalletAddress(cavosAppId);
-      const product = await activateWarranty(cavosAppId, scannedClaim, owner, (progress) => showMessage(progress, 'info'));
+      const product = await activateWarranty(cavosAppId, scannedClaim, owner, showcaseChoice && preview?.canShowcase === true, (progress) => showMessage(progress, 'info'));
       setScannedClaim(null);
       showMessage(fillIn(product.certificateUrl ? claimCopy.doneOnChain : claimCopy.done, { model: product.model }), 'success');
       await loadWarranties();
@@ -388,11 +452,12 @@ export function WarrantyDashboard({ cavosAppId, locale = 'es' }: WarrantyDashboa
             />
           ))}
         <form id="claim-form" noValidate hidden={!scannedClaim} onSubmit={handleClaim}>
+          <ShowcaseConsent preview={preview} checking={previewing} checked={showcaseChoice} onChange={setShowcaseChoice} disabled={claiming} locale={locale} />
           <button ref={claimButtonRef} className="button button-primary" type="submit" disabled={claiming}>{claimCopy.activate}</button>
         </form>
       </section>
 
-      <WarrantyVault warranties={warranties} status={vaultStatus} transfers={transfers} transferred={transferred} locale={locale} />
+      <WarrantyVault warranties={warranties} status={vaultStatus} transfers={transfers} showcase={showcase} transferred={transferred} locale={locale} />
       <ConfirmDialog confirmation={confirmation} onCancel={() => setConfirmation(null)} />
     </>
   );

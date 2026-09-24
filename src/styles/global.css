@@ -2152,3 +2152,500 @@ a.network-status:hover {
   padding-inline: 16px;
   white-space: nowrap;
 }
+
+/* ---------- Issuer of a product ---------- */
+
+.issuer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--vf-line);
+  border-radius: 10px;
+  background: var(--vf-mist);
+}
+
+.issuer-mark {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--vf-blush);
+  color: var(--vf-red);
+  font-size: 0.8125rem;
+  font-weight: 900;
+}
+
+/* A logo is drawn for a light background: it always sits on a white tile, in dark mode too. */
+.issuer-mark.has-logo {
+  border: 1px solid var(--vf-line);
+  background: #ffffff;
+}
+
+.issuer-mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.issuer-text {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.issuer-text small {
+  color: var(--vf-muted);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.issuer-text strong {
+  overflow: hidden;
+  color: var(--vf-ink);
+  font-size: 0.9375rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.issuer-actions {
+  display: flex;
+  flex: none;
+  gap: 6px;
+}
+
+.issuer-actions a {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--vf-line-strong);
+  border-radius: 8px;
+  color: var(--vf-ink);
+}
+
+.issuer-actions a:hover {
+  background: var(--vf-ink);
+  color: var(--vf-paper);
+}
+
+/* On the public pages the badge sits above the details of the product. */
+.verify-card .issuer {
+  margin: 4px 0 14px;
+}
+
+/* The photo of a batch: on the buyer's card, the public QR pages, the company's list and the issuance form. Product
+   photos are shot on light backgrounds, so they always sit on a white tile, in dark mode too. */
+.warranty-photo {
+  flex: 0 0 72px;
+  width: 72px;
+  height: 72px;
+  border: 1px solid var(--vf-line);
+  border-radius: 8px;
+  background: #ffffff;
+  object-fit: contain;
+}
+
+.warranty-showcase {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--vf-line);
+  border-radius: 10px;
+  background: var(--vf-mist);
+  color: var(--vf-muted);
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.warranty-showcase.is-on {
+  border-color: var(--vf-success-line);
+  background: var(--vf-success-soft);
+  color: var(--vf-success);
+}
+
+.warranty-showcase .button {
+  min-height: 36px;
+  padding: 6px 12px;
+  font-size: 0.8125rem;
+}
+
+.warranty-showcase small {
+  flex-basis: 100%;
+  font-weight: 500;
+}
+
+/* Asked while activating: it says what would become public before anything is ticked. */
+.showcase-consent {
+  display: grid;
+  gap: 12px;
+  margin: 0 0 14px;
+  padding: 14px;
+  border: 1px solid var(--vf-line-strong);
+  border-radius: 10px;
+  background: var(--vf-paper);
+}
+
+.showcase-consent legend {
+  padding: 0 6px;
+  color: var(--vf-muted);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.showcase-consent-product {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.showcase-consent-product img {
+  width: 64px;
+  height: 64px;
+  border: 1px solid var(--vf-line);
+  border-radius: 8px;
+  background: #ffffff;
+  object-fit: contain;
+}
+
+.showcase-consent-warning {
+  margin: 0;
+  padding: 10px 12px;
+  border-left: 4px solid var(--vf-warning);
+  background: var(--vf-warning-soft);
+  color: var(--vf-text);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.showcase-consent-warning i {
+  color: var(--vf-warning);
+}
+
+.showcase-consent-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  color: var(--vf-ink);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.showcase-consent-check input {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin-top: 1px;
+  accent-color: var(--vf-red);
+}
+
+.showcase-consent-note {
+  margin: 0;
+  color: var(--vf-muted);
+  font-size: 0.875rem;
+}
+
+.showcase-consent.is-unavailable {
+  background: var(--vf-mist);
+}
+
+/* Public QR pages: the photo of the product, above its details. */
+.verify-photo {
+  display: block;
+  width: 100%;
+  max-height: 320px;
+  margin: 4px 0 14px;
+  border: 1px solid var(--vf-line);
+  border-radius: 10px;
+  background: #ffffff;
+  object-fit: contain;
+}
+
+/* Company: the photo of a batch in the list, and the control to change it. */
+.batch-item-photo {
+  flex: none;
+  width: 56px;
+  height: 56px;
+  border: 1px solid var(--vf-line);
+  border-radius: 8px;
+  background: #ffffff;
+  object-fit: contain;
+}
+
+.batch-photo {
+  display: grid;
+  gap: 6px;
+}
+
+.batch-photo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.photo-picker {
+  display: grid;
+  gap: 8px;
+}
+
+.photo-picker-title {
+  color: var(--vf-ink);
+  font-weight: 700;
+}
+
+.photo-picker-title small {
+  margin-left: 6px;
+  color: var(--vf-muted);
+  font-weight: 500;
+}
+
+.photo-picker-body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.photo-picker-frame {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 96px;
+  height: 96px;
+  overflow: hidden;
+  border: 1.5px dashed var(--vf-line-strong);
+  border-radius: 10px;
+  background: var(--vf-mist);
+  color: var(--vf-muted);
+  font-size: 1.75rem;
+}
+
+.photo-picker-frame.has-photo {
+  border-style: solid;
+  background: #ffffff;
+}
+
+.photo-picker-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.photo-picker-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.photo-picker-error {
+  color: var(--vf-error);
+}
+
+/* With a photo, the title takes the room between the photo and the badge. */
+.batch-item-photo + .batch-item-title {
+  flex: 1 1 0;
+}
+
+/* "Pagar con wallet" under the payment QR. */
+.wallet-pay {
+  display: grid;
+  justify-items: start;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.wallet-pay-status {
+  font-size: 0.85rem;
+}
+
+.wallet-pay-status.is-error {
+  color: var(--vf-error);
+}
+
+.wallet-pay-status.is-success {
+  color: var(--vf-success);
+}
+
+/* Flags of the language menu. */
+.lp-flag {
+  display: inline-flex;
+  flex: none;
+  overflow: hidden;
+  width: 20px;
+  height: 14px;
+  border-radius: 3px;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 12%);
+}
+
+.lp-flag svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.lp-language-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.lp-language-menu.has-flags[open] > ul {
+  animation: lp-language-open 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  transform-origin: top right;
+}
+
+@keyframes lp-language-open {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.96);
+  }
+}
+
+/* Sun and moon of the theme switch: one shows at a time (the company panel animates the change, see company.css). */
+.theme-toggle-icons {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+}
+
+.theme-toggle-icons i {
+  position: absolute;
+}
+
+.theme-toggle-sun {
+  color: #f5a524;
+}
+
+.theme-toggle-moon {
+  opacity: 0;
+  transform: rotate(-120deg) scale(0.3);
+}
+
+.lp-theme-toggle[data-dark] .theme-toggle-sun {
+  opacity: 0;
+  transform: rotate(120deg) scale(0.3);
+}
+
+.lp-theme-toggle[data-dark] .theme-toggle-moon {
+  opacity: 1;
+  transform: none;
+}
+
+/* The theme change reveals the new look in a circle (see setTheme): the two snapshots are not cross-faded. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-new(root) {
+  z-index: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-toggle-icons i,
+  .lp-language-menu.has-flags[open] > ul {
+    transition: none;
+    animation: none;
+  }
+}
+
+/* "Inicio" in the buyer's header: on narrow phones only the house is shown. */
+@media (max-width: 420px) {
+  .app-home-button span {
+    display: none;
+  }
+}
+
+/* "Activá la recuperación de tu cuenta" at the top of the buyer's panel, until the account's key is sealed. */
+.recovery-card {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 20px 22px;
+  border: 1px solid var(--vf-blush-line);
+  border-left: 4px solid var(--vf-red);
+  border-radius: 12px;
+  background: var(--vf-paper);
+}
+
+.recovery-card h2 {
+  margin: 0 0 4px;
+  color: var(--vf-ink);
+  font-size: 1.125rem;
+}
+
+.recovery-card p {
+  margin: 0;
+  color: var(--vf-muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.recovery-card-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: var(--vf-blush);
+  color: var(--vf-red);
+  font-size: 1.2rem;
+}
+
+.recovery-card .button {
+  white-space: nowrap;
+}
+
+.recovery-card-error {
+  margin-top: 6px !important;
+  color: var(--vf-error) !important;
+}
+
+.recovery-card.is-done {
+  border-color: var(--vf-success-line);
+  border-left-color: var(--vf-success);
+}
+
+.recovery-card.is-done .recovery-card-icon {
+  background: var(--vf-success-soft);
+  color: var(--vf-success);
+}
+
+.recovery-card-close {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--vf-muted);
+  cursor: pointer;
+}
+
+@media (max-width: 640px) {
+  .recovery-card {
+    grid-template-columns: auto 1fr;
+  }
+
+  .recovery-card .button {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+}

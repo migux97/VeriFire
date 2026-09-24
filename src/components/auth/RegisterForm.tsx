@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type SubmitEvent } from 'react';
+import { useEffect, useRef, type SubmitEvent } from 'react';
 import { PasswordField } from './PasswordField';
 
 interface RegisterFormProps {
@@ -6,12 +6,13 @@ interface RegisterFormProps {
   submitting: boolean;
   // The name of the account already kept in this browser, if any.
   savedUsername: string;
+  // Came from "Registrar mi empresa": the company is created in the next step.
+  forCompany: boolean;
   onSubmit: (form: HTMLFormElement) => void;
 }
 
-export function RegisterForm({ hidden, submitting, savedUsername, onSubmit }: RegisterFormProps) {
+export function RegisterForm({ hidden, submitting, savedUsername, forCompany, onSubmit }: RegisterFormProps) {
   const usernameRef = useRef<HTMLInputElement>(null);
-  const [accountType, setAccountType] = useState('personal');
 
   useEffect(() => {
     if (savedUsername && usernameRef.current) usernameRef.current.value = savedUsername;
@@ -24,6 +25,11 @@ export function RegisterForm({ hidden, submitting, savedUsername, onSubmit }: Re
 
   return (
     <form id="register-panel" className="auth-form" role="tabpanel" aria-labelledby="register-tab" noValidate hidden={hidden} onSubmit={handleSubmit}>
+      {forCompany && (
+        <p className="auth-step-note">
+          <i className="fa-solid fa-building" aria-hidden="true" /> Primero creá tu usuario: en el paso siguiente registrás tu empresa.
+        </p>
+      )}
       <label>
         <span>Nombre de usuario</span>
         <input ref={usernameRef} name="username" type="text" placeholder="Ej. usuario_verifire" autoComplete="username" required />
@@ -33,19 +39,6 @@ export function RegisterForm({ hidden, submitting, savedUsername, onSubmit }: Re
         <span>Correo electrónico</span>
         <input name="email" type="email" placeholder="tu@correo.com" autoComplete="email" required />
       </label>
-
-      <label>
-        <span>Tipo de cuenta</span>
-        <select name="accountType" value={accountType} onChange={(event) => setAccountType(event.target.value)}>
-          <option value="personal">Cuenta personal</option>
-          <option value="business">Cuenta empresarial</option>
-        </select>
-      </label>
-
-      {accountType === 'business' && <label>
-        <span>Nombre de la empresa</span>
-        <input name="companyName" type="text" placeholder="Ej. Andes Manufacturing" maxLength={100} required />
-      </label>}
 
       <PasswordField id="registerPassword" name="password" label="Contraseña" placeholder="Mínimo 8 caracteres" autoComplete="new-password" />
       <PasswordField id="registerPasswordConfirm" name="passwordConfirm" label="Repetir contraseña" placeholder="Escribí la misma contraseña" autoComplete="new-password" />

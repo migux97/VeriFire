@@ -5,6 +5,24 @@ import type { Locale } from '@/lib/locale';
 
 const es = {
   intl: 'es-AR',
+  createCompany: {
+    metaTitle: 'Verifire | Registrar tu empresa',
+    eyebrow: 'Cuenta de empresa',
+    title: 'Registrá tu empresa',
+    lead: 'Con una empresa vas a poder comprar lotes de etiquetas, seguir sus activaciones y sumar a tu equipo. Seguís usando la misma cuenta para tus propias garantías.',
+    name: 'Nombre comercial de la empresa',
+    namePlaceholder: 'Ej. Andes Manufacturing',
+    nameHint: 'Es el nombre que ven tus compradores. La razón social, el CUIT y el logo los completás después en Configuración.',
+    industry: 'Rubro',
+    optional: 'Opcional',
+    submit: 'Crear empresa',
+    later: 'Ahora no, ir a mis garantías',
+    needName: 'Ingresá el nombre comercial de tu empresa.',
+    saveFailed: 'No se pudo guardar la empresa en este navegador. Intentá de nuevo.',
+    already: 'Tu cuenta ya tiene una empresa. Te llevamos a su panel.',
+    member: 'Sos parte del equipo de {company}. Si además tenés tu propia empresa, podés registrarla acá.',
+    creating: 'Creando tu empresa…'
+  },
   meta: {
     title: 'Verifire | Panel empresa',
     description: 'Panel operativo para gestionar productos, lotes y verificaciones de Verifire.'
@@ -264,7 +282,6 @@ const es = {
     shareAgain: (who: string) => `Compartir invitación de ${who}`,
     linkMember: 'Invitación por link',
     qrMember: 'Invitación por QR',
-    demoBlocked: 'En modo demo no se envían invitaciones reales. Desactivá el modo demo en Configuración para invitar a tu equipo.',
     declined: 'Rechazada',
     expired: 'Vencida',
     revokeFailed: 'No se pudo cancelar la invitación en el servidor. Se quitó de tu lista.'
@@ -307,6 +324,54 @@ const es = {
       missing: 'Sin configurar: tus compradores todavía no tienen un correo para pedir soporte.',
       readOnly: 'Solo un administrador puede cambiar la configuración de garantías.'
     },
+    brand: {
+      title: 'Marca para tus compradores',
+      lead: 'Lo que ve el comprador en cada garantía y cualquiera que escanee el QR público de tus productos: tu nombre comercial, el logo, el sitio web, la descripción y cómo contactarte para soporte. La razón social, el CUIT y la dirección no se publican.',
+      preview: 'Así lo ve el comprador',
+      issuedBy: 'Emitido por',
+      write: 'Escribir',
+      call: 'Llamar',
+      status: { unpublished: 'Sin publicar', current: 'Publicada', outdated: 'Con cambios sin publicar' },
+      publishedAt: (date: string) => `Publicada el ${date}`,
+      publish: 'Publicar marca',
+      update: 'Actualizar publicación',
+      unpublish: 'Dejar de publicar',
+      working: 'Un momento...',
+      publishedDone: 'Marca publicada. Tus compradores ya la ven en cada garantía.',
+      updatedDone: 'Publicación actualizada.',
+      unpublishedDone: 'Dejaste de publicar la marca. Tus compradores vuelven a ver solo el nombre y el correo de soporte.',
+      needName: 'Guardá el nombre comercial en el perfil para poder publicar la marca.',
+      failed: 'No se pudo publicar la marca:',
+      refreshFailed: 'Se guardó el perfil, pero no se pudo actualizar la marca publicada:',
+      noSupportEmail: 'Todavía no configuraste un correo de soporte: sin él los compradores no tienen cómo escribirte.',
+      readOnly: 'Solo un administrador puede publicar la marca.',
+      toml: {
+        title: 'Identidad en Stellar (stellar.toml)',
+        lead: 'Es el archivo con el que una organización se identifica en Stellar (SEP-0001): las billeteras y los exploradores lo leen para mostrar tu nombre y tu logo. Verifire lo arma con los datos de tu perfil y lo publicás vos en tu propio sitio.',
+        included: 'Incluye',
+        omitted: 'No incluye',
+        keys: {
+          ORG_NAME: 'Nombre de la organización',
+          ORG_DBA: 'Nombre comercial',
+          ORG_URL: 'Sitio web',
+          ORG_LOGO: 'Logo',
+          ORG_DESCRIPTION: 'Descripción',
+          ORG_OFFICIAL_EMAIL: 'Correo oficial',
+          ORG_SUPPORT_EMAIL: 'Correo de soporte'
+        } as Record<string, string>,
+        reasons: { missing: 'falta completarlo', 'not-https': 'necesita una dirección https' } as Record<string, string>,
+        warnings: {
+          'website-not-https': 'El sitio web no usa https: Stellar espera una dirección segura.',
+          'email-other-domain': 'El correo oficial no es del dominio de tu sitio web, y SEP-0001 pide que lo sea.'
+        } as Record<string, string>,
+        logoHint: 'Publicá la marca para que el logo tenga una dirección pública.',
+        download: 'Descargar stellar.toml',
+        downloaded: 'Archivo descargado.',
+        whereTitle: 'Dónde publicarlo',
+        where: 'Subilo a https://tu-dominio/.well-known/stellar.toml, con HTTPS y el encabezado Access-Control-Allow-Origin: *. El dominio tiene que ser el de tu sitio web.',
+        note: 'Verifire no lo publica por vos ni lo conecta a una cuenta de Stellar: hasta que lo publiques en tu dominio, no verifica nada.'
+      }
+    },
     profile: {
       title: 'Perfil de empresa',
       lead: 'Cómo se presenta tu empresa en el panel. El nombre comercial también figura como marca en las etiquetas nuevas.',
@@ -329,6 +394,7 @@ const es = {
         website: 'Sitio web',
         email: 'Correo de contacto',
         phone: 'Teléfono',
+        supportPhone: 'Teléfono de soporte (lo ve el comprador)',
         country: 'País',
         address: 'Dirección',
         description: 'Descripción'
@@ -340,6 +406,7 @@ const es = {
         website: 'https://tuempresa.com',
         email: 'contacto@tuempresa.com',
         phone: '+54 11 1234-5678',
+        supportPhone: '+54 11 1234-5678',
         country: 'Ej. Argentina',
         address: 'Calle, número, ciudad',
         description: 'Qué fabrica o vende tu empresa, en pocas palabras.'
@@ -363,23 +430,17 @@ const es = {
       saveFailed: 'No se pudo guardar: el navegador no tiene lugar. Probá con un logo más liviano.',
       invalidName: 'Ingresá el nombre comercial.',
       invalidEmail: 'Revisá el correo de contacto.',
+      invalidPhone: 'Revisá el teléfono de soporte: usá solo números, +, espacios, guiones y puntos.',
       invalidWebsite: 'Revisá el sitio web: tiene que empezar con http:// o https://.',
       readOnly: 'Solo un administrador puede editar el perfil de la empresa.',
       counter: (used: number, max: number) => `${used}/${max}`
     },
     appearance: {
       title: 'Apariencia',
-      lead: 'Elegí cómo se ve el panel.',
-      theme: 'Tema',
-      themes: { light: 'Claro', dark: 'Oscuro', system: 'Sistema' },
+      lead: 'Las animaciones del panel. El idioma y el modo claro u oscuro se eligen arriba, en el encabezado.',
       motion: 'Animaciones',
       motionHelp: 'Transiciones suaves al cambiar de sección, gráficos animados y avisos que aparecen con movimiento.',
       motionSystem: 'Tu sistema pide reducir el movimiento: las animaciones se muestran al mínimo aunque estén activadas.'
-    },
-    language: {
-      title: 'Idioma',
-      lead: 'El idioma del panel, del panel del comprador y de las páginas públicas de verificación.',
-      reloading: 'Cambiando el idioma…'
     },
     notifications: {
       title: 'Notificaciones',
@@ -397,15 +458,6 @@ const es = {
       browserDenied: 'El navegador bloqueó las notificaciones. Habilitalas desde la configuración del sitio.',
       browserUnsupported: 'Este navegador no admite notificaciones.',
       test: 'Enviar notificación de prueba'
-    },
-    demo: {
-      title: 'Modo demo',
-      badge: 'Temporal',
-      lead: 'Completa la cuenta con compras, lotes, agenda, equipo y notificaciones de ejemplo para probar la visualización y la edición. Los datos de ejemplo quedan aparte: tus datos reales no se tocan.',
-      toggle: 'Activar modo demo',
-      on: 'El modo demo está activo. Al desactivarlo se borran todos los datos de ejemplo.',
-      reset: 'Restablecer datos de ejemplo',
-      working: 'Preparando los datos…'
     }
   },
   notifications: {
@@ -455,15 +507,8 @@ const es = {
         title: 'Invitación rechazada',
         body: (p: Record<string, string>) => `${p['who'] ?? ''} rechazó la invitación a ${p['company'] ?? ''}.`
       },
-      demo: { title: 'Modo demo activado', body: () => 'Estás viendo datos de ejemplo. Podés desactivarlo desde Configuración.' },
       test: { title: 'Notificación de prueba', body: () => 'Así vas a ver los avisos de pagos, lotes y vencimientos.' }
     }
-  },
-  demo: {
-    banner: 'Modo demo activo: estás viendo datos de ejemplo.',
-    turnOff: 'Desactivar',
-    paymentQr: 'DEMO: ejemplo sin validez. No realiza pagos.',
-    labelQr: 'DEMO: ejemplo sin validez. No activa productos.'
   },
   batches: {
     title: 'Lotes',
@@ -519,7 +564,8 @@ const es = {
       ship: 'Marcar como despachado',
       hidePayment: 'Ocultar QR de pago',
       showPayment: 'Ver QR de pago',
-      ledger: 'Ver pago de emisión en Stellar'
+      ledger: 'Ver pago de emisión en Stellar',
+      photoAlt: (model: string) => `Foto de ${model}`
     },
     labels: {
       intro: 'Cada producto tiene dos QR:',
@@ -560,7 +606,38 @@ const es = {
     myBatches: 'Ver mis lotes',
     warning:
       'Pagá una sola vez: este QR es una transferencia real y se puede volver a pagar, pero un segundo pago no genera otro lote.',
-    demoWarning: 'Modo demo: este QR no es un pago real. El pago se confirma solo en unos segundos.'
+    wallet: {
+      action: 'Pagar con wallet',
+      busy: 'Esperando la wallet...',
+      hint: 'Desde esta computadora con Freighter u otra wallet Stellar: el pago va con su memo, sin copiar nada.',
+      hintTestnet: 'Desde esta computadora con Freighter (en Testnet) u otra wallet Stellar: el pago va con su memo, sin copiar nada.',
+      opening: 'Abrí tu wallet y confirmá el pago.',
+      confirming: 'Pago enviado. Confirmándolo con Cosmos Pay...',
+      paid: 'Pago confirmado. El lote se está generando.',
+      sent: 'Pago enviado. Cosmos Pay lo confirma en unos segundos.',
+      missing: 'No encontramos una wallet Stellar en este navegador. Instalá Freighter o pagá escaneando el QR.',
+      failed: 'No se pudo completar el pago con la wallet.',
+      retryConfirm: 'Volver a confirmar el pago'
+    }
+  },
+  photo: {
+    title: 'Foto del producto',
+    hint: 'Es la foto del modelo, la misma para todo el lote. Se muestra en la garantía del comprador y en la verificación pública del QR, y sin ella el comprador no puede mostrar el producto en la página de inicio.',
+    optional: 'Opcional',
+    choose: 'Elegir foto',
+    add: 'Agregar foto',
+    change: 'Cambiar foto',
+    remove: 'Quitar foto',
+    alt: 'Foto del lote',
+    saving: 'Guardando la foto…',
+    saved: 'Foto guardada.',
+    removed: 'Foto quitada.',
+    uploadFailed: 'El lote se creó, pero no se pudo guardar la foto. Agregala desde Mis lotes.',
+    errors: {
+      type: 'Usá una imagen JPG, PNG o WebP.',
+      size: 'La foto pesa demasiado. Probá con una más liviana.',
+      read: 'No pudimos leer esa imagen. Probá con otra.'
+    }
   },
   configurator: {
     steps: ['Producto', 'Lote y unidades', 'Etiquetas', 'Revisar'],
@@ -602,11 +679,11 @@ const es = {
     saveTemplate: 'Guardar como plantilla',
     templatePlaceholder: 'Ej. Calzado Argentina',
     saveTemplateButton: 'Guardar plantilla',
-    storageHint: 'Productos y plantillas se guardan en este navegador. La configuración emitida se conserva con la compra.',
+    storageHint: 'Productos y plantillas se guardan con tu cuenta y aparecen en cualquier navegador donde entres. La configuración emitida se conserva con la compra.',
     readFailed: 'No se pudieron leer las configuraciones guardadas.',
     needModelToSave: 'Ingresá un modelo para guardar el producto.',
     needTemplateName: 'Ingresá un nombre para la plantilla.',
-    saved: 'Guardado en este navegador.',
+    saved: 'Guardado en tu cuenta.',
     saveFailed: 'No se pudo guardar la configuración.',
     needModel: 'Completá el modelo del producto.',
     checkLot: 'Revisá la referencia, el destino y la cantidad (1–500).',
@@ -627,6 +704,24 @@ export type CompanyMessages = typeof es;
 
 const en: CompanyMessages = {
   intl: 'en-US',
+  createCompany: {
+    metaTitle: 'Verifire | Register your company',
+    eyebrow: 'Company account',
+    title: 'Register your company',
+    lead: 'With a company you can buy batches of labels, follow their activations and add your team. You keep using the same account for your own warranties.',
+    name: 'Company trade name',
+    namePlaceholder: 'E.g. Andes Manufacturing',
+    nameHint: 'It is the name your buyers see. The legal name, the tax ID and the logo are completed later in Settings.',
+    industry: 'Industry',
+    optional: 'Optional',
+    submit: 'Create company',
+    later: 'Not now, go to my warranties',
+    needName: 'Enter your company’s trade name.',
+    saveFailed: 'The company could not be saved in this browser. Try again.',
+    already: 'Your account already has a company. Taking you to its dashboard.',
+    member: 'You are part of the {company} team. If you also have your own company, you can register it here.',
+    creating: 'Creating your company…'
+  },
   meta: {
     title: 'Verifire | Company dashboard',
     description: 'Operations dashboard to manage Verifire products, batches and verifications.'
@@ -882,7 +977,6 @@ const en: CompanyMessages = {
     shareAgain: (who: string) => `Share the invitation for ${who}`,
     linkMember: 'Invitation by link',
     qrMember: 'Invitation by QR',
-    demoBlocked: 'Demo mode does not send real invitations. Turn demo mode off in Settings to invite your team.',
     declined: 'Declined',
     expired: 'Expired',
     revokeFailed: 'The invitation could not be cancelled on the server. It was removed from your list.'
@@ -925,6 +1019,54 @@ const en: CompanyMessages = {
       missing: 'Not set: your buyers do not have an email to ask for support yet.',
       readOnly: 'Only an administrator can change the warranty settings.'
     },
+    brand: {
+      title: 'Brand for your buyers',
+      lead: 'What the buyer sees on each warranty, and anyone who scans the public QR of your products: your trade name, your logo, your website, a description and how to contact you for support. The legal name, the tax ID and the address are not published.',
+      preview: 'How the buyer sees it',
+      issuedBy: 'Issued by',
+      write: 'Write',
+      call: 'Call',
+      status: { unpublished: 'Not published', current: 'Published', outdated: 'Unpublished changes' },
+      publishedAt: (date: string) => `Published on ${date}`,
+      publish: 'Publish brand',
+      update: 'Update publication',
+      unpublish: 'Stop publishing',
+      working: 'One moment...',
+      publishedDone: 'Brand published. Your buyers now see it on each warranty.',
+      updatedDone: 'Publication updated.',
+      unpublishedDone: 'You stopped publishing the brand. Your buyers see only the name and the support email again.',
+      needName: 'Save the trade name in the profile to be able to publish the brand.',
+      failed: 'The brand could not be published:',
+      refreshFailed: 'The profile was saved, but the published brand could not be updated:',
+      noSupportEmail: 'You have not set a support email yet: without it buyers have no way to write to you.',
+      readOnly: 'Only an administrator can publish the brand.',
+      toml: {
+        title: 'Identity on Stellar (stellar.toml)',
+        lead: 'The file an organization identifies itself with on Stellar (SEP-0001): wallets and explorers read it to show your name and logo. Verifire builds it from your profile and you publish it on your own website.',
+        included: 'Includes',
+        omitted: 'Does not include',
+        keys: {
+          ORG_NAME: 'Organization name',
+          ORG_DBA: 'Trade name',
+          ORG_URL: 'Website',
+          ORG_LOGO: 'Logo',
+          ORG_DESCRIPTION: 'Description',
+          ORG_OFFICIAL_EMAIL: 'Official email',
+          ORG_SUPPORT_EMAIL: 'Support email'
+        } as Record<string, string>,
+        reasons: { missing: 'it is not filled in', 'not-https': 'it needs an https address' } as Record<string, string>,
+        warnings: {
+          'website-not-https': 'The website does not use https: Stellar expects a secure address.',
+          'email-other-domain': 'The official email is not on the domain of your website, and SEP-0001 asks for that.'
+        } as Record<string, string>,
+        logoHint: 'Publish the brand so the logo gets a public address.',
+        download: 'Download stellar.toml',
+        downloaded: 'File downloaded.',
+        whereTitle: 'Where to publish it',
+        where: 'Upload it to https://your-domain/.well-known/stellar.toml, over HTTPS and with the header Access-Control-Allow-Origin: *. The domain has to be the one of your website.',
+        note: 'Verifire does not publish it for you or link it to a Stellar account: until you publish it on your domain, it verifies nothing.'
+      }
+    },
     profile: {
       title: 'Company profile',
       lead: 'How your company shows up in the dashboard. The trade name is also the brand on new labels.',
@@ -947,6 +1089,7 @@ const en: CompanyMessages = {
         website: 'Website',
         email: 'Contact email',
         phone: 'Phone',
+        supportPhone: 'Support phone (shown to the buyer)',
         country: 'Country',
         address: 'Address',
         description: 'Description'
@@ -958,6 +1101,7 @@ const en: CompanyMessages = {
         website: 'https://yourcompany.com',
         email: 'contact@yourcompany.com',
         phone: '+1 555 123 4567',
+        supportPhone: '+1 555 123 4567',
         country: 'E.g. Argentina',
         address: 'Street, number, city',
         description: 'What your company makes or sells, in a few words.'
@@ -981,23 +1125,17 @@ const en: CompanyMessages = {
       saveFailed: 'It could not be saved: the browser is out of space. Try a lighter logo.',
       invalidName: 'Enter the trade name.',
       invalidEmail: 'Check the contact email.',
+      invalidPhone: 'Check the support phone: use only digits, +, spaces, hyphens and dots.',
       invalidWebsite: 'Check the website: it must start with http:// or https://.',
       readOnly: 'Only an administrator can edit the company profile.',
       counter: (used: number, max: number) => `${used}/${max}`
     },
     appearance: {
       title: 'Appearance',
-      lead: 'Choose how the dashboard looks.',
-      theme: 'Theme',
-      themes: { light: 'Light', dark: 'Dark', system: 'System' },
+      lead: 'The dashboard animations. The language and light or dark mode are chosen at the top, in the header.',
       motion: 'Animations',
       motionHelp: 'Smooth transitions between sections, animated charts and notices that slide in.',
       motionSystem: 'Your system asks for reduced motion: animations stay minimal even when they are on.'
-    },
-    language: {
-      title: 'Language',
-      lead: 'The language of this dashboard, the buyer dashboard and the public verification pages.',
-      reloading: 'Switching language…'
     },
     notifications: {
       title: 'Notifications',
@@ -1015,15 +1153,6 @@ const en: CompanyMessages = {
       browserDenied: 'The browser blocked notifications. Allow them from the site settings.',
       browserUnsupported: 'This browser does not support notifications.',
       test: 'Send a test notification'
-    },
-    demo: {
-      title: 'Demo mode',
-      badge: 'Temporary',
-      lead: 'Fills the account with sample purchases, batches, agenda, team and notifications to try the charts and editing. Sample data is kept apart: your real data is not touched.',
-      toggle: 'Turn on demo mode',
-      on: 'Demo mode is on. Turning it off deletes all the sample data.',
-      reset: 'Reset sample data',
-      working: 'Preparing the data…'
     }
   },
   notifications: {
@@ -1073,15 +1202,8 @@ const en: CompanyMessages = {
         title: 'Invitation declined',
         body: (p: Record<string, string>) => `${p['who'] ?? ''} declined the invitation to ${p['company'] ?? ''}.`
       },
-      demo: { title: 'Demo mode on', body: () => 'You are looking at sample data. You can turn it off in Settings.' },
       test: { title: 'Test notification', body: () => 'This is how payment, batch and due date notices look.' }
     }
-  },
-  demo: {
-    banner: 'Demo mode is on: you are looking at sample data.',
-    turnOff: 'Turn off',
-    paymentQr: 'DEMO: sample only. It makes no payment.',
-    labelQr: 'DEMO: sample only. It activates no product.'
   },
   batches: {
     title: 'Batches',
@@ -1137,7 +1259,8 @@ const en: CompanyMessages = {
       ship: 'Mark as shipped',
       hidePayment: 'Hide payment QR',
       showPayment: 'See payment QR',
-      ledger: 'See the issuance payment on Stellar'
+      ledger: 'See the issuance payment on Stellar',
+      photoAlt: (model: string) => `Photo of ${model}`
     },
     labels: {
       intro: 'Every product has two QR codes:',
@@ -1177,7 +1300,38 @@ const en: CompanyMessages = {
     seeBatches: 'See payments and batches',
     myBatches: 'See my batches',
     warning: 'Pay only once: this QR is a real transfer and can be paid again, but a second payment does not issue another batch.',
-    demoWarning: 'Demo mode: this QR is not a real payment. It is confirmed on its own in a few seconds.'
+    wallet: {
+      action: 'Pay with wallet',
+      busy: 'Waiting for the wallet...',
+      hint: 'From this computer with Freighter or another Stellar wallet: the payment carries its memo, nothing to copy.',
+      hintTestnet: 'From this computer with Freighter (on Testnet) or another Stellar wallet: the payment carries its memo, nothing to copy.',
+      opening: 'Open your wallet and confirm the payment.',
+      confirming: 'Payment sent. Confirming it with Cosmos Pay...',
+      paid: 'Payment confirmed. The batch is being issued.',
+      sent: 'Payment sent. Cosmos Pay confirms it in a few seconds.',
+      missing: 'No Stellar wallet was found in this browser. Install Freighter or pay by scanning the QR.',
+      failed: 'The payment could not be completed with the wallet.',
+      retryConfirm: 'Confirm the payment again'
+    }
+  },
+  photo: {
+    title: 'Product photo',
+    hint: 'It is the photo of the model, the same for the whole batch. It shows on the buyer’s warranty and on the public QR verification, and without it the buyer cannot show the product on the home page.',
+    optional: 'Optional',
+    choose: 'Choose photo',
+    add: 'Add photo',
+    change: 'Change photo',
+    remove: 'Remove photo',
+    alt: 'Batch photo',
+    saving: 'Saving the photo…',
+    saved: 'Photo saved.',
+    removed: 'Photo removed.',
+    uploadFailed: 'The batch was created, but the photo could not be saved. Add it from My batches.',
+    errors: {
+      type: 'Use a JPG, PNG or WebP image.',
+      size: 'The photo is too heavy. Try a lighter one.',
+      read: 'We could not read that image. Try another one.'
+    }
   },
   configurator: {
     steps: ['Product', 'Lot and units', 'Labels', 'Review'],
@@ -1219,11 +1373,11 @@ const en: CompanyMessages = {
     saveTemplate: 'Save as template',
     templatePlaceholder: 'E.g. Footwear Argentina',
     saveTemplateButton: 'Save template',
-    storageHint: 'Products and templates are stored in this browser. The issued configuration is kept with the purchase.',
+    storageHint: 'Products and templates are saved with your account and show up in any browser you sign in to. The issued configuration is kept with the purchase.',
     readFailed: 'The saved configurations could not be read.',
     needModelToSave: 'Enter a model to save the product.',
     needTemplateName: 'Enter a name for the template.',
-    saved: 'Saved in this browser.',
+    saved: 'Saved to your account.',
     saveFailed: 'The configuration could not be saved.',
     needModel: 'Fill in the product model.',
     checkLot: 'Check the reference, the destination and the quantity (1–500).',

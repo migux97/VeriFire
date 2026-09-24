@@ -5,13 +5,14 @@
 // 3. submitOnChainClaim with signedXdr: the issuing account submits it and the claim is saved with its hash.
 // Without a contract (demo mode) the secret read from the QR identifies the product and the claim stays in this server.
 import { randomUUID } from 'node:crypto';
-import type { PreparedClaim, Warranty } from '../types';
+import type { ClaimPreview, PreparedClaim, Warranty } from '../types';
 import { isStellarAddress, normalizeId } from '../validation';
 import { chain } from './chain';
 import { reconcileProduct } from './chain-sync';
 import { HttpError } from './errors';
 import { textField, type JsonBody } from './http';
 import { secretFromQrKey } from './links';
+import { photoOfBatch } from './photos';
 import { activationKeyOf, anchorPendingProducts, isCurrentOnChain, recordRejectedClaim, transferredBy, warrantyView } from './products';
 import { messages } from './messages';
 import { singleton } from './singleton';
@@ -33,11 +34,17 @@ const assertClaimable = (product: Product, owner: string) => {
   if (!isStellarAddress(owner)) throw new HttpError(400, messages.invalidOwner);
 };
 
+// Whether the buyer asked, when activating, to show the product on the home page. It counts only for a product whose
+// batch has a photo: without one there is nothing to show, whatever the request says.
+const wantsShowcase = (body: JsonBody, product: Product) => body['showcase'] === true && photoOfBatch(product.batchId) !== null;
+
 // Runs synchronously after the request body was read, so two concurrent claims cannot both pass the check.
-const completeClaim = (product: Product, owner: string, baseUrl: string, claimTransaction = `demo-${randomUUID()}`): Warranty => {
+const completeClaim = (product: Product, owner: string, baseUrl: string, showcase: boolean, claimTransaction = `demo-${randomUUID()}`): Warranty => {
   assertClaimable(product, owner);
   const before = { claimed: product.claimed, owner: product.owner };
-  Object.assign(product, { claimed: true, owner, claimedAt: new Date().toISOString(), warrantyMonths: monthsAtActivation(product), claimTransaction });
+  const claimedAt = new Date().toISOString();
+  Object.assign(product, { claimed: true, owner, claimedAt, warrantyMonths: monthsAtActivation(product), claimTransaction });
+  if (showcase) product.showcase = { at: claimedAt };
   try {
     saveState();
   } catch (error) {
@@ -46,6 +53,7 @@ const completeClaim = (product: Product, owner: string, baseUrl: string, claimTr
     delete product.claimedAt;
     delete product.warrantyMonths;
     delete product.claimTransaction;
+    delete product.showcase;
     throw error;
   }
   return warrantyView(product, baseUrl);
@@ -96,13 +104,13 @@ export const submitOnChainClaim = async (body: JsonBody, baseUrl: string) => {
     const txHash = await chain.submitActivation({ tokenId, claimant: owner, signedXdr: textField(body, 'signedXdr') });
     // Adopted meanwhile by another path that reads the contract (a transfer check): it only lacks its transaction.
     if (product.claimed && product.owner === owner) {
-      if (!product.claimTransaction) {
-        product.claimTransaction = txHash;
-        saveState();
-      }
+      const showcase = wantsShowcase(body, product) && !product.showcase;
+      if (!product.claimTransaction) product.claimTransaction = txHash;
+      if (showcase) product.showcase = { at: product.claimedAt ?? new Date().toISOString() };
+      if (showcase || product.claimTransaction === txHash) saveState();
       return warrantyView(product, baseUrl);
     }
-    return completeClaim(product, owner, baseUrl, txHash);
+    return completeClaim(product, owner, baseUrl, wantsShowcase(body, product), txHash);
   } finally {
     claimsInFlight.delete(product.token);
   }
@@ -119,7 +127,17 @@ export const claimDemoWarranty = (body: JsonBody, baseUrl: string) => {
   if (chain.enabled && product.secretCode && !product.claimed) {
     throw new HttpError(409, 'Este producto se activa en Stellar. Recargá la página y volvé a escanear el QR.');
   }
-  return completeClaim(product, textField(body, 'owner').trim(), baseUrl);
+  return completeClaim(product, textField(body, 'owner').trim(), baseUrl, wantsShowcase(body, product));
+};
+
+// What the buyer sees after reading the secret QR and before activating: the model and whether the product can be shown
+// on the home page. Whoever holds the QR could activate the product, so nothing here is more than that.
+export const previewClaim = (body: JsonBody): ClaimPreview => {
+  const key = textField(body, 'activationKey').toLowerCase();
+  const product = /^[0-9a-f]{64}$/.test(key) ? [...store.products.values()].find((candidate) => activationKeyOf(candidate) === key) : undefined;
+  if (!product) throw new HttpError(404, messages.qrNotFound);
+  const photoUrl = photoOfBatch(product.batchId);
+  return { model: product.model, photoUrl, canShowcase: photoUrl !== null && !product.claimed };
 };
 
 export const warrantiesOf = (owner: string, baseUrl: string) => {

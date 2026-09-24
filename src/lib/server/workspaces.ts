@@ -4,7 +4,9 @@
 //
 // Reading or writing it needs a signature from that wallet (see wallet-auth.ts): a purchase id is the key to the
 // secret codes of its batch, so this list is never handed out to whoever asks.
+import { buildBrand } from './brands';
 import { HttpError } from './errors';
+import { withoutSampleEntries } from '../sample-data';
 import { saveState, store, type Workspace } from './store';
 
 const MAX_PURCHASES = 500;
@@ -12,7 +14,33 @@ const MAX_PURCHASES = 500;
 const MAX_DATA_BYTES = 48 * 1024;
 const MAX_DATA_KINDS = 40;
 
-export const findWorkspace = (owner: string): Workspace | undefined => store.workspaces.get(owner);
+// Drops the demo's invented entries that reached the account (see sample-data.ts). The date stays: removing them is not
+// an edit, so a newer copy from a browser still replaces it (browsers drop them too, see account-data.ts).
+const withoutSamples = (data: Workspace['data']): Workspace['data'] => {
+  if (!data) return data;
+  let cleaned: NonNullable<Workspace['data']> | null = null;
+  for (const [name, entry] of Object.entries(data)) {
+    const value = withoutSampleEntries(entry.value);
+    if (!value) continue;
+    cleaned ??= { ...data };
+    cleaned[name] = { value, updatedAt: entry.updatedAt };
+  }
+  return cleaned ?? data;
+};
+
+export const findWorkspace = (owner: string): Workspace | undefined => {
+  const workspace = store.workspaces.get(owner);
+  const data = withoutSamples(workspace?.data);
+  if (workspace && data && data !== workspace.data) {
+    workspace.data = data;
+    try {
+      saveState();
+    } catch {
+      // Cleaned again the next time it is read.
+    }
+  }
+  return workspace;
+};
 
 // Newest first, the way the panel lists them.
 const purchasesOf = (owner: string) => [...store.purchases.values()]
@@ -29,7 +57,9 @@ export const workspaceView = (owner: string) => {
     // A wallet that bought a batch is a company: its panel is offered on every device it signs in from.
     accountType: workspace?.accountType ?? (purchaseIds.length ? ('business' as const) : null),
     companyName: workspace?.companyName ?? null,
-    data: workspace?.data ?? {}
+    data: workspace?.data ?? {},
+    // Only what is needed to build the address of the logo; the brand itself is read by whoever shows it.
+    brand: workspace?.brand ? { slug: workspace.brand.slug, hasLogo: Boolean(workspace.brand.logo) } : null
   };
 };
 
@@ -45,11 +75,12 @@ const mergeData = (current: Workspace['data'], incoming: unknown): Workspace['da
     if (mine && mine.updatedAt >= updatedAt) continue;
     merged[name] = { value, updatedAt };
   }
-  if (Object.keys(merged).length > MAX_DATA_KINDS) throw new HttpError(400, 'Demasiada configuración para una sola cuenta.');
-  if (JSON.stringify(merged).length > MAX_DATA_BYTES) {
+  const clean = withoutSamples(merged) ?? merged;
+  if (Object.keys(clean).length > MAX_DATA_KINDS) throw new HttpError(400, 'Demasiada configuración para una sola cuenta.');
+  if (JSON.stringify(clean).length > MAX_DATA_BYTES) {
     throw new HttpError(413, 'La configuración de la empresa es demasiado grande. Probá con un logo más liviano.');
   }
-  return merged;
+  return clean;
 };
 
 const text = (value: unknown, limit: number) => {
@@ -66,6 +97,8 @@ export const mergeWorkspace = (owner: string, changes: {
   accountType?: unknown;
   companyName?: unknown;
   data?: unknown;
+  // The public brand: an object to publish or replace it, null to take it down, absent to leave it as it is.
+  brand?: unknown;
 }) => {
   const current = findWorkspace(owner);
   const incoming = Array.isArray(changes.purchaseIds) ? changes.purchaseIds.filter((id): id is string => typeof id === 'string') : [];
@@ -73,6 +106,10 @@ export const mergeWorkspace = (owner: string, changes: {
     ? changes.removedPurchaseIds.filter((id): id is string => typeof id === 'string')
     : []);
   if (incoming.length > MAX_PURCHASES) throw new HttpError(400, 'Demasiadas compras en una sola sincronización.');
+  // Checked before anything changes: a rejected sync (too much data, a brand that is not valid) must leave the purchases
+  // as they were.
+  const data = mergeData(current?.data, changes.data);
+  const brand = changes.brand === undefined ? current?.brand : changes.brand === null ? undefined : buildBrand(owner, changes.brand, current?.brand);
 
   // A purchase made before the panel sent its wallet is claimed by the browser that still holds its id, and only
   // while nobody else holds it: from then on it belongs to that account and no browser has to remember it.
@@ -90,7 +127,6 @@ export const mergeWorkspace = (owner: string, changes: {
     : current?.accountType;
   const companyName = changes.companyName === undefined ? current?.companyName : text(changes.companyName, 80);
   const purchaseIds = workspaceView(owner).purchaseIds;
-  const data = mergeData(current?.data, changes.data);
 
   store.workspaces.set(owner, {
     owner,
@@ -98,6 +134,7 @@ export const mergeWorkspace = (owner: string, changes: {
     ...(accountType ? { accountType } : {}),
     ...(companyName ? { companyName } : {}),
     ...(data && Object.keys(data).length ? { data } : {}),
+    ...(brand ? { brand } : {}),
     updatedAt: new Date().toISOString()
   });
   saveState();

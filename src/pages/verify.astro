@@ -3,6 +3,7 @@
 // without logging in. It only shows public data and does not link to the rest of the app.
 import LocalDates from '@/components/layout/LocalDates.astro';
 import StandaloneHeader from '@/components/layout/StandaloneHeader.astro';
+import { IssuerBadge } from '@/components/ui/IssuerBadge';
 import { ProductDetails } from '@/components/verification/ProductDetails';
 import { ProductHistory } from '@/components/verification/ProductHistory';
 import { VerifyScanner } from '@/components/verification/VerifyScanner';
@@ -51,6 +52,8 @@ if (product) {
         </div>
       </div>
       <p class="verify-message">{message}</p>
+      {product?.photoUrl && <img class="verify-photo" src={product.photoUrl} alt={copy.photoAlt.replace('{model}', product.model)} loading="lazy" decoding="async" />}
+      {product?.issuer && <IssuerBadge issuer={product.issuer} labels={{ issuedBy: copy.issuer.issuedBy, write: copy.issuer.write, call: copy.issuer.call }} />}
       {product && <ProductDetails product={product} locale={locale} />}
       {
         product && product.history.length > 0 && (

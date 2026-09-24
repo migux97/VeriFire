@@ -1,0 +1,33 @@
+---
+// "Registrá tu empresa": the step after registering for whoever runs a company, and the way in for a person who already
+// had an account. Without a session it sends to the registration and comes back here afterwards.
+import { CreateCompany } from '@/components/company/CreateCompany';
+import BrandLogo from '@/components/layout/BrandLogo.astro';
+import { companyMessages } from '@/i18n/company';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { pageLocale } from '@/lib/server/page-locale';
+import '@/styles/auth.css';
+
+const locale = pageLocale(Astro);
+const t = companyMessages(locale).createCompany;
+---
+
+<BaseLayout title={t.metaTitle} description={t.lead} bodyClass="workspace-page" session="protected">
+  <script>
+    import { guardSession, userSession } from '@/lib/client/session';
+    import { rememberCompanyIntent } from '@/lib/client/company-signup';
+
+    // Without an account yet: register first, and this page opens right after.
+    if (!userSession.isActive() && !userSession.read()) {
+      rememberCompanyIntent();
+      window.location.replace('/login?modo=registro&para=empresa');
+    } else {
+      if (!userSession.isActive()) rememberCompanyIntent();
+      guardSession();
+    }
+  </script>
+  <main class="workspace-shell">
+    <BrandLogo href={locale === 'en' ? '/en' : '/'} />
+    <CreateCompany client:load locale={locale} />
+  </main>
+</BaseLayout>

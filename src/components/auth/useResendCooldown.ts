@@ -40,9 +40,10 @@ export function useResendCooldown() {
     setEndsAt(next);
   }, []);
 
-  const label = remainingSeconds > 0
-    ? `Reenviar código en ${Math.floor(remainingSeconds / 60)}:${String(remainingSeconds % 60).padStart(2, '0')}`
-    : 'Reenviar código';
+  // "Reenviar código en 0:42", or "Reenviar enlace" for the recovery link.
+  const labelFor = (thing: string) => remainingSeconds > 0
+    ? `Reenviar ${thing} en ${Math.floor(remainingSeconds / 60)}:${String(remainingSeconds % 60).padStart(2, '0')}`
+    : `Reenviar ${thing}`;
 
-  return { waiting: remainingSeconds > 0, label, start, isWaiting: () => storedCooldownEnd() > Date.now() };
+  return { waiting: remainingSeconds > 0, label: labelFor('código'), labelFor, start, isWaiting: () => storedCooldownEnd() > Date.now() };
 }

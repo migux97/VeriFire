@@ -5,6 +5,19 @@ const es = {
     title: 'Verifire | Mis garantías',
     description: 'Escaneá el QR de tus productos para activar su garantía oficial y consultá tus certificados de autenticidad.'
   },
+  topbar: { home: 'Inicio', homeLabel: 'Volver a la página principal' },
+  recovery: {
+    title: 'Activá la recuperación de tu cuenta',
+    lead: 'Hacelo una sola vez y vas a poder recuperar tu cuenta, tus garantías y tu wallet desde cualquier navegador o dispositivo, aunque olvides tu contraseña. Te mandamos un enlace a tu correo: abrilo en este navegador.',
+    sent: 'Te enviamos un enlace a {email}. Abrilo en este mismo navegador para terminar de activarla.',
+    action: 'Activar recuperación',
+    resend: 'Reenviar enlace',
+    resendIn: 'Reenviar en {seconds} s',
+    failed: 'No se pudo enviar el enlace.',
+    doneTitle: 'Recuperación activada',
+    doneText: 'Si olvidás tu contraseña, vas a poder recuperar tu cuenta desde cualquier navegador o dispositivo con un enlace a tu correo.',
+    close: 'Cerrar'
+  },
   scan: {
     camera: 'Abrir cámara', upload: 'Subir imagen del QR', preview: 'Vista de la cámara', close: 'Cerrar cámara',
     asking: 'Pidiendo permiso para usar la cámara...',
@@ -39,7 +52,16 @@ const es = {
     unreadableQr: 'No pudimos leer ese QR. Escanealo de nuevo.',
     loading: 'Cargando tus garantías...',
     loadError: 'No se pudieron cargar tus garantías.',
-    onceHint: 'Cada QR puede activarse una única vez.'
+    onceHint: 'Cada QR puede activarse una única vez.',
+    showcase: {
+      checking: 'Consultando el producto…',
+      title: 'Página de inicio de Verifire',
+      label: 'Quiero que este producto aparezca en el carrusel de últimos productos verificados',
+      warningTitle: 'Antes de activar, tené en cuenta',
+      warning: 'Si lo marcás, cualquier persona que entre a la página de inicio de Verifire va a ver la foto del producto, su modelo, la empresa que lo emitió, el país de destino y la fecha en que lo verificaste. Tu cuenta y tu correo no se muestran. Podés quitarlo cuando quieras desde tu garantía.',
+      noPhoto: 'Este producto no puede aparecer en el carrusel: la empresa que lo emitió todavía no cargó su foto.',
+      productPhoto: 'Foto de {model}'
+    }
   },
   incoming: {
     eyebrow: 'Cambio de dueño',
@@ -63,6 +85,20 @@ const es = {
     linkExpiresIn: 'El link vence en',
     linkElsewhere: 'Abriste este link desde otro navegador. Si no lo tenés, generá uno nuevo: el anterior deja de funcionar.',
     linkExpired: 'El link de transferencia venció sin que nadie lo aceptara. El producto sigue a tu nombre.',
+    issuedBy: 'Emitido por', writeIssuer: 'Escribir a la empresa', callIssuer: 'Llamar a la empresa',
+    photoAlt: 'Foto de {model}',
+    showcase: {
+      on: 'Aparece en la página de inicio',
+      off: 'No aparece en la página de inicio',
+      show: 'Mostrar en el inicio',
+      hide: 'Quitar del inicio',
+      noPhoto: 'No se puede mostrar en el inicio: la empresa todavía no cargó la foto del producto.',
+      confirmTitle: 'Mostrar este producto en el inicio',
+      confirmMessage: 'Cualquier persona que entre a la página de inicio de Verifire va a ver la foto del producto, su modelo, la empresa que lo emitió, el país de destino y la fecha de verificación. Tu cuenta y tu correo no se muestran. Podés quitarlo cuando quieras.',
+      confirmYes: 'Mostrar',
+      shown: 'Tu producto ya aparece en la página de inicio.',
+      hidden: 'Quitamos tu producto de la página de inicio.'
+    },
     linkLabel: 'Link para el nuevo dueño',
     linkOpen: 'Transferencia abierta: el producto pasa a quien abra el link con su cuenta Verifire y lo acepte.',
     linkReady: 'Link listo. Compartilo con el nuevo dueño: el producto pasa a su cuenta cuando lo acepte.',
@@ -103,7 +139,7 @@ const es = {
   support: {
     action: 'Soporte', title: 'Soporte de tu producto', close: 'Cerrar',
     intro: 'Escribile a la empresa que fabricó tu producto. Incluí el identificador del producto y describí el problema.',
-    company: 'Empresa', email: 'Correo de soporte',
+    company: 'Empresa', email: 'Correo de soporte', phone: 'Teléfono de soporte', website: 'Sitio web', call: 'Llamar',
     write: 'Escribir al correo', copy: 'Copiar correo', copied: 'Correo copiado',
     subject: 'Garantía de {model} ({token})',
     noEmail: 'La empresa todavía no configuró un correo de soporte. Volvé a intentarlo más tarde.',
@@ -117,6 +153,19 @@ const en: Messages = {
   meta: {
     title: 'Verifire | My warranties',
     description: 'Scan the QR of your products to activate their official warranty and check your certificates of authenticity.'
+  },
+  topbar: { home: 'Home', homeLabel: 'Back to the home page' },
+  recovery: {
+    title: 'Turn on account recovery',
+    lead: 'Do it once and you will be able to recover your account, your warranties and your wallet from any browser or device, even if you forget your password. We send a link to your email: open it in this browser.',
+    sent: 'We sent a link to {email}. Open it in this same browser to finish turning it on.',
+    action: 'Turn on recovery',
+    resend: 'Resend link',
+    resendIn: 'Resend in {seconds} s',
+    failed: 'The link could not be sent.',
+    doneTitle: 'Recovery is on',
+    doneText: 'If you forget your password, you will be able to recover your account from any browser or device with a link to your email.',
+    close: 'Close'
   },
   scan: {
     camera: 'Open camera', upload: 'Upload QR image', preview: 'Camera preview', close: 'Close camera',
@@ -152,7 +201,16 @@ const en: Messages = {
     unreadableQr: 'We could not read that QR. Scan it again.',
     loading: 'Loading your warranties...',
     loadError: 'Your warranties could not be loaded.',
-    onceHint: 'Each QR can be activated only once.'
+    onceHint: 'Each QR can be activated only once.',
+    showcase: {
+      checking: 'Checking the product…',
+      title: 'Verifire home page',
+      label: 'I want this product to appear in the carousel of latest verified products',
+      warningTitle: 'Before activating, keep in mind',
+      warning: 'If you tick this, anyone who visits the Verifire home page will see the product’s photo, its model, the company that issued it, its destination country and the date you verified it. Your account and your email are not shown. You can remove it whenever you want from your warranty.',
+      noPhoto: 'This product cannot appear in the carousel: the company that issued it has not added its photo yet.',
+      productPhoto: 'Photo of {model}'
+    }
   },
   incoming: {
     eyebrow: 'Change of owner',
@@ -176,6 +234,20 @@ const en: Messages = {
     linkExpiresIn: 'The link expires in',
     linkElsewhere: 'You opened this link from another browser. If you do not have it, generate a new one: the previous one stops working.',
     linkExpired: 'The transfer link expired before anyone accepted it. The product is still in your name.',
+    issuedBy: 'Issued by', writeIssuer: 'Write to the company', callIssuer: 'Call the company',
+    photoAlt: 'Photo of {model}',
+    showcase: {
+      on: 'Shown on the home page',
+      off: 'Not shown on the home page',
+      show: 'Show on home page',
+      hide: 'Remove from home page',
+      noPhoto: 'It cannot be shown on the home page: the company has not added the product’s photo yet.',
+      confirmTitle: 'Show this product on the home page',
+      confirmMessage: 'Anyone who visits the Verifire home page will see the product’s photo, its model, the company that issued it, its destination country and the verification date. Your account and your email are not shown. You can remove it whenever you want.',
+      confirmYes: 'Show it',
+      shown: 'Your product now appears on the home page.',
+      hidden: 'We removed your product from the home page.'
+    },
     linkLabel: 'Link for the new owner',
     linkOpen: 'Transfer open: the product moves to whoever opens the link with their Verifire account and accepts it.',
     linkReady: 'Link ready. Share it with the new owner: the product moves to their account when they accept it.',
@@ -216,7 +288,7 @@ const en: Messages = {
   support: {
     action: 'Support', title: 'Support for your product', close: 'Close',
     intro: 'Write to the company that made your product. Include the product identifier and describe the problem.',
-    company: 'Company', email: 'Support email',
+    company: 'Company', email: 'Support email', phone: 'Support phone', website: 'Website', call: 'Call',
     write: 'Write an email', copy: 'Copy email', copied: 'Email copied',
     subject: 'Warranty of {model} ({token})',
     noEmail: 'The company has not set a support email yet. Please try again later.',

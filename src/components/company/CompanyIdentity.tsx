@@ -6,6 +6,7 @@ import { currentWorkspace, type CompanyRole } from '@/lib/client/workspace';
 import { userSession } from '@/lib/client/session';
 import type { Locale } from '@/lib/locale';
 import { CompanyTextProvider, useCompanyText } from './CompanyText';
+import { CREATE_COMPANY_PATH } from '@/lib/client/company-signup';
 
 const initials = (name: string) =>
   name
@@ -38,8 +39,12 @@ function Identity({ view }: { view: 'workspace' | 'profile' }) {
   useEffect(() => {
     const currentUser = storedUser();
     const workspace = currentWorkspace(currentUser);
-    if (!userSession.isActive() || !currentUser || !workspace) {
+    if (!userSession.isActive() || !currentUser) {
       window.location.replace('/app');
+      return undefined;
+    }
+    if (!workspace) {
+      window.location.replace(CREATE_COMPANY_PATH);
       return undefined;
     }
     // The profile saved in Configuración updates the card at once.

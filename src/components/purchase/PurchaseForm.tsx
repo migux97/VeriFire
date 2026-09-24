@@ -1,4 +1,5 @@
 import { IssuanceConfigurator } from './IssuanceConfigurator';
+import { PhotoPicker } from './PhotoPicker';
 // Company purchase: pay a batch of tokens with Cosmos Pay. Once the payment is confirmed the batch, its labels and its
 // activation counters live in Mis lotes; this form only creates the purchase and follows its payment.
 import { useEffect, useMemo, useRef, useState, type SubmitEvent } from 'react';
@@ -7,11 +8,11 @@ import { Icon } from '@/components/ui/Icon';
 import { PaymentWarning } from '@/components/ui/PaymentWarning';
 import type { Message } from '@/components/ui/StatusMessage';
 import { Toast } from '@/components/ui/Toast';
-import { isDemoPurchase } from '@/lib/client/demo';
+import { WalletPayButton } from './WalletPayButton';
 import { createPurchase, fetchPurchase, migrateLegacyPurchase, savePurchase } from '@/lib/client/purchases';
+import { saveBatchPhoto } from '@/lib/client/photo';
 import { supportForNewBatch } from '@/lib/client/warranty-settings';
 import { userSession } from '@/lib/client/session';
-import { resolveWalletAddress } from '@/lib/client/wallet';
 import { errorMessage } from '@/lib/errors';
 import type { CountryOption, CreatedPurchase } from '@/lib/types';
 
@@ -19,8 +20,6 @@ const POLL_MS = 4000;
 
 interface PurchaseFormProps {
   countries: CountryOption[];
-  // Needed to ask the wallet for its address: the purchase is recorded under it.
-  cavosAppId?: string;
   batchesHref?: string;
   embedded?: boolean;
   pricePerToken?: string;
@@ -33,23 +32,16 @@ const groupByRegion = (countries: CountryOption[]) => {
   return [...regions.entries()].sort(([first], [second]) => (first === 'LATAM' ? -1 : second === 'LATAM' ? 1 : first.localeCompare(second, 'es')));
 };
 
-export function PurchaseForm({ countries, cavosAppId = '', batchesHref = '/batches', embedded = false, pricePerToken }: PurchaseFormProps) {
+export function PurchaseForm({ countries, batchesHref = '/batches', embedded = false, pricePerToken }: PurchaseFormProps) {
   const t = useCompanyText();
-  // Best effort: a browser that cannot reach the wallet still buys, and the batch is claimed on the next sync.
-  const walletAddress = async () => {
-    if (!cavosAppId) return undefined;
-    try {
-      return await resolveWalletAddress(cavosAppId);
-    } catch {
-      return undefined;
-    }
-  };
   const [message, setMessage] = useState<Message | null>(null);
   const [payment, setPayment] = useState<CreatedPurchase | null>(null);
   const [paymentStatus, setPaymentStatus] = useState(t.purchase.waiting);
   const [submitting, setSubmitting] = useState(false);
   const [batchReady, setBatchReady] = useState(false);
   const [country, setCountry] = useState('');
+  // The photo of the batch of the simple form; the configurator keeps its own.
+  const [photo, setPhoto] = useState('');
   const purchaseId = useRef('');
   const pollTimer = useRef<number | undefined>(undefined);
   // Set when the form closes: a poll that was mid-request must not schedule the next one.
@@ -110,18 +102,26 @@ export function PurchaseForm({ countries, cavosAppId = '', batchesHref = '/batch
           quantity: Number(formData.get('quantity')),
           ...(formData.get('configuration') ? { configuration: JSON.parse(String(formData.get('configuration'))) } : {})
         },
-        countries.find((option) => option.code === chosen)?.destination ?? chosen,
-        t.purchase.createFailed,
-        // The wallet of the account, when this browser can tell: the batch then belongs to the account, not to it.
-        await walletAddress()
+        t.purchase.createFailed
       );
 
       // Saved right away: the purchase is already in Mis lotes, even if this page is closed before paying.
       savePurchase(purchase.purchaseId);
+      // The photo of the batch, if one was chosen. The purchase stands without it: it can be added from Mis lotes.
+      const photo = String(formData.get('photo') ?? '');
+      let photoFailed = false;
+      if (photo) {
+        try {
+          await saveBatchPhoto(purchase.purchaseId, photo, t.photo.uploadFailed);
+        } catch {
+          photoFailed = true;
+        }
+      }
       purchaseId.current = purchase.purchaseId;
       form.reset();
       setCountry('');
-      setMessage(null);
+      setPhoto('');
+      setMessage(photoFailed ? { text: t.photo.uploadFailed, tone: 'error' } : null);
       setPayment(purchase);
       setPaymentStatus(t.purchase.waiting);
       void pollPurchase();
@@ -169,6 +169,7 @@ export function PurchaseForm({ countries, cavosAppId = '', batchesHref = '/batch
           </p>
           <label htmlFor="token-quantity">Cantidad de tokens</label>
           <input id="token-quantity" name="quantity" type="number" min={1} max={500} defaultValue={3} required />
+          <PhotoPicker value={photo} onChange={setPhoto} />
           <button className="button button-primary" type="submit" disabled={submitting}>
             {submitting ? 'Preparando pago…' : 'Generar lote y pagar'}
           </button>
@@ -179,8 +180,20 @@ export function PurchaseForm({ countries, cavosAppId = '', batchesHref = '/batch
         <div className="verify-details is-available">
           <strong>{t.purchase.payTitle(payment.amount, payment.asset || 'XLM', payment.quantity)}</strong>
           <span>{t.purchase.payNote}</span>
-          <PaymentWarning as="span" text={isDemoPurchase(payment.purchaseId) ? t.purchase.demoWarning : t.purchase.warning} />
+          <PaymentWarning as="span" text={t.purchase.warning} />
           {payment.qr && <img src={payment.qr} alt={t.purchase.qrAlt} width={240} height={240} />}
+          {payment.uri && (
+            <WalletPayButton
+              purchaseId={payment.purchaseId}
+              uri={payment.uri}
+              network={payment.network === 'public' ? 'public' : 'testnet'}
+              onPaid={() => {
+                // Checks at once instead of at the next poll.
+                window.clearTimeout(pollTimer.current);
+                void pollPurchase();
+              }}
+            />
+          )}
           <span role="status">{paymentStatus}</span>
         </div>
       )}

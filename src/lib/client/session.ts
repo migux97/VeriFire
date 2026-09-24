@@ -59,16 +59,22 @@ export const userSession = {
   }
 };
 
-// TEMPORARY demo mode (see src/lib/client/demo.ts): while it is on, every account key gets this suffix, so the sample
-// data lives beside the real data and never mixes with it. Kept here so that nothing below depends on demo.ts.
-const DEMO_FLAG_PREFIX = 'verifire:demo-mode';
-export const DEMO_SUFFIX = ':demo';
-export const demoFlagKey = () => `${DEMO_FLAG_PREFIX}:${userSession.email().toLowerCase()}`;
-export const demoModeActive = () => Boolean(userSession.email()) && readRaw(localStorage, demoFlagKey()) === '1';
+// The panel had a demo mode that kept sample data under keys ending in ":demo", switched on by a flag. It was removed:
+// whatever it left in this browser for the account is deleted the first time the account's data is read.
+let demoLeftoversChecked = '';
+const removeDemoLeftovers = () => {
+  const email = userSession.email().toLowerCase();
+  if (!email || demoLeftoversChecked === email) return;
+  demoLeftoversChecked = email;
+  removeStored(localStorage, `verifire:demo-mode:${email}`);
+  for (const key of storedKeys(localStorage)) {
+    if (key.startsWith(`${ACCOUNT_PREFIX}:`) && key.endsWith(`:${email}:demo`)) removeStored(localStorage, key);
+  }
+};
 
 // Key of one kind of data for the account signed in now. Data saved before this existed is carried over once.
 export const accountKey = (name: string, legacyKey?: string) => {
-  if (demoModeActive()) return `${ACCOUNT_PREFIX}:${name}:${userSession.email().toLowerCase()}${DEMO_SUFFIX}`;
+  removeDemoLeftovers();
   const key = `${ACCOUNT_PREFIX}:${name}:${userSession.email().toLowerCase()}`;
   const legacy = legacyKey ? readRaw(localStorage, legacyKey) : null;
   if (legacy !== null && readRaw(localStorage, key) === null) {
@@ -76,12 +82,6 @@ export const accountKey = (name: string, legacyKey?: string) => {
     removeStored(localStorage, legacyKey as string);
   }
   return key;
-};
-
-// Every key of the signed-in account's demo data, to wipe it when demo mode is turned off.
-export const demoAccountKeys = () => {
-  const suffix = `:${userSession.email().toLowerCase()}${DEMO_SUFFIX}`;
-  return storedKeys(localStorage).filter((key) => key.startsWith(`${ACCOUNT_PREFIX}:`) && key.endsWith(suffix));
 };
 
 export const leaveSession = (reason: SessionEndReason) => {

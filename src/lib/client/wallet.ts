@@ -5,6 +5,7 @@ import { errorMessage } from '../errors';
 import { isStellarAddress } from '../validation';
 import { storedUser, updateStoredUser } from './account';
 import { DEVICE_CODE_KEY, userSession, WALLET_KEY, WALLET_UPDATED_EVENT } from './session';
+import { enrollSocialRecovery, recoverWithSocial } from './social-recovery';
 import { readStored, writeStored } from './storage';
 
 const APP_SALT = 'verifire-demo';
@@ -66,9 +67,21 @@ export const storedDeviceCode = () => {
 
 // Connects the Stellar wallet of an identity Cavos authenticated (email code or Google): its token lets the Cavos
 // registry verify who owns the address.
-const openCavosWallet = async (appId: string, auth: CavosAuth, identity: Identity): Promise<CavosStellar> => {
+type CavosRegistry = NonNullable<Parameters<typeof import('@cavos/kit').Cavos.connect>[0]['registry']>;
+
+// The Cavos registry maps the account to its wallet, and asking it needs the Cavos login token, which expires within
+// hours while a password-only login lasts days. The address is already known (saved when the email was verified), so
+// without a token it is answered from here instead of failing with "registry lookup skipped: no login token".
+const knownWalletRegistry = (address: string): CavosRegistry => ({
+  lookup: async () => ({ address }),
+  register: async (params) => ({ address, conflict: params.address !== address })
+});
+
+const openCavosWallet = async (appId: string, auth: CavosAuth, identity: Identity, knownAddress?: string): Promise<CavosStellar> => {
   const { Cavos } = await loadCavosKit();
+  const registry = knownAddress && !auth.getAuthToken() ? knownWalletRegistry(knownAddress) : undefined;
   const session = await Cavos.connect({
+    ...(registry ? { registry } : {}),
     chains: ['stellar'],
     defaultChain: 'stellar',
     network: 'testnet',
@@ -107,7 +120,7 @@ export const hasDeviceFactor = async (address: string): Promise<boolean | null> 
 const authorizeDevice = async (wallet: CavosStellar, deviceCode: string): Promise<{ ok: boolean; error: string; wrongPassword?: boolean }> => {
   if (wallet.status === 'needs-device-approval') {
     if (await hasDeviceFactor(wallet.address) === false) {
-      return { ok: false, error: 'Tu cuenta todavía no tiene habilitado el uso en varios dispositivos. Abrí Verifire en la misma dirección donde la creaste (si fue en tu computadora, http://localhost:5501), entrá y habilitalo desde Mi perfil.' };
+      return { ok: false, error: 'Tu cuenta todavía no tiene habilitado el uso en varios dispositivos. Abrí Verifire en la misma dirección donde la creaste (si fue en tu computadora, http://localhost:5501) y entrá una vez con tu correo y contraseña: se habilita solo.' };
     }
     try {
       await wallet.approveThisDeviceWithRecovery(deviceCode);
@@ -141,11 +154,72 @@ export const createAccountOnChain = async (wallet: CavosStellar) => {
   }
 };
 
+// Whether signing in without a password (Google) leaves the account usable on other devices. Its key is saved in
+// Stellar with a password: without one it would live only in this browser, at this exact site address.
+//  - 'ready': this browser signs and the key is saved; nothing to ask.
+//  - 'create': this browser holds the key but never saved it; a password saves it now.
+//  - 'enter': another device saved it; the password enables this one.
+//  - 'lost': only the browser that created the account holds its key, and it never saved it.
+export type KeyBackupState = 'ready' | 'create' | 'enter' | 'lost';
+
+export const keyBackupState = async (appId: string, auth: CavosAuth, identity: Identity): Promise<KeyBackupState> => {
+  const wallet = await openCavosWallet(appId, auth, identity);
+  const factor = await hasDeviceFactor(wallet.address);
+  if (wallet.status === 'needs-device-approval') return factor === false ? 'lost' : 'enter';
+  // Stellar did not answer: asking for a new password could replace the one the other devices use. It is saved later
+  // by saveKeyIfMissing when it turns out to be missing.
+  if (factor === null && wallet.status === 'ready') return 'ready';
+  return factor === true && wallet.status === 'ready' ? 'ready' : 'create';
+};
+
+// A new password for the account: the copy of its key kept in Stellar is saved again with it, so the old password stops
+// opening it. Only a browser that already holds the key can do that (ok: false otherwise): the copy in Stellar is sealed
+// with the old password, which Verifire never knew. Devices already enabled keep working.
+// Thrown when the current password given to open the key on this device is not the account's.
+export const WRONG_CURRENT_PASSWORD = 'Esa no es tu contraseña actual. Escribí la que usás hoy para entrar a Verifire.';
+
+// currentCode: the device code of the current password, when the user gave it to open the key on this device.
+export const resetKeyPassword = async (appId: string, auth: CavosAuth, identity: Identity, deviceCode: string, currentCode?: string) => {
+  const wallet = await openCavosWallet(appId, auth, identity);
+  // A device that does not hold the key opens it through Cavos' recovery enclave, when the account was sealed there,
+  // or with the current password, which also opens the copy kept in Stellar.
+  if (wallet.status === 'needs-device-approval') {
+    if (currentCode) {
+      try {
+        await wallet.approveThisDeviceWithRecovery(currentCode);
+      } catch (error) {
+        const message = errorMessage(error);
+        throw new Error(/wrong factor|not enrolled/i.test(message) ? WRONG_CURRENT_PASSWORD : message);
+      }
+    } else if (!(await recoverWithSocial(appId, auth, wallet))) {
+      // needsCurrent: a copy sealed with the password exists in Stellar, so the current password can open it.
+      return { address: wallet.address, ok: false as const, needsCurrent: (await hasDeviceFactor(wallet.address)) !== false };
+    }
+  }
+  await wallet.setupRecovery(deviceCode);
+  await enrollSocialRecovery(appId, auth, wallet);
+  if (wallet.status === 'undeployed') await createAccountOnChain(wallet);
+  rememberWallet(wallet.address);
+  rememberDeviceCode(deviceCode);
+  return { address: wallet.address, ok: true as const, needsCurrent: false };
+};
+
+// Seals the account's key in Cavos' recovery enclave, from the link of the "Activá la recuperación" card. Only a browser
+// that holds the key can do it.
+export const enableAnywhereRecovery = async (appId: string, auth: CavosAuth, identity: Identity) => {
+  const wallet = await openCavosWallet(appId, auth, identity);
+  if (wallet.status === 'needs-device-approval') return { address: wallet.address, result: 'other-device' as const };
+  return { address: wallet.address, result: (await enrollSocialRecovery(appId, auth, wallet)) ? 'enabled' as const : 'failed' as const };
+};
+
 export const connectCavosWallet = async (appId: string, auth: CavosAuth, identity: Identity, deviceCode?: string) => {
   const wallet = await openCavosWallet(appId, auth, identity);
   rememberWallet(wallet.address);
   rememberDeviceCode(deviceCode);
   const device = deviceCode ? await authorizeDevice(wallet, deviceCode) : { ok: false, error: '' };
+  // A device that holds the key right after a fresh login seals it in Cavos' recovery enclave (once), so the account
+  // can be recovered from any other device later. Nothing happens while the app has not turned it on.
+  if (device.ok || wallet.status === 'ready') await enrollSocialRecovery(appId, auth, wallet);
   // The password opens the account's key on every device: one that does not is a wrong password, not a device issue.
   return { address: wallet.address, deviceFactor: device.ok, deviceError: device.error, wrongPassword: Boolean(device.wrongPassword) };
 };
@@ -159,7 +233,14 @@ const openOwnWallet = async (appId: string, expectedAddress: string) => {
   const identity = auth.restoreIdentity() ?? (sameAccount && account?.cavosUserId ? { userId: account.cavosUserId, email: account.email } : null);
   if (!identity) throw new EmailCodeRequiredError();
 
-  const wallet = await openCavosWallet(appId, auth, identity);
+  let wallet;
+  try {
+    wallet = await openCavosWallet(appId, auth, identity, expectedAddress);
+  } catch (error) {
+    // Cavos wants the login confirmed again: the panel asks for an email code instead of showing Cavos' message.
+    if (/no login token|unauthori[sz]ed|401/i.test(errorMessage(error))) throw new EmailCodeRequiredError();
+    throw error;
+  }
   if (wallet.address !== expectedAddress) {
     throw new Error('La wallet Cavos de este navegador no coincide con la de tu cuenta. Cerrá sesión y volvé a entrar.');
   }
@@ -187,7 +268,43 @@ export const connectSigningWallet = async (appId: string, expectedAddress: strin
       ? new DeviceNotReadyError(ORIGINAL_BROWSER_ONLY, false)
       : new DeviceNotReadyError('Este navegador todavía no está habilitado para firmar con tu cuenta. Tocá "Reintentar" para habilitarlo.', true);
   }
+  await saveKeyIfMissing(wallet);
   return wallet;
+};
+
+// Checked once per page at a time: the panel's sync and a signature can ask together, and both would send the
+// transactions that save the key. Settled only once Stellar confirmed the key is there (or it was just saved).
+let keySaving: Promise<boolean> | null = null;
+let keySaved = false;
+
+// This browser holds the account's key: when Stellar still has no copy (the account was created before the multi-device
+// factor, or saving it failed at sign-up), it is saved now with the password of this login. Without it every other
+// device fails with ORIGINAL_BROWSER_ONLY, and this browser is the only place that can fix that. It never throws:
+// signing works here either way.
+const saveKeyIfMissing = async (wallet: CavosStellar) => {
+  if (keySaved) return;
+  const deviceCode = storedDeviceCode();
+  if (!deviceCode) return;
+  keySaving ??= (async () => {
+    try {
+      const undeployed = wallet.status === 'undeployed';
+      const factor = undeployed ? false : await hasDeviceFactor(wallet.address);
+      // Stellar did not answer: tried again at the next signature.
+      if (factor === null) return false;
+      if (factor === false) {
+        await wallet.setupRecovery(deviceCode);
+        if (undeployed) await createAccountOnChain(wallet);
+        updateStoredUser({ deviceFactorAt: Date.now() });
+      }
+      return true;
+    } catch (error) {
+      console.warn('No se pudo guardar la llave de la cuenta en Stellar:', errorMessage(error));
+      return false;
+    }
+  })().finally(() => {
+    keySaving = null;
+  });
+  keySaved = await keySaving;
 };
 
 // Everything that lets this browser sign, from the account's password: enables it with the key saved in Stellar,

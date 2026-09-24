@@ -33,15 +33,15 @@ const es = {
     brandsText: 'Comprás lotes de etiquetas, las imprimís en tu línea de empaque y seguís desde un panel qué unidades se activaron y en qué mercado.',
     brandBenefits: ['Pago de cada lote con Cosmos Pay', 'Etiquetas con los dos QR, listas para imprimir', 'Activaciones de cada lote por destino'], brandLabel: ['TU', 'MARCA'],
     buyers: 'Compradores', buyersText: 'Escaneás el QR de adentro, confirmás con tu correo y la garantía queda a tu nombre. No necesitás criptomonedas ni pagar comisiones.',
-    buyerBenefits: ['Cuenta creada con tu correo', 'Certificado público de cada garantía', 'Todas tus garantías en un mismo lugar'], activate: 'Activar mi garantía'
+    buyerBenefits: ['Cuenta creada con tu correo', 'Certificado público de cada garantía', 'Todas tus garantías en un mismo lugar'], activate: 'Activar mi garantía', createCompany: 'Registrar mi empresa'
   },
   safeguardsTitle: 'Por qué una etiqueta copiada no sirve',
   footer: {
     description: 'Infraestructura antipiratería para marcas, con cada producto registrado en Stellar.', access: 'Accesos', warranties: 'Mis garantías', batches: 'Panel de lotes', sections: 'Secciones del sitio', history: 'Historial de un producto',
-    verify: 'Verificá un producto', hint: 'Ingresá el código impreso junto al QR público.', placeholder: 'Ej. VF-001',
+    verify: 'Verificá un producto', hint: 'Ingresá el código impreso junto al QR público.', placeholder: 'Ej. VF-7K3M9Q2A',
     tagline: 'Seguridad y reclamo de productos.'
   },
-  profile: { title: 'Mi perfil', user: 'Usuario Verifire', noEmail: 'Correo no disponible', dark: 'Modo oscuro', company: 'Modo empresa', logout: 'Cerrar sesión' },
+  profile: { title: 'Mi perfil', user: 'Usuario Verifire', noEmail: 'Correo no disponible', dark: 'Modo oscuro', company: 'Modo empresa', createCompany: 'Registrar una empresa', logout: 'Cerrar sesión' },
   showcase: {
     demo: 'Explorá los productos',
     credential: 'Identidad digital de producto',
@@ -97,14 +97,14 @@ const en: typeof es = {
     title: 'Who uses Verifire', brands: 'Brands and manufacturers', brandsText: 'Buy batches of labels, print them on your packaging line, and track which units are activated and in which markets from one dashboard.',
     brandBenefits: ['Pay for each batch with Cosmos Pay', 'Ready-to-print labels with both QR codes', 'Batch activations by destination'], brandLabel: ['YOUR', 'BRAND'],
     buyers: 'Buyers', buyersText: 'Scan the QR code inside, confirm your email, and the warranty is registered in your name. No cryptocurrency or transaction fees required.',
-    buyerBenefits: ['An account created with your email', 'A public certificate for every warranty', 'All your warranties in one place'], activate: 'Activate my warranty'
+    buyerBenefits: ['An account created with your email', 'A public certificate for every warranty', 'All your warranties in one place'], activate: 'Activate my warranty', createCompany: 'Register my company'
   },
   safeguardsTitle: 'Why a copied label does not work',
   footer: {
-    description: 'Anti-counterfeiting infrastructure for brands, with every product registered on Stellar.', access: 'Quick links', warranties: 'My warranties', batches: 'Batch dashboard', sections: 'Site sections', history: 'A product’s history', verify: 'Verify a product', hint: 'Enter the code printed next to the public QR code.', placeholder: 'e.g. VF-001',
+    description: 'Anti-counterfeiting infrastructure for brands, with every product registered on Stellar.', access: 'Quick links', warranties: 'My warranties', batches: 'Batch dashboard', sections: 'Site sections', history: 'A product’s history', verify: 'Verify a product', hint: 'Enter the code printed next to the public QR code.', placeholder: 'e.g. VF-7K3M9Q2A',
     tagline: 'Product security and warranty claims.'
   },
-  profile: { title: 'My profile', user: 'Verifire user', noEmail: 'Email unavailable', dark: 'Dark mode', company: 'Company workspace', logout: 'Sign out' },
+  profile: { title: 'My profile', user: 'Verifire user', noEmail: 'Email unavailable', dark: 'Dark mode', company: 'Company workspace', createCompany: 'Register a company', logout: 'Sign out' },
   showcase: {
     demo: 'Explore the products',
     credential: 'Digital product identity',

@@ -1,11 +1,11 @@
 // The company's warranty settings for its products: the support email the buyer sees and how long a warranty lasts.
 // Kept with the account's data (see account-data.ts) and sent to the server, which gives them to every batch of the
-// company and shows the email to the owners of its products. In demo mode they stay in the demo data only.
+// company and shows the email to the owners of its products.
 import { postJson } from './api';
 import { storedUser } from './account';
 import { realPurchaseIds } from './purchases';
 import { readAccountData, writeAccountData } from './account-data';
-import { demoModeActive, userSession } from './session';
+import { userSession } from './session';
 
 export const WARRANTY_MONTH_OPTIONS = [6, 12, 18, 24, 36] as const;
 export type WarrantyMonths = (typeof WARRANTY_MONTH_OPTIONS)[number];
@@ -19,7 +19,7 @@ export interface WarrantySettings {
 const legacyKey = () => `verifire:warranty-settings:${userSession.email().toLowerCase()}`;
 
 export const readWarrantySettings = (): WarrantySettings | null => {
-  const saved = readAccountData<Partial<WarrantySettings>>('warranty-settings', demoModeActive() ? undefined : legacyKey());
+  const saved = readAccountData<Partial<WarrantySettings>>('warranty-settings', legacyKey());
   if (!saved?.email) return null;
   const months = WARRANTY_MONTH_OPTIONS.find((option) => option === saved.warrantyMonths) ?? 12;
   return { email: saved.email, warrantyMonths: months };
@@ -35,8 +35,7 @@ export const supportForNewBatch = () => {
 // Saves the settings and applies them to every batch this company already has. Answers how many were updated.
 export const saveWarrantySettings = async (settings: WarrantySettings) => {
   const companyName = storedUser()?.companyName?.trim() ?? '';
-  // The demo's batches are not on the server: its settings change nothing there.
-  const ids = demoModeActive() ? [] : realPurchaseIds();
+  const ids = realPurchaseIds();
   let updated = 0;
   if (ids.length) {
     ({ updated } = await postJson<{ updated: number }>(

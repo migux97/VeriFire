@@ -22,6 +22,15 @@ export interface ApiErrorBody {
   retryable?: boolean;
 }
 
+// Who issued a product, as the company chose to show itself. "Issued by", not "verified": the name is self-declared.
+export interface Issuer {
+  name: string;
+  logoUrl: string | null;
+  website: string | null;
+  email: string | null;
+  phone: string | null;
+}
+
 // What the QR on the outside of the box shows to anyone, without a session. Owners appear only shortened, in the history.
 export interface PublicProduct {
   token: string;
@@ -37,6 +46,10 @@ export interface PublicProduct {
   history: HistoryEvent[];
   // The last change of owner, when the product was passed on after its activation.
   lastTransfer: { to: string; at: string } | null;
+  // The company's published brand, when it published one. Nothing private: only what it chose to show to everyone.
+  issuer: Issuer | null;
+  // What the batch looks like, when its company added a photo.
+  photoUrl: string | null;
 }
 
 export interface Warranty extends PublicProduct {
@@ -55,6 +68,31 @@ export interface Warranty extends PublicProduct {
   transferExpiresAt: string | null;
   // The company that issued it and its support email, when the company set one.
   support: { company: string; email: string } | null;
+  // Who issued it for its owner: the published brand, or the name and email set for support when there is none.
+  issuer: Issuer | null;
+  // The owner chose to show it on the home page, and whether that is possible: only with a photo of the batch.
+  showcase: boolean;
+  canShowcase: boolean;
+}
+
+// What a buyer learns about a product when its secret QR is read, before activating it: enough to decide whether to
+// show it on the home page.
+export interface ClaimPreview {
+  model: string;
+  photoUrl: string | null;
+  canShowcase: boolean;
+}
+
+// A product on the home page: only what its owner agreed to show. The owner's account is never part of it.
+export interface ShowcaseItem {
+  token: string;
+  model: string;
+  lot: string;
+  destination: string;
+  photoUrl: string;
+  verifiedAt: string;
+  issuer: { name: string; logoUrl: string | null } | null;
+  onChain: boolean;
 }
 
 // Answer of POST /api/products, the only one that carries the secret code of a single product.
@@ -105,6 +143,8 @@ interface BatchBase {
 }
 
 export interface PublicBatch extends BatchBase {
+  issuer: Issuer | null;
+  photoUrl: string | null;
   tokens: BatchToken[];
 }
 
@@ -128,13 +168,16 @@ export interface PurchaseSummary {
   createdAt: string | null;
   batchId: string | null;
   // The payment QR, kept so a pending purchase can be paid from the list. Null once the batch exists.
-  payment: { qr: string | null; uri: string | null } | null;
+  // network: where the payment is made, for paying from a browser wallet (a dv_ key pays on testnet).
+  payment: { qr: string | null; uri: string | null; network?: 'public' | 'testnet' } | null;
   issuanceTxUrl: string | null;
   registeredOnChain: number;
   pendingOnChain: number;
   claimed: number;
   // When the company marked the batch as shipped to its destination.
   shippedAt: string | null;
+  // The photo of the batch, when the company added one.
+  photoUrl: string | null;
 }
 
 export type PurchaseStatus =

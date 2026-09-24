@@ -1,5 +1,6 @@
 ---
 import StandaloneHeader from '@/components/layout/StandaloneHeader.astro';
+import { WorkspaceSync } from '@/components/company/WorkspaceSync';
 import { PurchaseForm } from '@/components/purchase/PurchaseForm';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import { publicConfig } from '@/lib/server/config';
@@ -21,13 +22,19 @@ import { countryOptions } from '@/lib/server/countries';
       <span class="eyebrow">Nuevo lote</span>
       <h1 id="new-batch-title">Comprá tokens con Cosmos Pay</h1>
       <p class="verify-message">Cada token tiene un precio fijo en XLM. El lote se genera cuando Cosmos Pay confirma el pago, y queda guardado en Mis lotes con sus etiquetas.</p>
-      <PurchaseForm client:load countries={countryOptions} cavosAppId={publicConfig.cavosAppId} />
+      <PurchaseForm client:load countries={countryOptions} />
+      <WorkspaceSync client:load cavosAppId={publicConfig.cavosAppId} />
     </section>
   </main>
 
   <script>
-    import { guardSession } from '@/lib/client/session';
+    import { storedUser } from '@/lib/client/account';
+    import { CREATE_COMPANY_PATH } from '@/lib/client/company-signup';
+    import { guardSession, userSession } from '@/lib/client/session';
+    import { currentWorkspace } from '@/lib/client/workspace';
 
     guardSession();
+    // Buying batches is done for a company: an account without one registers it first.
+    if (userSession.isActive() && !currentWorkspace(storedUser())) window.location.replace(CREATE_COMPANY_PATH);
   </script>
 </BaseLayout>

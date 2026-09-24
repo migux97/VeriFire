@@ -18,12 +18,19 @@ export interface TransferControls {
   onCancel: (token: string) => void;
 }
 
+export interface ShowcaseControls {
+  // Product whose choice is being saved.
+  busyToken: string | null;
+  onToggle: (token: string, visible: boolean) => void;
+}
+
 interface WarrantyVaultProps {
   // Null until the first load answers.
   warranties: Warranty[] | null;
   // Loading text or the error of the last load; null hides it.
   status: string | null;
   transfers: TransferControls;
+  showcase: ShowcaseControls;
   // Products this account passed on to someone else.
   transferred: TransferredWarranty[];
   locale?: ConsumerLocale;
@@ -51,7 +58,7 @@ function TransferredCard({ product, locale }: { product: TransferredWarranty; lo
   );
 }
 
-export function WarrantyVault({ warranties, status, transfers, transferred, locale = 'es' }: WarrantyVaultProps) {
+export function WarrantyVault({ warranties, status, transfers, showcase, transferred, locale = 'es' }: WarrantyVaultProps) {
   const labels = getConsumerMessages(locale);
   const { vault } = labels;
   const pageText = { previous: vault.previous, next: vault.next, page: (page: number, pages: number) => fillIn(vault.pageOf, { page, pages }) };
@@ -78,6 +85,8 @@ export function WarrantyVault({ warranties, status, transfers, transferred, loca
             status={transfers.statuses[warranty.token] ?? null}
             onOfferTransfer={() => transfers.onOffer(warranty.token)}
             onCancelTransfer={() => transfers.onCancel(warranty.token)}
+            showcaseBusy={showcase.busyToken !== null}
+            onToggleShowcase={(visible) => showcase.onToggle(warranty.token, visible)}
           />
         ))}
       </div>

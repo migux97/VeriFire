@@ -4,10 +4,9 @@ import { currentWorkspace } from '@/lib/client/workspace';
 import { useEffect, useState, type SubmitEvent } from 'react';
 import type { CountryOption } from '@/lib/types';
 import type { IssuanceOptions } from '@/lib/issuance';
-import { readAccountData, writeAccountData } from '@/lib/client/account-data';
+import { ACCOUNT_DATA_EVENT, readAccountData, writeAccountData } from '@/lib/client/account-data';
+import { PhotoPicker } from './PhotoPicker';
 
-const savedTemplates = () => readAccountData<unknown>('issuance-templates', 'verifire-issuance-templates');
-const savedProducts = () => readAccountData<unknown>('issuance-products', 'verifire-issuance-products');
 interface Draft extends IssuanceOptions {
   model: string;
   lot: string;
@@ -19,6 +18,31 @@ interface Saved {
   draft: Draft;
 }
 const blank: Draft = { model: '', lot: '', country: '', quantity: 3, brand: '', labelText: '', labelStyle: 'standard' };
+
+// Saved entries are completed with the defaults instead of dropped: a template saved before a field existed (the label
+// style, the label text) was skipped when read and then erased by the next save.
+const readSaved = (data: unknown): Saved[] => {
+  if (!Array.isArray(data)) return [];
+  return data.flatMap((entry: unknown) => {
+    if (!entry || typeof entry !== 'object') return [];
+    const { name, draft } = entry as { name?: unknown; draft?: unknown };
+    if (typeof name !== 'string' || !name.trim() || !draft || typeof draft !== 'object') return [];
+    const complete = { ...blank };
+    for (const key of Object.keys(blank) as (keyof Draft)[]) {
+      const value = (draft as Record<string, unknown>)[key];
+      if (typeof value === typeof blank[key]) Object.assign(complete, { [key]: value });
+    }
+    if (complete.labelStyle !== 'standard' && complete.labelStyle !== 'compact') complete.labelStyle = 'standard';
+    if (!Number.isInteger(complete.quantity) || complete.quantity < 1 || complete.quantity > 500) complete.quantity = blank.quantity;
+    return [{ name, draft: complete }];
+  });
+};
+const savedList = (product: boolean) =>
+  readSaved(
+    product
+      ? readAccountData<unknown>('issuance-products', 'verifire-issuance-products')
+      : readAccountData<unknown>('issuance-templates', 'verifire-issuance-templates')
+  );
 export function IssuanceConfigurator({
   countries,
   submitting,
@@ -38,6 +62,9 @@ export function IssuanceConfigurator({
   const [products, setProducts] = useState<Saved[]>([]);
   const [name, setName] = useState('');
   const [notice, setNotice] = useState('');
+  // The photo of the batch: prepared in the browser and sent by the purchase form once the purchase exists.
+  const [photo, setPhoto] = useState('');
+  // Read in the browser: the server that renders this page has no storage.
   const update = <K extends keyof Draft>(key: K, value: Draft[K]) => setDraft((old) => ({ ...old, [key]: value }));
   useEffect(() => {
     const user = storedUser();
@@ -45,23 +72,18 @@ export function IssuanceConfigurator({
     const company = currentWorkspace(user)?.companyName ?? '';
     setCompanyName(company);
     setDraft((old) => ({ ...old, brand: company }));
-    try {
-      const read = (data: unknown): Saved[] => {
-        return Array.isArray(data)
-          ? data.filter(
-              (entry): entry is Saved =>
-                entry &&
-                typeof entry.name === 'string' &&
-                entry.draft &&
-                Object.keys(blank).every((key) => typeof entry.draft[key] === typeof blank[key as keyof Draft])
-            )
-          : [];
-      };
-      setSaved(read(savedTemplates() ?? []));
-      setProducts(read(savedProducts() ?? []));
-    } catch {
-      setNotice(t.readFailed);
-    }
+    // Again when the account brings the templates and products saved in another browser.
+    const load = () => {
+      try {
+        setSaved(savedList(false));
+        setProducts(savedList(true));
+      } catch {
+        setNotice(t.readFailed);
+      }
+    };
+    load();
+    window.addEventListener(ACCOUNT_DATA_EVENT, load);
+    return () => window.removeEventListener(ACCOUNT_DATA_EVENT, load);
   }, []);
   const persist = (product: boolean) => {
     const title = (product ? draft.model : name).trim();
@@ -69,7 +91,8 @@ export function IssuanceConfigurator({
       setNotice(product ? t.needModelToSave : t.needTemplateName);
       return;
     }
-    const list = product ? products : saved;
+    // What is stored now, not what this form read when it opened: the account may have brought more since.
+    const list = savedList(product);
     const next = [{ name: title, draft: { ...draft, lot: '' } }, ...list.filter((item) => item.name !== title)].slice(0, 50);
     try {
       if (!writeAccountData(product ? 'issuance-products' : 'issuance-templates', next)) throw new Error('storage');
@@ -177,6 +200,7 @@ export function IssuanceConfigurator({
               {companyName ? t.brandFromCompany : t.brandHint}
             </small>
           </label>
+          <PhotoPicker value={photo} onChange={setPhoto} />
           <button type="button" className="button button-secondary" onClick={() => persist(true)}>
             {t.saveProduct}
           </button>

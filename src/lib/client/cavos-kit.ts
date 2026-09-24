@@ -3,4 +3,11 @@
 // them creating the buyer's Stellar account fails with "Buffer is not defined". Keep this import first.
 import './node-globals';
 
-export { Cavos, CavosAuth } from '@cavos/kit';
+export {
+  Cavos,
+  CavosAuth,
+  DEFAULT_SOCIAL_RECOVERY_ATTESTATION,
+  enrollHardwareIsolatedRecovery,
+  recoverHardwareIsolatedDevice,
+  SocialRecoveryClient
+} from '@cavos/kit';

@@ -5,6 +5,7 @@
 // Adding a new kind of data to that list is all a new feature needs: write it through here and it follows the account.
 // What must NOT be listed: secrets of this browser (the secret of an open transfer link) and notes about this device
 // (which purchase it already announced), which mean nothing anywhere else.
+import { withoutSampleEntries } from '../sample-data';
 import { accountKey } from './session';
 import { readStored, writeStored } from './storage';
 
@@ -13,6 +14,7 @@ export const ACCOUNT_DATA = [
   'company-schedules',
   'company-profile',
   'company-role-permissions',
+  'brand-public',
   'warranty-settings',
   'issuance-templates',
   'issuance-products',
@@ -28,14 +30,25 @@ const readTimes = () => readStored<Record<string, string>>(localStorage, account
 
 // Tells the panels on this page to read again what just arrived from the account.
 export const ACCOUNT_DATA_EVENT = 'verifire:account-data-changed';
+// Something was saved here: the account sync sends it to the other browsers of the account.
+export const ACCOUNT_DATA_WRITTEN_EVENT = 'verifire:account-data-written';
 
-export const readAccountData = <T>(name: AccountDataName, legacyKey?: string): T | null =>
-  readStored<T>(localStorage, accountKey(name, legacyKey));
+// The demo's invented entries that a sync brought here are dropped as they are read, and the cleaned list is saved
+// (and sent to the account), so they never show up again (see sample-data.ts).
+export const readAccountData = <T>(name: AccountDataName, legacyKey?: string): T | null => {
+  const value = readStored<T>(localStorage, accountKey(name, legacyKey));
+  const clean = withoutSampleEntries(value);
+  if (!clean) return value;
+  // Saved with its own date: removing them is not an edit, and a newer copy from another browser must still win.
+  writeAccountData(name, clean, { at: readTimes()[name] ?? new Date(0).toISOString() });
+  return clean as T;
+};
 
 // False when the browser refused to store it (a full quota, most often a logo).
-export const writeAccountData = (name: AccountDataName, value: unknown, { at = new Date().toISOString() } = {}) => {
+export const writeAccountData = (name: AccountDataName, value: unknown, { at }: { at?: string } = {}) => {
   if (!writeStored(localStorage, accountKey(name), value)) return false;
-  writeStored(localStorage, accountKey(TIMES), { ...readTimes(), [name]: at });
+  writeStored(localStorage, accountKey(TIMES), { ...readTimes(), [name]: at ?? new Date().toISOString() });
+  if (!at) window.dispatchEvent(new Event(ACCOUNT_DATA_WRITTEN_EVENT));
   return true;
 };
 

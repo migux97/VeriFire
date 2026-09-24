@@ -1,7 +1,7 @@
 import { useEffect, useRef, type ChangeEvent, type SubmitEvent } from 'react';
 import { Icon } from '@/components/ui/Icon';
 
-export type VerificationKind = 'register' | 'login' | 'new-device';
+export type VerificationKind = 'register' | 'login' | 'new-device' | 'reset' | 'password-changed';
 
 interface EmailCodeFormProps {
   kind: VerificationKind;
@@ -16,6 +16,8 @@ interface EmailCodeFormProps {
 
 const TITLES: Record<VerificationKind, string> = {
   'new-device': 'Recuperá tu cuenta',
+  reset: 'Confirmá que sos vos',
+  'password-changed': 'Confirmá tu contraseña nueva',
   login: 'Confirmá tu correo',
   register: 'Revisá tu correo'
 };
@@ -24,6 +26,12 @@ function Description({ kind, email }: { kind: VerificationKind; email: string })
   const address = <strong>{email}</strong>;
   if (kind === 'new-device') {
     return <p>Este dispositivo todavía no conoce tu cuenta. Ingresá el código de 6 dígitos que enviamos a {address} y vas a entrar con tu misma wallet y tus mismas garantías.</p>;
+  }
+  if (kind === 'password-changed') {
+    return <p>Tu contraseña cambió desde otro dispositivo. Ingresá el código de 6 dígitos que enviamos a {address} para usarla también en este navegador.</p>;
+  }
+  if (kind === 'reset') {
+    return <p>Ingresá el código de 6 dígitos que enviamos a {address} para cambiar tu contraseña. Tus garantías, tu empresa y tu wallet no cambian.</p>;
   }
   if (kind === 'login') {
     return <p>Por seguridad te pedimos un código cada 7 días. Ingresá el código de 6 dígitos que enviamos a {address}. Durante los próximos 7 días vas a entrar solo con tu contraseña.</p>;
