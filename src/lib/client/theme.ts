@@ -35,16 +35,17 @@ export interface ThemeOrigin {
   y: number;
 }
 
-// The change is animated with a view transition when the browser has them and the person has not turned animations off
-// (the panel's switch or the system's reduced motion): a snapshot of the page in the new theme is revealed in a growing
-// circle over the old one. Otherwise it changes at once, as before.
+// In the company panel the change is animated with a view transition, when the browser has them and the person has not
+// turned animations off (the panel's switch or the system's reduced motion): a snapshot of the page in the new theme is
+// revealed in a growing circle over the old one. Everywhere else it changes at once.
 export const setTheme = (preference: ThemePreference, origin?: ThemeOrigin) => {
   const next = preference === 'system' ? systemTheme() : preference;
   // Without storage the choice lasts until the page changes.
   writeRaw(localStorage, THEME_KEY, preference);
   const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   const start = (document as Document & { startViewTransition?: (update: () => void) => { ready: Promise<void> } }).startViewTransition;
-  if (next === currentTheme() || !start || reduced || !motionEnabled()) {
+  const companyPanel = Boolean(document.querySelector('.company-shell'));
+  if (next === currentTheme() || !companyPanel || !start || reduced || !motionEnabled()) {
     applyTheme(next);
     return;
   }

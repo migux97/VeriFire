@@ -1,21 +1,20 @@
-// Configuración of the company panel: look, language, animations, notifications and role permissions.
+// Configuración of the company panel: company profile, brand, warranties, animations, notifications and role permissions.
+// The language and the light/dark theme are chosen in the header.
 // Every choice is kept in this browser.
-import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { defaultPrefs, notify, readPrefs, savePrefs, type LeadHours, type NotificationPrefs } from '@/lib/client/notifications';
-import { motionEnabled, setMotionEnabled, setTheme, themePreference, type ThemePreference } from '@/lib/client/theme';
-import { LOCALE_COOKIE, type Locale } from '@/lib/locale';
+import { motionEnabled, setMotionEnabled } from '@/lib/client/theme';
+import type { Locale } from '@/lib/locale';
 import { CompanyBrandSettings } from './CompanyBrandSettings';
 import { CompanyProfileSettings } from './CompanyProfileSettings';
 import { CompanyRoleSettings } from './CompanyRoleSettings';
 import { CompanyWarrantySettings } from './CompanyWarrantySettings';
 import { CompanyTextProvider, useCompanyText } from './CompanyText';
 
-const LOCALE_COOKIE_MAX_AGE = 365 * 24 * 60 * 60;
-
 export function CompanySettings({ locale = 'es', cavosAppId = '' }: { locale?: Locale | undefined; cavosAppId?: string }) {
   return (
     <CompanyTextProvider locale={locale}>
-      <Settings locale={locale} cavosAppId={cavosAppId} />
+      <Settings cavosAppId={cavosAppId} />
     </CompanyTextProvider>
   );
 }
@@ -25,20 +24,6 @@ function Switch({ checked, onChange, label, disabled = false }: { checked: boole
     <button type="button" role="switch" aria-checked={checked} aria-label={label} className="settings-switch" disabled={disabled} onClick={() => onChange(!checked)}>
       <span />
     </button>
-  );
-}
-
-function Segmented<T extends string>({ value, options, onChange, label }: { value: T; options: { value: T; label: ReactNode }[]; onChange: (value: T) => void; label: string }) {
-  const index = Math.max(0, options.findIndex((option) => option.value === value));
-  return (
-    <div className="settings-segmented" role="radiogroup" aria-label={label} style={{ '--count': options.length, '--index': index } as CSSProperties}>
-      <span className="settings-segmented-thumb" aria-hidden="true" />
-      {options.map((option) => (
-        <button key={option.value} type="button" role="radio" aria-checked={option.value === value} onClick={() => onChange(option.value)}>
-          {option.label}
-        </button>
-      ))}
-    </div>
   );
 }
 
@@ -72,39 +57,24 @@ function Card({ icon, title, lead, badge, children }: { icon: string; title: str
   );
 }
 
-function Settings({ locale, cavosAppId }: { locale: Locale; cavosAppId: string }) {
+function Settings({ cavosAppId }: { cavosAppId: string }) {
   const t = useCompanyText();
   const text = t.settings;
-  const [theme, setThemeChoice] = useState<ThemePreference>('light');
   const [motion, setMotion] = useState(true);
   const [systemReduced, setSystemReduced] = useState(false);
   const [prefs, setPrefs] = useState<NotificationPrefs>(defaultPrefs);
   const [permission, setPermission] = useState<NotificationPermission | 'unsupported'>('default');
-  const [working, setWorking] = useState('');
 
   useEffect(() => {
-    setThemeChoice(themePreference());
     setMotion(motionEnabled());
     setSystemReduced(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false);
     setPrefs(readPrefs());
     setPermission(typeof Notification === 'undefined' ? 'unsupported' : Notification.permission);
   }, []);
 
-  const chooseTheme = (value: ThemePreference) => {
-    setTheme(value);
-    setThemeChoice(value);
-  };
-
   const chooseMotion = (value: boolean) => {
     setMotionEnabled(value);
     setMotion(value);
-  };
-
-  const chooseLocale = (value: Locale) => {
-    if (value === locale) return;
-    document.cookie = `${LOCALE_COOKIE}=${value}; path=/; max-age=${LOCALE_COOKIE_MAX_AGE}; samesite=lax`;
-    setWorking(text.language.reloading);
-    window.location.reload();
   };
 
   const updatePrefs = (next: Partial<NotificationPrefs>) => {
@@ -128,34 +98,8 @@ function Settings({ locale, cavosAppId }: { locale: Locale; cavosAppId: string }
       <CompanyWarrantySettings cavosAppId={cavosAppId} />
 
       <Card icon="fa-palette" title={text.appearance.title} lead={text.appearance.lead}>
-        <Row title={text.appearance.theme}>
-          <Segmented<ThemePreference>
-            label={text.appearance.theme}
-            value={theme}
-            onChange={chooseTheme}
-            options={[
-              { value: 'light', label: <><i className="fa-regular fa-sun" aria-hidden="true" /> {text.appearance.themes.light}</> },
-              { value: 'dark', label: <><i className="fa-regular fa-moon" aria-hidden="true" /> {text.appearance.themes.dark}</> },
-              { value: 'system', label: <><i className="fa-solid fa-desktop" aria-hidden="true" /> {text.appearance.themes.system}</> }
-            ]}
-          />
-        </Row>
         <Row title={text.appearance.motion} help={systemReduced && motion ? text.appearance.motionSystem : text.appearance.motionHelp}>
           <Switch checked={motion} onChange={chooseMotion} label={text.appearance.motion} />
-        </Row>
-      </Card>
-
-      <Card icon="fa-language" title={text.language.title} lead={text.language.lead}>
-        <Row title={text.language.title}>
-          <Segmented<Locale>
-            label={text.language.title}
-            value={locale}
-            onChange={chooseLocale}
-            options={[
-              { value: 'es', label: 'Español' },
-              { value: 'en', label: 'English' }
-            ]}
-          />
         </Row>
       </Card>
 
@@ -193,11 +137,6 @@ function Settings({ locale, cavosAppId }: { locale: Locale; cavosAppId: string }
 
       <CompanyRoleSettings />
 
-      {working && (
-        <p className="settings-working" role="status">
-          <i className="fa-solid fa-circle-notch fa-spin" aria-hidden="true" /> {working}
-        </p>
-      )}
     </div>
   );
 }

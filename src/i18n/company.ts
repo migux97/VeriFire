@@ -419,17 +419,10 @@ const es = {
     },
     appearance: {
       title: 'Apariencia',
-      lead: 'Elegí cómo se ve el panel.',
-      theme: 'Tema',
-      themes: { light: 'Claro', dark: 'Oscuro', system: 'Sistema' },
+      lead: 'Las animaciones del panel. El idioma y el modo claro u oscuro se eligen arriba, en el encabezado.',
       motion: 'Animaciones',
       motionHelp: 'Transiciones suaves al cambiar de sección, gráficos animados y avisos que aparecen con movimiento.',
       motionSystem: 'Tu sistema pide reducir el movimiento: las animaciones se muestran al mínimo aunque estén activadas.'
-    },
-    language: {
-      title: 'Idioma',
-      lead: 'El idioma del panel, del panel del comprador y de las páginas públicas de verificación.',
-      reloading: 'Cambiando el idioma…'
     },
     notifications: {
       title: 'Notificaciones',
@@ -1103,17 +1096,10 @@ const en: CompanyMessages = {
     },
     appearance: {
       title: 'Appearance',
-      lead: 'Choose how the dashboard looks.',
-      theme: 'Theme',
-      themes: { light: 'Light', dark: 'Dark', system: 'System' },
+      lead: 'The dashboard animations. The language and light or dark mode are chosen at the top, in the header.',
       motion: 'Animations',
       motionHelp: 'Smooth transitions between sections, animated charts and notices that slide in.',
       motionSystem: 'Your system asks for reduced motion: animations stay minimal even when they are on.'
-    },
-    language: {
-      title: 'Language',
-      lead: 'The language of this dashboard, the buyer dashboard and the public verification pages.',
-      reloading: 'Switching language…'
     },
     notifications: {
       title: 'Notifications',
