@@ -14,8 +14,10 @@ export const SHOWCASE_LIMIT = 12;
 export const showcaseItems = (limit = SHOWCASE_LIMIT): ShowcaseItem[] =>
   [...store.products.values()]
     .flatMap((product) => {
+      // Checked first: looking the photo up walks the purchases, and only the products shown need it.
+      if (!product.claimed || !product.showcase || !product.claimedAt) return [];
       const photoUrl = photoOfBatch(product.batchId);
-      if (!product.claimed || !product.showcase || !product.claimedAt || !photoUrl) return [];
+      if (!photoUrl) return [];
       const issuer = publishedIssuerOf(product.batchId);
       return [{
         token: product.token,

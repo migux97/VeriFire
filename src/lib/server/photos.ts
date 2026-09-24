@@ -24,10 +24,16 @@ export const photoBytes = (batchId: string) => {
 };
 
 // Sets or removes (photo: null) the photo of a purchase. The purchase id is the key, as it is for its codes.
+const UNPAID_PHOTO_WINDOW_MS = 15 * 60 * 1000;
+
 export const setPurchasePhoto = (body: JsonBody) => {
   const purchaseId = typeof body['purchaseId'] === 'string' ? body['purchaseId'] : '';
   const purchase = store.purchases.get(purchaseId);
   if (!purchase) throw new HttpError(404, 'La compra no existe.');
+  // The form uploads it right after creating the purchase; later, only a paid one takes a photo. Unpaid purchases are
+  // free to create, and their photos would otherwise pile up in the state file.
+  const fresh = Date.now() - Date.parse(purchase.createdAt ?? '') < UNPAID_PHOTO_WINDOW_MS;
+  if (!purchase.batchId && !fresh) throw new HttpError(409, 'La foto se puede cargar cuando el lote esté pagado.');
   const photo = body['photo'];
   const previous = { photo: purchase.photo, photoVersion: purchase.photoVersion };
   if (photo === null) {

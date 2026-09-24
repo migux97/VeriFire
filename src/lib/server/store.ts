@@ -189,7 +189,14 @@ const createState = () => {
     const tokens = batch.tokens.map((token) => state.products.get(token)).filter((product) => product !== undefined);
     state.batches.set(batch.batchId, { ...batch, tokens });
   }
-  for (const purchase of saved.purchases ?? []) state.purchases.set(purchase.purchaseId, purchase);
+  for (const purchase of saved.purchases ?? []) {
+    // A purchase left unpaid for a day does not keep a photo (anyone can create one): it is dropped on the next start.
+    if (!purchase.batchId && purchase.photo && Date.now() - Date.parse(purchase.createdAt ?? '') > 24 * 60 * 60 * 1000) {
+      delete purchase.photo;
+      delete purchase.photoVersion;
+    }
+    state.purchases.set(purchase.purchaseId, purchase);
+  }
   for (const workspace of saved.workspaces ?? []) state.workspaces.set(workspace.owner, workspace);
   for (const invitation of saved.invitations ?? []) state.invitations.set(invitation.id, invitation);
   for (const [previous, current] of Object.entries(saved.productAliases ?? {})) state.productAliases.set(previous, current);
