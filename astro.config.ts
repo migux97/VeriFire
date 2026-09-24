@@ -26,9 +26,19 @@ export default defineConfig({
   },
   // Accounts and sessions live in each browser; the server keeps no per-user state.
   session: false,
+  // The public server (verifire.cosmosapp.lat) sits behind Cloudflare and a reverse proxy. Only for requests to this
+  // domain is the proxy's X-Forwarded-For trusted, so the per-minute limits of the API count per visitor instead of all
+  // of them together as the proxy's address. No protocol here on purpose: the proxy reaches Node over plain http, and a
+  // pattern with https would never match it.
+  security: {
+    allowedDomains: [{ hostname: 'verifire.cosmosapp.lat' }]
+  },
   // Cavos keeps each wallet's signing key per site address, and existing accounts were created on this port.
   server: {
-    port: 5501
+    port: 5501,
+    // The dev server only answers to hosts it knows. The public server has run `astro dev` behind nginx, which passes
+    // verifire.cosmosapp.lat as the host; without this every request there is refused.
+    allowedHosts: ['verifire.cosmosapp.lat']
   },
   fonts: [
     {

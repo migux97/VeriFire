@@ -38,7 +38,9 @@ Todas las variables de `.env` se leen en tiempo de ejecución, así que el mismo
 
 ## Producción
 
-Verifire corre en un servidor propio con HTTPS, que se administra con Bitvise SSH Client. La guía, los scripts de
+Verifire está publicado en **https://verifire.cosmosapp.lat**: un servidor propio detrás de Cloudflare y un proxy, que
+se administra con Bitvise SSH Client. Ese dominio está declarado en `astro.config.ts` (`security.allowedDomains`) para
+que los límites de la API cuenten a cada visitante por su dirección real; si el dominio cambia, hay que cambiarlo ahí. La guía, los scripts de
 instalación y actualización, la configuración de Caddy y el servicio de systemd están en una carpeta aparte, fuera de
 este repositorio (`VeriFire-servidor`), junto con el perfil de acceso al servidor, que no debe subirse a GitHub.
 
