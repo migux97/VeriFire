@@ -151,6 +151,17 @@ export const createStellarClient = ({ contractId, issuerSecret, rpcUrl = DEFAULT
 
   const readProduct = async (tokenId: number | bigint) => (await simulate('get_product', u64(tokenId))) as OnChainProduct;
 
+  // The product registered under a public code, or null when the code is free. The release wasm drops the panic
+  // message, so a failed read counts as free: minting then fails again and is retried, as before.
+  const productByCode = async (code: string) => {
+    try {
+      const product = (await simulate('get_product_by_code', text(code))) as { token_id: bigint | number; activation_key: Uint8Array };
+      return { tokenId: Number(product.token_id), activationKey: Buffer.from(product.activation_key) };
+    } catch {
+      return null;
+    }
+  };
+
   const accountExists = async (address: string) => {
     try {
       await rpcServer.getAccount(address);
@@ -249,6 +260,7 @@ export const createStellarClient = ({ contractId, issuerSecret, rpcUrl = DEFAULT
     contractId,
     submitOperation,
     readProduct,
+    productByCode,
 
     // Existing account that receives the 1-stroop payment the Cavos kit makes when it creates a user's account.
     issuerAddress: () => issuerKeypair().publicKey(),

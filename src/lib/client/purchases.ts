@@ -92,15 +92,26 @@ export const savePurchase = (purchaseId: string) => {
 export const addPurchaseIds = (purchaseIds: string[]) => {
   if (inDemo()) return;
   const known = savedPurchaseIds();
-  const missing = purchaseIds.filter((purchaseId) => !known.includes(purchaseId));
+  const forgotten = forgottenPurchaseIds();
+  const missing = purchaseIds.filter((purchaseId) => !known.includes(purchaseId) && !forgotten.includes(purchaseId));
   if (!missing.length) return;
   writePurchaseIds([...known, ...missing]);
   window.dispatchEvent(new Event(PURCHASES_CHANGED_EVENT));
 };
 
+// Purchases removed from the list by hand. Kept so the account sync drops them on the server too and does not bring
+// them back; buying again with the same id is impossible, so the list only grows with what the user removed.
+const forgottenKey = () => `verifireForgottenPurchases:${userSession.email().toLowerCase()}`;
+export const forgottenPurchaseIds = (): string[] => {
+  const saved = readStored<unknown>(localStorage, forgottenKey());
+  return Array.isArray(saved) ? saved.filter((id): id is string => typeof id === 'string').slice(-500) : [];
+};
+
 export const forgetPurchase = (purchaseId: string) => {
   if (inDemo(purchaseId)) return forgetDemoPurchase(purchaseId);
   writePurchaseIds(realPurchaseIds().filter((id) => id !== purchaseId));
+  writeStored(localStorage, forgottenKey(), [...forgottenPurchaseIds().filter((id) => id !== purchaseId), purchaseId]);
+  window.dispatchEvent(new Event(PURCHASES_CHANGED_EVENT));
 };
 
 // The panel used to keep only the last purchase under its own key; it moves into the list once.

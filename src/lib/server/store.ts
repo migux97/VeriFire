@@ -141,6 +141,8 @@ interface SavedState {
   purchases?: Purchase[];
   workspaces?: Workspace[];
   invitations?: Invitation[];
+  // Old public code -> current code, for products renamed because their code was taken in the contract.
+  productAliases?: Record<string, string>;
 }
 
 export const hashSecret = (secret: string) => createHash('sha256').update(secret).digest('hex');
@@ -164,7 +166,8 @@ const createState = () => {
     batches: new Map<string, Batch>(),
     purchases: new Map<string, Purchase>(),
     workspaces: new Map<string, Workspace>(),
-    invitations: new Map<string, Invitation>()
+    invitations: new Map<string, Invitation>(),
+    productAliases: new Map<string, string>()
   };
 
   const readSaved = (file: string) => JSON.parse(readFileSync(file, 'utf8')) as SavedState;
@@ -192,6 +195,7 @@ const createState = () => {
   for (const purchase of saved.purchases ?? []) state.purchases.set(purchase.purchaseId, purchase);
   for (const workspace of saved.workspaces ?? []) state.workspaces.set(workspace.owner, workspace);
   for (const invitation of saved.invitations ?? []) state.invitations.set(invitation.id, invitation);
+  for (const [previous, current] of Object.entries(saved.productAliases ?? {})) state.productAliases.set(previous, current);
   state.nextTokenId = Math.max(state.nextTokenId, Number(saved.nextTokenId) || 0);
   state.nextBatchId = Math.max(state.nextBatchId, Number(saved.nextBatchId) || 0);
   return state;
@@ -201,6 +205,22 @@ export const store = singleton('store', createState);
 // A state created by an older version of this module (the dev server keeps it across reloads) lacks the lists added
 // since; they start empty instead of breaking every request that reads them.
 store.invitations ??= new Map<string, Invitation>();
+store.productAliases ??= new Map<string, string>();
+
+// On Windows, replacing a file fails for a moment while another program has it open (the antivirus, the search
+// indexer, an editor showing it). A few short retries get past it instead of failing the user's change.
+const renameWithRetry = (from: string, to: string) => {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      renameSync(from, to);
+      return;
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code;
+      if (attempt >= 10 || (code !== 'EPERM' && code !== 'EBUSY' && code !== 'EACCES')) throw error;
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 20 * (attempt + 1));
+    }
+  }
+};
 
 export const saveState = () => {
   const saved: SavedState = {
@@ -210,7 +230,8 @@ export const saveState = () => {
     batches: [...store.batches.values()].map((batch) => ({ ...batch, tokens: batch.tokens.map((product) => product.token) })),
     purchases: [...store.purchases.values()],
     workspaces: [...store.workspaces.values()],
-    invitations: [...store.invitations.values()]
+    invitations: [...store.invitations.values()],
+    productAliases: Object.fromEntries(store.productAliases)
   };
   // Written beside the file and renamed over it: a rename replaces the file atomically, so a crash leaves either the
   // previous state or the new one, never half of either and never no file at all. The previous state is copied to .bak
@@ -220,7 +241,7 @@ export const saveState = () => {
     mkdirSync(dirname(config.dataFile), { recursive: true });
     writeFileSync(temporary, JSON.stringify(saved, null, 2));
     if (existsSync(config.dataFile)) copyFileSync(config.dataFile, `${config.dataFile}.bak`);
-    renameSync(temporary, config.dataFile);
+    renameWithRetry(temporary, config.dataFile);
   } catch (error) {
     // The caller answers the request anyway, so what it just promised the user has to be visible in the log.
     console.error('No se pudo guardar el estado de Verifire:', error);

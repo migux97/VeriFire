@@ -65,7 +65,13 @@ const matchesSearch = (summary: SummaryEntry | undefined, query: string) => {
     .some((label) => Boolean(label) && String(label).toLowerCase().includes(query));
 };
 
-const needsPolling = (summary: SummaryEntry | undefined) => isSummary(summary) && (!summary.batchId || summary.pendingOnChain > 0);
+// A payment left unpaid for half an hour is checked with the rest, once a minute, instead of every few seconds.
+const FRESH_PAYMENT_MS = 30 * 60 * 1000;
+const needsPolling = (summary: SummaryEntry | undefined) =>
+  isSummary(summary) &&
+  (summary.batchId
+    ? summary.pendingOnChain > 0
+    : !summary.createdAt || Date.now() - new Date(summary.createdAt).getTime() < FRESH_PAYMENT_MS);
 
 interface BatchListProps {
   locale?: Locale | undefined;

@@ -22,7 +22,7 @@ export default defineConfig({
     // Dependencies imported lazily (the wallet on login, QR codes and the camera scanner when first used) are prepared
     // up front: discovered mid-session, Vite re-optimizes and reloads the page, cutting off whatever was running (such
     // as turning on the company panel's demo mode).
-    optimizeDeps: { include: ['@cavos/kit', 'buffer', 'qrcode', 'jsqr', 'nanostores', '@nanostores/react'] }
+    optimizeDeps: { include: ['@cavos/kit', 'buffer', 'qrcode', 'jsqr', 'nanostores', '@nanostores/react', '@cosmosapp/pay_sdk/web', '@stellar/freighter-api', '@stellar/stellar-sdk'] }
   },
   // Accounts and sessions live in each browser; the server keeps no per-user state.
   session: false,

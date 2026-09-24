@@ -1,6 +1,6 @@
 import { parseIssuanceOptions } from '../issuance';
 // Company purchases: a batch of products is paid with Cosmos Pay and minted once the payment is confirmed.
-import { randomUUID } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
 import { Client } from '@cosmosapp/pay_sdk';
 import type { CompanyBatch, CreatedPurchase, PublicBatch, PurchaseStatus, PurchaseSummary } from '../types';
 import { normalizeId } from '../validation';
@@ -25,6 +25,9 @@ export const paymentsConfigured = () => {
   const { apiKey, destination } = config.cosmosPay;
   return Boolean(apiKey && destination && !apiKey.includes('REPLACE') && !destination.includes('REPLACE'));
 };
+
+// Cosmos Pay picks the network from the key: prod_ keys charge on the public network, dv_ keys on testnet.
+export const paymentNetwork = (): 'public' | 'testnet' => (config.cosmosPay.apiKey.startsWith('prod_') ? 'public' : 'testnet');
 
 export const findBatch = (batchId: unknown) => store.batches.get(normalizeId(batchId));
 export const findPurchase = (purchaseId: string) => store.purchases.get(purchaseId);
@@ -112,7 +115,8 @@ export const createBatchPayment = async (body: JsonBody): Promise<CreatedPurchas
     asset: intent.asset || 'XLM',
     intentId: intent.id,
     status: intent.status,
-    network: intent.network,
+    // The key decides the network (dv_ testnet, prod_ public); the intent's own label may use other names.
+    network: paymentNetwork(),
     uri: intent.uri,
     qr: intent.qr
   };
@@ -121,7 +125,11 @@ export const createBatchPayment = async (body: JsonBody): Promise<CreatedPurchas
 // Idempotent: concurrent status checks for the same purchase create a single batch.
 const finalizePurchase = (purchase: Purchase, txHash: string | null) => {
   if (!purchase.batchId) {
-    const batchId = `BATCH-${String(store.nextBatchId++).padStart(4, '0')}`;
+    // Random, like the product codes: the batch page is public, and numbered ids let anyone list every batch.
+    store.nextBatchId++;
+    let batchId: string;
+    do batchId = `BATCH-${randomBytes(5).toString('hex').toUpperCase()}`;
+    while (store.batches.has(batchId));
     const { model, lot, destination } = purchase;
     const tokens = Array.from({ length: purchase.quantity }, () => mintProduct({ model, lot, destination, batchId }));
     store.batches.set(batchId, { batchId, tokens, model, lot, destination, amount: purchase.total, txHash, ...(purchase.configuration ? { configuration: purchase.configuration } : {}), ...(purchase.support ? { support: purchase.support } : {}) });
@@ -145,7 +153,7 @@ const purchaseSummary = (purchase: Purchase): PurchaseSummary => {
     // Purchases made before createdAt was stored use the date their products were created.
     createdAt: purchase.createdAt ?? tokens[0]?.createdAt ?? null,
     batchId: purchase.batchId ?? null,
-    payment: purchase.batchId ? null : { qr: purchase.paymentQr ?? null, uri: purchase.paymentUri ?? null },
+    payment: purchase.batchId ? null : { qr: purchase.paymentQr ?? null, uri: purchase.paymentUri ?? null, network: paymentNetwork() },
     issuanceTxUrl: isTxHash(purchase.txHash) ? explorerTxUrl(purchase.txHash) : null,
     registeredOnChain: tokens.filter(isCurrentOnChain).length,
     pendingOnChain: chain.enabled ? tokens.filter(isPendingOnChain).length : 0,
@@ -165,6 +173,22 @@ export const shipBatch = (purchase: Purchase) => {
     saveState();
   }
   return { purchase: purchaseSummary(purchase) };
+};
+
+// A payment sent from a browser wallet: Cosmos Pay checks the transaction (destination, amount and memo) and marks the
+// intent as paid, so the batch is issued right away instead of waiting for Cosmos Pay to find it on its own.
+export const confirmWalletPayment = async (purchase: Purchase, txHash: string, baseUrl: string) => {
+  if (!isTxHash(txHash)) throw new HttpError(400, 'La transacción del pago no es válida.');
+  // Cosmos Pay usually sees the payment on its own within seconds; validating an intent already paid is refused.
+  const status = await purchaseStatus(purchase, { summaryOnly: true, baseUrl });
+  if (status.succeeded) return status;
+  try {
+    await cosmosPay().paymentIntents.validate(purchase.intentId, { txHash });
+  } catch (error) {
+    // Paid meanwhile, or not on the ledger yet: the list keeps checking the purchase either way.
+    console.error('Cosmos validate error:', error instanceof Error ? error.message : error);
+  }
+  return purchaseStatus(purchase, { summaryOnly: true, baseUrl });
 };
 
 // Checks the payment and returns the batch with its secret codes and QR images. With summaryOnly it returns only

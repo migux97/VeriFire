@@ -168,7 +168,8 @@ export interface PurchaseSummary {
   createdAt: string | null;
   batchId: string | null;
   // The payment QR, kept so a pending purchase can be paid from the list. Null once the batch exists.
-  payment: { qr: string | null; uri: string | null } | null;
+  // network: where the payment is made, for paying from a browser wallet (a dv_ key pays on testnet).
+  payment: { qr: string | null; uri: string | null; network?: 'public' | 'testnet' } | null;
   issuanceTxUrl: string | null;
   registeredOnChain: number;
   pendingOnChain: number;
