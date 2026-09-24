@@ -78,6 +78,16 @@ const offeredProduct = async (body: JsonBody) => {
   return { product, recipient, tokenId: product.chain.tokenId };
 };
 
+// After a transaction Stellar already confirmed: failing to save here must not tell the user it failed (the link or
+// the new owner is on-chain), and the contract is read again the next time the product is (reconcileProduct).
+const saveAfterChain = () => {
+  try {
+    saveState();
+  } catch (error) {
+    console.error('La operación ya está en Stellar, pero no se pudo guardar el estado local:', error);
+  }
+};
+
 export const offerTransfer = async (body: JsonBody, baseUrl: string): Promise<Step> => {
   const { product, owner, tokenId } = await ownedProduct(body);
   const key = transferKeyOf(body);
@@ -88,7 +98,7 @@ export const offerTransfer = async (body: JsonBody, baseUrl: string): Promise<St
   await exclusive(product, () => chain.submitTransferOffer({ tokenId, owner, transferKey, signedXdr }));
   const offeredAt = new Date();
   product.transfer = { key, from: owner, offeredAt: offeredAt.toISOString(), expiresAt: new Date(offeredAt.getTime() + TRANSFER_LINK_MS).toISOString() };
-  saveState();
+  saveAfterChain();
   return { warranty: warrantyView(product, baseUrl) };
 };
 
@@ -99,7 +109,7 @@ export const cancelTransfer = async (body: JsonBody, baseUrl: string): Promise<S
 
   await exclusive(product, () => chain.submitTransferCancel({ tokenId, owner, signedXdr }));
   delete product.transfer;
-  saveState();
+  saveAfterChain();
   return { warranty: warrantyView(product, baseUrl) };
 };
 
@@ -136,11 +146,15 @@ export const acceptTransfer = async (body: JsonBody, baseUrl: string): Promise<S
     const adopted = product.events?.findLast((event) => event.kind === 'transferred' && event.to === recipient && !event.tx);
     if (adopted) adopted.tx = txHash;
     delete product.transfer;
-    saveState();
+    saveAfterChain();
   } else {
     product.owner = recipient;
     delete product.transfer;
-    recordEvent(product, { kind: 'transferred', at: new Date().toISOString(), tx: txHash, ...(from ? { from } : {}), to: recipient });
+    try {
+      recordEvent(product, { kind: 'transferred', at: new Date().toISOString(), tx: txHash, ...(from ? { from } : {}), to: recipient });
+    } catch (error) {
+      console.error(`La transferencia de ${product.token} ya está en Stellar, pero no se pudo guardar acá:`, error);
+    }
   }
   return { warranty: warrantyView(product, baseUrl) };
 };

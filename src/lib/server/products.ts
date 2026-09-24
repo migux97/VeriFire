@@ -43,7 +43,12 @@ const warrantyUntil = (product: Product) => {
 
 const statusOf = (product: Product): ProductStatus => (product.claimed ? 'CLAIMED_IN_WARRANTY' : 'SEALED');
 
-export const findProduct = (token: unknown) => store.products.get(normalizeId(token));
+// A product renamed because its code was taken in the contract is still found by its old code, the one its printed
+// labels carry.
+export const findProduct = (token: unknown) => {
+  const code = normalizeId(token);
+  return store.products.get(code) ?? store.products.get(store.productAliases.get(code) ?? '');
+};
 
 // Registered in the contract this server uses now, not only in one that a later deploy replaced.
 export const isCurrentOnChain = (product: Product): product is Product & { chain: NonNullable<Product['chain']> } =>
@@ -200,9 +205,20 @@ export const readProductFields = (body: JsonBody): ProductFields | null => {
   return valid ? fields : null;
 };
 
+// Public codes are random, not VF-001, VF-002...: several servers (each developer's, the demo, production) can share
+// one contract, and numbered codes from each of them collided there, leaving the products unregistered for good.
+// No 0/O, 1/I/L: the code is also read and typed by people.
+const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+const newProductCode = () => {
+  for (;;) {
+    const code = `VF-${[...randomBytes(8)].map((byte) => CODE_ALPHABET[byte % CODE_ALPHABET.length]).join('')}`;
+    if (!store.products.has(code)) return code;
+  }
+};
+
 export const mintProduct = (fields: ProductFields & { batchId?: string }) => {
   const tokenId = store.nextTokenId++;
-  const token = `VF-${String(tokenId).padStart(3, '0')}`;
+  const token = newProductCode();
   const secretCode = `VF-SECRET-${randomBytes(10).toString('hex').toUpperCase()}`;
   const product: Product = {
     tokenId, token, ...fields, secretCode, secretHash: hashSecret(secretCode), claimed: false, owner: null, createdAt: new Date().toISOString()
@@ -240,6 +256,34 @@ export const anchorPendingProducts = () => {
       anchoring.again = false;
       for (const product of [...store.products.values()].filter(isPendingOnChain)) {
         try {
+          // The code may already be in the contract: this product registered by a run whose answer was lost, or
+          // another product from another server that shares the contract.
+          const existing = await chain.productByCode(product.token);
+          if (existing && !product.claimed && existing.activationKey.equals(activationKeyFor(product.secretCode ?? ''))) {
+            // Its mint transaction is not known here (the one saved may belong to a replaced contract).
+            product.chain = { tokenId: existing.tokenId, mintTx: '', contractId: chain.contractId, at: new Date().toISOString() };
+            delete product.transfer;
+            saveState();
+            continue;
+          }
+          if (existing && product.claimed) {
+            // An activated warranty keeps the code its owner knows: this needs a person to look at it.
+            console.error(`El código ${product.token} ya existe en el contrato con otro producto y su garantía ya está activada.`);
+            continue;
+          }
+          if (existing) {
+            // Someone else's product holds the code: this one could never be registered with it. It gets a new code,
+            // so its labels have to be downloaded again (their QR carry the code).
+            const previous = product.token;
+            store.products.delete(previous);
+            product.token = newProductCode();
+            store.products.set(product.token, product);
+            // The labels already printed keep working: their code answers with this product.
+            store.productAliases.set(previous, product.token);
+            for (const [alias, target] of store.productAliases) if (target === previous) store.productAliases.set(alias, product.token);
+            saveState();
+            console.warn(`El código ${previous} ya existe en el contrato con otro producto: ahora es ${product.token}.`);
+          }
           const toMint = { ...product, secretCode: product.secretCode ?? '' };
           const registered = product.claimed && product.owner
             ? await chain.importClaimedProduct(toMint, product.owner)
