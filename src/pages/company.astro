@@ -1,4 +1,7 @@
 ---
+import LanguageMenu from '@/components/ui/LanguageMenu.astro';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { getLandingMessages } from '@/i18n/landing';
 import { BatchList } from '@/components/batches/BatchList';
 import { CompanyCatalogSummary } from '@/components/company/CompanyCatalogSummary';
 import { CompanyData } from '@/components/company/CompanyData';
@@ -18,6 +21,8 @@ import '@/styles/company.css';
 
 const locale = pageLocale(Astro);
 const t = companyMessages(locale);
+// Labels of the language menu and the theme switch, the same the other headers use.
+const landingText = getLandingMessages(locale);
 const views = t.views;
 ---
 
@@ -103,6 +108,10 @@ const views = t.views;
         </button>
         <span class="company-appbar-title" data-appbar-title>{views.dashboard.title}</span>
         <div class="company-appbar-actions">
+          <div class="company-appbar-prefs">
+            <LanguageMenu locale={locale} label={landingText.nav.language} mode="query" />
+            <ThemeToggle client:load label={landingText.profile.dark} />
+          </div>
           <CompanyNotifications client:load locale={locale} />
           <CompanyIdentity client:load view="profile" locale={locale} />
         </div>

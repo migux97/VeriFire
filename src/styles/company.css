@@ -3512,3 +3512,36 @@ button.invite-share-qr:disabled {
 .brand-toml-where p {
   margin-top: 8px;
 }
+
+/* Language and light/dark in the header of the panel. */
+.company-appbar-prefs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.company-appbar-prefs .lp-language-menu > summary,
+.company-appbar-prefs .lp-theme-toggle {
+  min-height: 42px;
+  border-color: var(--vf-line);
+  border-radius: 12px;
+  background: var(--vf-paper);
+}
+
+.company-appbar-prefs .lp-theme-toggle {
+  width: 42px;
+  height: 42px;
+}
+
+@media (max-width: 560px) {
+  .company-appbar-prefs .lp-language-menu > summary > span:not(.lp-flag),
+  .company-appbar-prefs .lp-language-caret {
+    display: none;
+  }
+}
+
+html[data-motion='off'] .theme-toggle-icons i,
+html[data-motion='off'] .lp-language-menu[open] > ul {
+  transition: none;
+  animation: none;
+}

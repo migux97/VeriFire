@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
 import { Icon } from '@/components/ui/Icon';
 import { ACCOUNT_UPDATED_EVENT, storedUser, type StoredUser } from '@/lib/client/account';
 import { leaveSession } from '@/lib/client/session';
@@ -34,8 +34,9 @@ export function ProfileMenu({ labels = getLandingMessages().profile }: { labels?
     return () => window.removeEventListener(THEME_EVENT, follow);
   }, []);
 
-  const toggleTheme = () => {
-    setTheme(dark ? 'light' : 'dark');
+  const toggleTheme = (event: ReactMouseEvent<HTMLButtonElement>) => {
+    const box = event.currentTarget.getBoundingClientRect();
+    setTheme(dark ? 'light' : 'dark', { x: box.left + box.width / 2, y: box.top + box.height / 2 });
     setDark(!dark);
   };
 

@@ -24,11 +24,45 @@ export const themePreference = (): ThemePreference => {
   return saved === 'dark' || saved === 'system' ? saved : 'light';
 };
 
-export const setTheme = (preference: ThemePreference) => {
-  document.documentElement.dataset.theme = preference === 'system' ? systemTheme() : preference;
+const applyTheme = (theme: Theme) => {
+  document.documentElement.dataset.theme = theme;
   window.dispatchEvent(new CustomEvent(THEME_EVENT));
+};
+
+// Where the switch was touched: the new look spreads in a circle from there. Without it, from the top of the page.
+export interface ThemeOrigin {
+  x: number;
+  y: number;
+}
+
+// The change is animated with a view transition when the browser has them and the person has not turned animations off
+// (the panel's switch or the system's reduced motion): a snapshot of the page in the new theme is revealed in a growing
+// circle over the old one. Otherwise it changes at once, as before.
+export const setTheme = (preference: ThemePreference, origin?: ThemeOrigin) => {
+  const next = preference === 'system' ? systemTheme() : preference;
   // Without storage the choice lasts until the page changes.
   writeRaw(localStorage, THEME_KEY, preference);
+  const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const start = (document as Document & { startViewTransition?: (update: () => void) => { ready: Promise<void> } }).startViewTransition;
+  if (next === currentTheme() || !start || reduced || !motionEnabled()) {
+    applyTheme(next);
+    return;
+  }
+  const x = origin?.x ?? window.innerWidth / 2;
+  const y = origin?.y ?? 0;
+  // Far enough to cover the farthest corner of the window.
+  const radius = Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y));
+  const transition = start.call(document, () => applyTheme(next));
+  void transition.ready
+    .then(() => {
+      document.documentElement.animate(
+        { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${radius}px at ${x}px ${y}px)`] },
+        { duration: 650, easing: 'cubic-bezier(0.65, 0, 0.35, 1)', pseudoElement: '::view-transition-new(root)' }
+      );
+    })
+    .catch(() => {
+      // An interrupted transition still leaves the new theme applied.
+    });
 };
 
 export const motionEnabled = () => readRaw(localStorage, MOTION_KEY) !== 'off';
