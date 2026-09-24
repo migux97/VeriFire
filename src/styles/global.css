@@ -2152,3 +2152,23 @@ a.network-status:hover {
   padding-inline: 16px;
   white-space: nowrap;
 }
+
+/* "Pagar con wallet" under the payment QR. */
+.wallet-pay {
+  display: grid;
+  justify-items: start;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.wallet-pay-status {
+  font-size: 0.85rem;
+}
+
+.wallet-pay-status.is-error {
+  color: var(--vf-error);
+}
+
+.wallet-pay-status.is-success {
+  color: var(--vf-success);
+}

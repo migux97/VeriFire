@@ -560,7 +560,20 @@ const es = {
     myBatches: 'Ver mis lotes',
     warning:
       'Pagá una sola vez: este QR es una transferencia real y se puede volver a pagar, pero un segundo pago no genera otro lote.',
-    demoWarning: 'Modo demo: este QR no es un pago real. El pago se confirma solo en unos segundos.'
+    demoWarning: 'Modo demo: este QR no es un pago real. El pago se confirma solo en unos segundos.',
+    wallet: {
+      action: 'Pagar con wallet',
+      busy: 'Esperando la wallet...',
+      hint: 'Desde esta computadora con Freighter u otra wallet Stellar: el pago va con su memo, sin copiar nada.',
+      hintTestnet: 'Desde esta computadora con Freighter (en Testnet) u otra wallet Stellar: el pago va con su memo, sin copiar nada.',
+      opening: 'Abrí tu wallet y confirmá el pago.',
+      confirming: 'Pago enviado. Confirmándolo con Cosmos Pay...',
+      paid: 'Pago confirmado. El lote se está generando.',
+      sent: 'Pago enviado. Cosmos Pay lo confirma en unos segundos.',
+      missing: 'No encontramos una wallet Stellar en este navegador. Instalá Freighter o pagá escaneando el QR.',
+      failed: 'No se pudo completar el pago con la wallet.',
+      retryConfirm: 'Volver a confirmar el pago'
+    }
   },
   configurator: {
     steps: ['Producto', 'Lote y unidades', 'Etiquetas', 'Revisar'],
@@ -602,11 +615,11 @@ const es = {
     saveTemplate: 'Guardar como plantilla',
     templatePlaceholder: 'Ej. Calzado Argentina',
     saveTemplateButton: 'Guardar plantilla',
-    storageHint: 'Productos y plantillas se guardan en este navegador. La configuración emitida se conserva con la compra.',
+    storageHint: 'Productos y plantillas se guardan con tu cuenta y aparecen en cualquier navegador donde entres. La configuración emitida se conserva con la compra.',
     readFailed: 'No se pudieron leer las configuraciones guardadas.',
     needModelToSave: 'Ingresá un modelo para guardar el producto.',
     needTemplateName: 'Ingresá un nombre para la plantilla.',
-    saved: 'Guardado en este navegador.',
+    saved: 'Guardado en tu cuenta.',
     saveFailed: 'No se pudo guardar la configuración.',
     needModel: 'Completá el modelo del producto.',
     checkLot: 'Revisá la referencia, el destino y la cantidad (1–500).',
@@ -1177,7 +1190,20 @@ const en: CompanyMessages = {
     seeBatches: 'See payments and batches',
     myBatches: 'See my batches',
     warning: 'Pay only once: this QR is a real transfer and can be paid again, but a second payment does not issue another batch.',
-    demoWarning: 'Demo mode: this QR is not a real payment. It is confirmed on its own in a few seconds.'
+    demoWarning: 'Demo mode: this QR is not a real payment. It is confirmed on its own in a few seconds.',
+    wallet: {
+      action: 'Pay with wallet',
+      busy: 'Waiting for the wallet...',
+      hint: 'From this computer with Freighter or another Stellar wallet: the payment carries its memo, nothing to copy.',
+      hintTestnet: 'From this computer with Freighter (on Testnet) or another Stellar wallet: the payment carries its memo, nothing to copy.',
+      opening: 'Open your wallet and confirm the payment.',
+      confirming: 'Payment sent. Confirming it with Cosmos Pay...',
+      paid: 'Payment confirmed. The batch is being issued.',
+      sent: 'Payment sent. Cosmos Pay confirms it in a few seconds.',
+      missing: 'No Stellar wallet was found in this browser. Install Freighter or pay by scanning the QR.',
+      failed: 'The payment could not be completed with the wallet.',
+      retryConfirm: 'Confirm the payment again'
+    }
   },
   configurator: {
     steps: ['Product', 'Lot and units', 'Labels', 'Review'],
@@ -1219,11 +1245,11 @@ const en: CompanyMessages = {
     saveTemplate: 'Save as template',
     templatePlaceholder: 'E.g. Footwear Argentina',
     saveTemplateButton: 'Save template',
-    storageHint: 'Products and templates are stored in this browser. The issued configuration is kept with the purchase.',
+    storageHint: 'Products and templates are saved with your account and show up in any browser you sign in to. The issued configuration is kept with the purchase.',
     readFailed: 'The saved configurations could not be read.',
     needModelToSave: 'Enter a model to save the product.',
     needTemplateName: 'Enter a name for the template.',
-    saved: 'Saved in this browser.',
+    saved: 'Saved to your account.',
     saveFailed: 'The configuration could not be saved.',
     needModel: 'Fill in the product model.',
     checkLot: 'Check the reference, the destination and the quantity (1–500).',

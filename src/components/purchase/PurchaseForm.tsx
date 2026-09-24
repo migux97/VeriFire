@@ -7,6 +7,7 @@ import { Icon } from '@/components/ui/Icon';
 import { PaymentWarning } from '@/components/ui/PaymentWarning';
 import type { Message } from '@/components/ui/StatusMessage';
 import { Toast } from '@/components/ui/Toast';
+import { WalletPayButton } from './WalletPayButton';
 import { isDemoPurchase } from '@/lib/client/demo';
 import { createPurchase, fetchPurchase, migrateLegacyPurchase, savePurchase } from '@/lib/client/purchases';
 import { supportForNewBatch } from '@/lib/client/warranty-settings';
@@ -181,6 +182,18 @@ export function PurchaseForm({ countries, cavosAppId = '', batchesHref = '/batch
           <span>{t.purchase.payNote}</span>
           <PaymentWarning as="span" text={isDemoPurchase(payment.purchaseId) ? t.purchase.demoWarning : t.purchase.warning} />
           {payment.qr && <img src={payment.qr} alt={t.purchase.qrAlt} width={240} height={240} />}
+          {payment.uri && !isDemoPurchase(payment.purchaseId) && (
+            <WalletPayButton
+              purchaseId={payment.purchaseId}
+              uri={payment.uri}
+              network={payment.network === 'public' ? 'public' : 'testnet'}
+              onPaid={() => {
+                // Checks at once instead of at the next poll.
+                window.clearTimeout(pollTimer.current);
+                void pollPurchase();
+              }}
+            />
+          )}
           <span role="status">{paymentStatus}</span>
         </div>
       )}
