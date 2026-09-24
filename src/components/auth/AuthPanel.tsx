@@ -5,10 +5,11 @@ import { useEffect, useRef, useState } from 'react';
 import { persistUser, storedUser, type StoredUser } from '@/lib/client/account';
 import { describeAuthError, googleCallbackUrl, sendEmailCode, verifyEmailCode } from '@/lib/client/email-code';
 import { deviceCodeFor, hashPassword, verifyPassword } from '@/lib/client/password';
+import { GooglePasswordForm, type GooglePasswordKind } from './GooglePasswordForm';
 import { hasPendingClaim, hasPendingTransfer } from '@/lib/client/qr';
 import { userSession, type SessionEndReason } from '@/lib/client/session';
 import { readStored, writeStored } from '@/lib/client/storage';
-import { connectCavosWallet, createCavosAuth, rememberDeviceCode, rememberWallet } from '@/lib/client/wallet';
+import { connectCavosWallet, createCavosAuth, keyBackupState, rememberDeviceCode, rememberWallet } from '@/lib/client/wallet';
 import { pendingInvite } from '@/lib/client/invitations';
 import { pendingCompanyInvitation } from '@/lib/client/workspace';
 import { errorMessage } from '@/lib/errors';
@@ -87,6 +88,9 @@ export function AuthPanel({ cavosAppId }: AuthPanelProps) {
   const [googleBusy, setGoogleBusy] = useState(false);
   const [resending, setResending] = useState(false);
   const [savedUsername, setSavedUsername] = useState('');
+  // Signed in with Google, and the account's key still has to be saved (or opened) with its Verifire password.
+  const [googlePassword, setGooglePassword] = useState<{ kind: GooglePasswordKind; email: string } | null>(null);
+  const [googleSaving, setGoogleSaving] = useState(false);
   const pending = useRef<PendingVerification | null>(null);
   // Set synchronously: a pasted code submits on its own, and a second submit may come before the next render.
   const codeInFlight = useRef(false);
@@ -332,6 +336,53 @@ export function AuthPanel({ cavosAppId }: AuthPanelProps) {
     }
   };
 
+  const submitGooglePassword = async (form: HTMLFormElement) => {
+    const current = pending.current;
+    if (!current?.identity || !googlePassword) {
+      setGooglePassword(null);
+      showNotice('El acceso con Google expiró. Iniciá sesión nuevamente.', 'error');
+      return;
+    }
+    const password = inputOf(form, 'password')?.value.trim() ?? '';
+    const confirm = inputOf(form, 'passwordConfirm');
+    if (!PASSWORD_PATTERN.test(password)) {
+      showNotice('La contraseña debe tener mínimo 8 caracteres, una mayúscula, una minúscula y un número.', 'error');
+      return;
+    }
+    if (confirm && confirm.value.trim() !== password) {
+      showNotice('Las contraseñas no coinciden. Escribí la misma contraseña en los dos campos.', 'error');
+      return;
+    }
+    // A password this browser already knows for the account must be the same one: the key is saved with it.
+    if (current.user.passwordHash && !(await verifyPassword(current.user, password))) {
+      showNotice('Esa no es la contraseña de tu cuenta. Escribí la misma con la que la creaste.', 'error');
+      return;
+    }
+    setGoogleSaving(true);
+    showNotice('Guardando la llave de tu cuenta en Stellar...');
+    try {
+      pending.current = {
+        ...current,
+        deviceCode: await deviceCodeFor(current.user.email, password),
+        // From now on the account also signs in with this password, without Google.
+        user: { ...current.user, passwordHash: current.user.passwordHash ?? (await hashPassword(password)) }
+      };
+      const entered = await finishAuthFlow(current.identity);
+      if (entered) {
+        setGooglePassword(null);
+      } else {
+        // A wrong password leaves the form open, with the reason in the notice. Its hash is not kept: the next try
+        // would be checked against it and the right password refused.
+        if (pending.current) pending.current = { ...pending.current, user: current.user };
+        setMode('login');
+      }
+    } catch (error) {
+      showNotice(describeAuthError(error, 'No se pudo guardar la llave de tu cuenta. Intentá de nuevo.'), 'error');
+    } finally {
+      setGoogleSaving(false);
+    }
+  };
+
   // Returns to the form the user came from, keeping the code alive: Cavos only sends a new one once a minute.
   const leaveVerification = () => {
     setVerification(null);
@@ -389,7 +440,15 @@ export function AuthPanel({ cavosAppId }: AuthPanelProps) {
         showNotice('Confirmando tu acceso con Google y preparando tu cuenta...');
         const identity = await auth.handleCallback(`?${params}`, googleCallbackUrl());
         const user = googleUserFromIdentity(identity);
-        pending.current = { auth, email: user.email, user, mode: 'login', newDevice: false };
+        pending.current = { auth, email: user.email, user, mode: 'login', newDevice: false, identity };
+        // Without a password the account's key would stay in this browser only, and every other device would fail to
+        // sign with it. It is saved (or opened) with the Verifire password before entering.
+        const state = await keyBackupState(cavosAppId, auth, identity);
+        if (state === 'create' || state === 'enter') {
+          setGooglePassword({ kind: state === 'enter' || user.passwordHash ? 'enter' : 'create', email: user.email });
+          showNotice('');
+          return;
+        }
         await finishAuthFlow(identity);
       } catch (error) {
         showNotice(describeAuthError(error, 'No se pudo confirmar el acceso con Google.'), 'error');
@@ -401,7 +460,7 @@ export function AuthPanel({ cavosAppId }: AuthPanelProps) {
 
   return (
     <>
-      {!verification && (
+      {!verification && !googlePassword && (
         <div className="auth-header">
           <div className="auth-tabs" role="tablist" aria-label="Acceso de usuario">
             {(['login', 'register'] as const).map((tabMode) => (
@@ -423,18 +482,32 @@ export function AuthPanel({ cavosAppId }: AuthPanelProps) {
       )}
 
       <LoginForm
-        hidden={Boolean(verification) || mode !== 'login'}
+        hidden={Boolean(verification || googlePassword) || mode !== 'login'}
         submitting={submitting === 'login'}
         googleBusy={googleBusy}
         onSubmit={(form) => void handleAuthSubmit('login', form)}
         onGoogleLogin={() => void startGoogleLogin()}
       />
       <RegisterForm
-        hidden={Boolean(verification) || mode !== 'register'}
+        hidden={Boolean(verification || googlePassword) || mode !== 'register'}
         submitting={submitting === 'register'}
         savedUsername={savedUsername}
         onSubmit={(form) => void handleAuthSubmit('register', form)}
       />
+
+      {googlePassword && (
+        <GooglePasswordForm
+          kind={googlePassword.kind}
+          email={googlePassword.email}
+          submitting={googleSaving}
+          onSubmit={(form) => void submitGooglePassword(form)}
+          onCancel={() => {
+            pending.current = null;
+            setGooglePassword(null);
+            showNotice('');
+          }}
+        />
+      )}
 
       {verification && (
         <EmailCodeForm
