@@ -73,6 +73,8 @@ export const mergeWorkspace = (owner: string, changes: {
     ? changes.removedPurchaseIds.filter((id): id is string => typeof id === 'string')
     : []);
   if (incoming.length > MAX_PURCHASES) throw new HttpError(400, 'Demasiadas compras en una sola sincronización.');
+  // Checked before anything changes: a rejected sync (too much data) must leave the purchases as they were.
+  const data = mergeData(current?.data, changes.data);
 
   // A purchase made before the panel sent its wallet is claimed by the browser that still holds its id, and only
   // while nobody else holds it: from then on it belongs to that account and no browser has to remember it.
@@ -90,7 +92,6 @@ export const mergeWorkspace = (owner: string, changes: {
     : current?.accountType;
   const companyName = changes.companyName === undefined ? current?.companyName : text(changes.companyName, 80);
   const purchaseIds = workspaceView(owner).purchaseIds;
-  const data = mergeData(current?.data, changes.data);
 
   store.workspaces.set(owner, {
     owner,

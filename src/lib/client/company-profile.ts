@@ -56,6 +56,34 @@ export const saveCompanyProfile = (profile: CompanyProfile, name: string) => {
 
 export type LogoError = 'type' | 'size' | 'read';
 
+// The profile travels with the account and the sync carries at most 48 KB of data: a detailed logo as PNG can pass that
+// on its own and make every sync fail. WebP keeps the transparency and weighs much less; the quality drops until it fits.
+const MAX_LOGO_CHARS = 24_000;
+const compactLogo = (canvas: HTMLCanvasElement) => {
+  const png = canvas.toDataURL('image/png');
+  if (png.length <= MAX_LOGO_CHARS) return png;
+  for (const quality of [0.9, 0.8, 0.7, 0.6, 0.5, 0.4]) {
+    const webp = canvas.toDataURL('image/webp', quality);
+    // Browsers without WebP encoding answer PNG again.
+    if (!webp.startsWith('data:image/webp')) break;
+    if (webp.length <= MAX_LOGO_CHARS) return webp;
+  }
+  for (const quality of [0.85, 0.7, 0.55, 0.4]) {
+    // JPEG has no transparency: the logo is drawn over white first.
+    const flat = document.createElement('canvas');
+    flat.width = canvas.width;
+    flat.height = canvas.height;
+    const context = flat.getContext('2d');
+    if (!context) break;
+    context.fillStyle = '#ffffff';
+    context.fillRect(0, 0, flat.width, flat.height);
+    context.drawImage(canvas, 0, 0);
+    const jpeg = flat.toDataURL('image/jpeg', quality);
+    if (jpeg.length <= MAX_LOGO_CHARS) return jpeg;
+  }
+  throw new Error('size' satisfies LogoError);
+};
+
 // Fits any image into a transparent 256×256 square, so a logo of any size or shape takes little storage and shows
 // the same everywhere.
 export const prepareLogo = (file: File): Promise<string> =>
@@ -79,7 +107,7 @@ export const prepareLogo = (file: File): Promise<string> =>
         const drawnHeight = height * scale;
         context.imageSmoothingQuality = 'high';
         context.drawImage(image, (LOGO_SIZE - drawnWidth) / 2, (LOGO_SIZE - drawnHeight) / 2, drawnWidth, drawnHeight);
-        resolve(canvas.toDataURL('image/png'));
+        resolve(compactLogo(canvas));
       } catch {
         // Some browsers cannot draw an SVG without a size: the upload says so instead of spinning forever.
         reject(new Error('read' satisfies LogoError));

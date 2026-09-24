@@ -28,14 +28,17 @@ const readTimes = () => readStored<Record<string, string>>(localStorage, account
 
 // Tells the panels on this page to read again what just arrived from the account.
 export const ACCOUNT_DATA_EVENT = 'verifire:account-data-changed';
+// Something was saved here: the account sync sends it to the other browsers of the account.
+export const ACCOUNT_DATA_WRITTEN_EVENT = 'verifire:account-data-written';
 
 export const readAccountData = <T>(name: AccountDataName, legacyKey?: string): T | null =>
   readStored<T>(localStorage, accountKey(name, legacyKey));
 
 // False when the browser refused to store it (a full quota, most often a logo).
-export const writeAccountData = (name: AccountDataName, value: unknown, { at = new Date().toISOString() } = {}) => {
+export const writeAccountData = (name: AccountDataName, value: unknown, { at }: { at?: string } = {}) => {
   if (!writeStored(localStorage, accountKey(name), value)) return false;
-  writeStored(localStorage, accountKey(TIMES), { ...readTimes(), [name]: at });
+  writeStored(localStorage, accountKey(TIMES), { ...readTimes(), [name]: at ?? new Date().toISOString() });
+  if (!at) window.dispatchEvent(new Event(ACCOUNT_DATA_WRITTEN_EVENT));
   return true;
 };
 

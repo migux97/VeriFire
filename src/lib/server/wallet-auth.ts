@@ -25,7 +25,11 @@ export const issueNonce = (owner: string): string => {
   if (!isStellarAddress(owner)) throw new HttpError(400, 'Indica una dirección pública Stellar válida (G...).');
   const now = Date.now();
   dropExpired(now);
-  if (nonces.size > MAX_PENDING_NONCES) nonces.clear();
+  // Oldest first (a Map keeps insertion order): a flood of requests cannot wipe the challenges users are signing.
+  for (const oldest of nonces.keys()) {
+    if (nonces.size <= MAX_PENDING_NONCES) break;
+    nonces.delete(oldest);
+  }
   const nonce = `verifire-${randomUUID()}`;
   nonces.set(nonce, { owner, until: now + NONCE_TTL_MS });
   return nonce;
