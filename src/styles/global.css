@@ -2239,3 +2239,220 @@ a.network-status:hover {
 .verify-card .issuer {
   margin: 4px 0 14px;
 }
+
+/* The photo of a batch: on the buyer's card, the public QR pages, the company's list and the issuance form. Product
+   photos are shot on light backgrounds, so they always sit on a white tile, in dark mode too. */
+.warranty-photo {
+  flex: 0 0 72px;
+  width: 72px;
+  height: 72px;
+  border: 1px solid var(--vf-line);
+  border-radius: 8px;
+  background: #ffffff;
+  object-fit: contain;
+}
+
+.warranty-showcase {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--vf-line);
+  border-radius: 10px;
+  background: var(--vf-mist);
+  color: var(--vf-muted);
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.warranty-showcase.is-on {
+  border-color: var(--vf-success-line);
+  background: var(--vf-success-soft);
+  color: var(--vf-success);
+}
+
+.warranty-showcase .button {
+  min-height: 36px;
+  padding: 6px 12px;
+  font-size: 0.8125rem;
+}
+
+.warranty-showcase small {
+  flex-basis: 100%;
+  font-weight: 500;
+}
+
+/* Asked while activating: it says what would become public before anything is ticked. */
+.showcase-consent {
+  display: grid;
+  gap: 12px;
+  margin: 0 0 14px;
+  padding: 14px;
+  border: 1px solid var(--vf-line-strong);
+  border-radius: 10px;
+  background: var(--vf-paper);
+}
+
+.showcase-consent legend {
+  padding: 0 6px;
+  color: var(--vf-muted);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.showcase-consent-product {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.showcase-consent-product img {
+  width: 64px;
+  height: 64px;
+  border: 1px solid var(--vf-line);
+  border-radius: 8px;
+  background: #ffffff;
+  object-fit: contain;
+}
+
+.showcase-consent-warning {
+  margin: 0;
+  padding: 10px 12px;
+  border-left: 4px solid var(--vf-warning);
+  background: var(--vf-warning-soft);
+  color: var(--vf-text);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.showcase-consent-warning i {
+  color: var(--vf-warning);
+}
+
+.showcase-consent-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  color: var(--vf-ink);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.showcase-consent-check input {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin-top: 1px;
+  accent-color: var(--vf-red);
+}
+
+.showcase-consent-note {
+  margin: 0;
+  color: var(--vf-muted);
+  font-size: 0.875rem;
+}
+
+.showcase-consent.is-unavailable {
+  background: var(--vf-mist);
+}
+
+/* Public QR pages: the photo of the product, above its details. */
+.verify-photo {
+  display: block;
+  width: 100%;
+  max-height: 320px;
+  margin: 4px 0 14px;
+  border: 1px solid var(--vf-line);
+  border-radius: 10px;
+  background: #ffffff;
+  object-fit: contain;
+}
+
+/* Company: the photo of a batch in the list, and the control to change it. */
+.batch-item-photo {
+  flex: none;
+  width: 56px;
+  height: 56px;
+  border: 1px solid var(--vf-line);
+  border-radius: 8px;
+  background: #ffffff;
+  object-fit: contain;
+}
+
+.batch-photo {
+  display: grid;
+  gap: 6px;
+}
+
+.batch-photo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.photo-picker {
+  display: grid;
+  gap: 8px;
+}
+
+.photo-picker-title {
+  color: var(--vf-ink);
+  font-weight: 700;
+}
+
+.photo-picker-title small {
+  margin-left: 6px;
+  color: var(--vf-muted);
+  font-weight: 500;
+}
+
+.photo-picker-body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.photo-picker-frame {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 96px;
+  height: 96px;
+  overflow: hidden;
+  border: 1.5px dashed var(--vf-line-strong);
+  border-radius: 10px;
+  background: var(--vf-mist);
+  color: var(--vf-muted);
+  font-size: 1.75rem;
+}
+
+.photo-picker-frame.has-photo {
+  border-style: solid;
+  background: #ffffff;
+}
+
+.photo-picker-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.photo-picker-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.photo-picker-error {
+  color: var(--vf-error);
+}
+
+/* With a photo, the title takes the room between the photo and the badge. */
+.batch-item-photo + .batch-item-title {
+  flex: 1 1 0;
+}

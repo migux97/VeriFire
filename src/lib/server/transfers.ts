@@ -140,6 +140,8 @@ export const acceptTransfer = async (body: JsonBody, baseUrl: string): Promise<S
   } else {
     product.owner = recipient;
     delete product.transfer;
+    // The new owner did not choose to show it on the home page.
+    delete product.showcase;
     recordEvent(product, { kind: 'transferred', at: new Date().toISOString(), tx: txHash, ...(from ? { from } : {}), to: recipient });
   }
   return { warranty: warrantyView(product, baseUrl) };

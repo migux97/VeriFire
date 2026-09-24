@@ -11,6 +11,7 @@ const es = {
   },
   header: { network: 'Verificación pública', eyebrow: 'QR público del producto', batchEyebrow: 'QR público del lote' },
   issuer: { issuedBy: 'Emitido por', write: 'Escribir a la empresa', call: 'Llamar a la empresa' },
+  photoAlt: 'Foto de {model}',
   product: {
     title: 'Verificá tu producto',
     lead: 'Escaneá el QR de la caja o ingresá el código público del producto.',
@@ -55,6 +56,7 @@ const en: Messages = {
   },
   header: { network: 'Public verification', eyebrow: 'Public product QR', batchEyebrow: 'Public batch QR' },
   issuer: { issuedBy: 'Issued by', write: 'Write to the company', call: 'Call the company' },
+  photoAlt: 'Photo of {model}',
   product: {
     title: 'Check your product',
     lead: 'Scan the QR on the box or enter the public code of the product.',

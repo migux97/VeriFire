@@ -34,6 +34,7 @@ export const reconcileProduct = async (product: Product): Promise<Product> => {
   const from = product.owner ?? undefined;
   product.owner = owner;
   delete product.transfer;
+  delete product.showcase;
   recordEvent(product, { kind: 'transferred', at, ...(from ? { from } : {}), to: owner });
   console.warn(`${product.token} había cambiado de dueño en el contrato: se tomó el estado del contrato.`);
   return product;

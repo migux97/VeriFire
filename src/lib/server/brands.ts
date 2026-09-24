@@ -74,19 +74,21 @@ export const logoBytes = (brand: Brand) => {
   return Buffer.from(brand.logo.slice(brand.logo.indexOf(',') + 1), 'base64');
 };
 
-export const logoUrlOf = (brand: Brand, baseUrl: string) =>
-  brand.logo ? `${baseUrl}/api/brand/${encodeURIComponent(brand.slug)}/logo.png?v=${brand.logoVersion ?? ''}` : null;
+// Relative to the site, like the photos: the page works from whatever address it was opened at. Only the stellar.toml
+// needs the full address, and it is built from the one the workspace answers (see /api/workspace).
+export const logoPathOf = (brand: Brand) =>
+  brand.logo ? `/api/brand/${encodeURIComponent(brand.slug)}/logo.png?v=${brand.logoVersion ?? ''}` : null;
 
 // The brand published by whoever bought a batch, as anyone may see it. It comes from the wallet that owns the purchase
 // of the batch, and a purchase only gets an owner through a signed request, so a company cannot borrow another one's
 // name by claiming its wallet. A company that never published one shows nothing here: this is what the public QR uses.
-export const publishedIssuerOf = (batchId: string | undefined, baseUrl: string): Issuer | null => {
+export const publishedIssuerOf = (batchId: string | undefined): Issuer | null => {
   const purchase = batchId ? [...store.purchases.values()].find((candidate) => candidate.batchId === batchId) : undefined;
   const brand = purchase?.owner ? store.workspaces.get(purchase.owner)?.brand : undefined;
   if (!brand) return null;
   return {
     name: brand.name,
-    logoUrl: logoUrlOf(brand, baseUrl),
+    logoUrl: logoPathOf(brand),
     website: brand.website ?? null,
     email: brand.supportEmail ?? null,
     phone: brand.supportPhone ?? null
@@ -95,12 +97,8 @@ export const publishedIssuerOf = (batchId: string | undefined, baseUrl: string):
 
 // Who issued a product, for its owner: the published brand, and without one the name and email the company set for
 // support, which stay private to the owner.
-export const issuerOf = (
-  product: Product,
-  baseUrl: string,
-  support: { companyName: string; email: string } | undefined
-): Issuer | null => {
-  const published = publishedIssuerOf(product.batchId, baseUrl);
+export const issuerOf = (product: Product, support: { companyName: string; email: string } | undefined): Issuer | null => {
+  const published = publishedIssuerOf(product.batchId);
   if (published) return { ...published, email: published.email ?? support?.email ?? null };
   return support ? { name: support.companyName, logoUrl: null, website: null, email: support.email, phone: null } : null;
 };

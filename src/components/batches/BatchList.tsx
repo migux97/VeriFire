@@ -384,6 +384,7 @@ function Batches({ pageSize, layout }: { pageSize: number; layout: 'list' | 'gri
             }}
             isBusy={(action) => busy.has(`${purchaseId}:${action}`)}
             onAction={(action) => void handleAction(purchaseId, action)}
+            onPhotoSaved={() => void refreshSummary(purchaseId)}
           />
         ))}
       </div>

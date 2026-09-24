@@ -1,23 +1,21 @@
-﻿---
+---
 import { getLandingContent } from '@/i18n/landing-content';
 import { getLandingMessages } from '@/i18n/landing';
+import { getShowcaseCopy } from '@/i18n/showcase';
 import { getTechnicalLandingCopy } from '@/i18n/technical-landing';
-import { UseCaseCarousel, type UseCaseItem } from './UseCaseCarousel';
+import { showcaseItems } from '@/lib/server/showcase';
+import { LiveCases, type UseCaseItem } from './LiveCases';
 const locale = Astro.currentLocale ?? 'es';
 const { sampleProducts } = getLandingContent(locale);
 const { cases: copy } = getTechnicalLandingCopy(locale);
 const { artwork } = getLandingMessages(locale);
 const ids = ['relojes', 'perfumes', 'vinos', 'repuestos', 'cosmetica'];
-const items: UseCaseItem[] = ids.map((id, index) => ({
+// They fill the carousel while fewer than five buyers have chosen to show a verified product.
+const examples: UseCaseItem[] = ids.map((id, index) => ({
   ...sampleProducts.find((product) => product.id === id)!,
   industry: copy.industries[index]!,
   description: copy.descriptions[index]!
 }));
+const initial = showcaseItems();
 ---
-<section class="lp-catalog lp-use-cases" id="history" aria-labelledby="lp-catalog-title">
-  <div class="lp-catalog-head">
-    <div><p class="lp-eyebrow">{copy.eyebrow}</p><h2 id="lp-catalog-title">{copy.title}</h2></div>
-    <p>{copy.lead}</p>
-  </div>
-  <UseCaseCarousel items={items} copy={copy} artwork={artwork} locale={locale} client:load />
-</section>
+<LiveCases initial={initial} examples={examples} copy={copy} live={getShowcaseCopy(locale === 'en' ? 'en' : 'es')} artwork={artwork} locale={locale} client:load />

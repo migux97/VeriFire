@@ -22,6 +22,9 @@ interface WarrantyCardProps {
   status: Message | null;
   onOfferTransfer: () => void;
   onCancelTransfer: () => void;
+  // Whether the choice of the home page is being saved for some product, and how to change it for this one.
+  showcaseBusy: boolean;
+  onToggleShowcase: (visible: boolean) => void;
   locale?: ConsumerLocale;
 }
 
@@ -70,7 +73,7 @@ function TransferLink({ link, labels }: { link: string; labels: CardLabels }) {
   );
 }
 
-export function WarrantyCard({ warranty, transferLink, busy, status, onOfferTransfer, onCancelTransfer, locale = 'es' }: WarrantyCardProps) {
+export function WarrantyCard({ warranty, transferLink, busy, status, onOfferTransfer, onCancelTransfer, showcaseBusy, onToggleShowcase, locale = 'es' }: WarrantyCardProps) {
   const labels = getConsumerMessages(locale);
   const card = labels.card;
   const now = useNow(true, warranty.transferExpiresAt !== null ? 1000 : 60_000);
@@ -83,7 +86,9 @@ export function WarrantyCard({ warranty, transferLink, busy, status, onOfferTran
   return (
     <article className="warranty-card">
       <div className="warranty-head">
-        <div className="warranty-thumb" aria-hidden="true"><Icon name="fa-solid fa-box-open" /></div>
+        {warranty.photoUrl
+          ? <img className="warranty-photo" src={warranty.photoUrl} alt={fillIn(card.photoAlt, { model: warranty.model })} width={72} height={72} loading="lazy" decoding="async" />
+          : <div className="warranty-thumb" aria-hidden="true"><Icon name="fa-solid fa-box-open" /></div>}
         <div className="warranty-top">
           <span className={`warranty-badge${active ? '' : ' is-expired'}`}>
             <Icon name={`fa-solid ${active ? 'fa-shield-halved' : 'fa-clock-rotate-left'}`} /> {coverage ? labels.coverage[coverage.state] : labels.coverage.unknown}
@@ -99,6 +104,18 @@ export function WarrantyCard({ warranty, transferLink, busy, status, onOfferTran
         />
       )}
       <WarrantyCoverage start={warranty.claimedAt} end={warranty.warrantyUntil} now={now} locale={locale} />
+      <div className={`warranty-showcase${warranty.showcase ? ' is-on' : ''}`}>
+        <span>
+          <Icon name={`fa-solid ${warranty.showcase ? 'fa-eye' : 'fa-eye-slash'}`} /> {warranty.showcase ? card.showcase.on : card.showcase.off}
+        </span>
+        {warranty.canShowcase || warranty.showcase ? (
+          <button className="button button-secondary" type="button" disabled={showcaseBusy} onClick={() => onToggleShowcase(!warranty.showcase)}>
+            {warranty.showcase ? card.showcase.hide : card.showcase.show}
+          </button>
+        ) : (
+          <small className="field-hint">{card.showcase.noPhoto}</small>
+        )}
+      </div>
       <dl className="warranty-meta">
         <div>
           <dt>{card.claimedAt}</dt>

@@ -37,6 +37,7 @@ if (batch) {
       <span class="eyebrow">{copy.header.batchEyebrow}</span>
       <h1 id="batch-title">{title}</h1>
       <p class="verify-message">{message}</p>
+      {batch?.photoUrl && <img class="verify-photo" src={batch.photoUrl} alt={copy.photoAlt.replace('{model}', batch.model)} loading="lazy" decoding="async" />}
       {batch?.issuer && <IssuerBadge issuer={batch.issuer} labels={{ issuedBy: copy.issuer.issuedBy, write: copy.issuer.write, call: copy.issuer.call }} />}
       {
         batch && (

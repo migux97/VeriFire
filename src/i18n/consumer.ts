@@ -39,7 +39,16 @@ const es = {
     unreadableQr: 'No pudimos leer ese QR. Escanealo de nuevo.',
     loading: 'Cargando tus garantías...',
     loadError: 'No se pudieron cargar tus garantías.',
-    onceHint: 'Cada QR puede activarse una única vez.'
+    onceHint: 'Cada QR puede activarse una única vez.',
+    showcase: {
+      checking: 'Consultando el producto…',
+      title: 'Página de inicio de Verifire',
+      label: 'Quiero que este producto aparezca en el carrusel de últimos productos verificados',
+      warningTitle: 'Antes de activar, tené en cuenta',
+      warning: 'Si lo marcás, cualquier persona que entre a la página de inicio de Verifire va a ver la foto del producto, su modelo, la empresa que lo emitió, el país de destino y la fecha en que lo verificaste. Tu cuenta y tu correo no se muestran. Podés quitarlo cuando quieras desde tu garantía.',
+      noPhoto: 'Este producto no puede aparecer en el carrusel: la empresa que lo emitió todavía no cargó su foto.',
+      productPhoto: 'Foto de {model}'
+    }
   },
   incoming: {
     eyebrow: 'Cambio de dueño',
@@ -64,6 +73,19 @@ const es = {
     linkElsewhere: 'Abriste este link desde otro navegador. Si no lo tenés, generá uno nuevo: el anterior deja de funcionar.',
     linkExpired: 'El link de transferencia venció sin que nadie lo aceptara. El producto sigue a tu nombre.',
     issuedBy: 'Emitido por', writeIssuer: 'Escribir a la empresa', callIssuer: 'Llamar a la empresa',
+    photoAlt: 'Foto de {model}',
+    showcase: {
+      on: 'Aparece en la página de inicio',
+      off: 'No aparece en la página de inicio',
+      show: 'Mostrar en el inicio',
+      hide: 'Quitar del inicio',
+      noPhoto: 'No se puede mostrar en el inicio: la empresa todavía no cargó la foto del producto.',
+      confirmTitle: 'Mostrar este producto en el inicio',
+      confirmMessage: 'Cualquier persona que entre a la página de inicio de Verifire va a ver la foto del producto, su modelo, la empresa que lo emitió, el país de destino y la fecha de verificación. Tu cuenta y tu correo no se muestran. Podés quitarlo cuando quieras.',
+      confirmYes: 'Mostrar',
+      shown: 'Tu producto ya aparece en la página de inicio.',
+      hidden: 'Quitamos tu producto de la página de inicio.'
+    },
     linkLabel: 'Link para el nuevo dueño',
     linkOpen: 'Transferencia abierta: el producto pasa a quien abra el link con su cuenta Verifire y lo acepte.',
     linkReady: 'Link listo. Compartilo con el nuevo dueño: el producto pasa a su cuenta cuando lo acepte.',
@@ -153,7 +175,16 @@ const en: Messages = {
     unreadableQr: 'We could not read that QR. Scan it again.',
     loading: 'Loading your warranties...',
     loadError: 'Your warranties could not be loaded.',
-    onceHint: 'Each QR can be activated only once.'
+    onceHint: 'Each QR can be activated only once.',
+    showcase: {
+      checking: 'Checking the product…',
+      title: 'Verifire home page',
+      label: 'I want this product to appear in the carousel of latest verified products',
+      warningTitle: 'Before activating, keep in mind',
+      warning: 'If you tick this, anyone who visits the Verifire home page will see the product’s photo, its model, the company that issued it, its destination country and the date you verified it. Your account and your email are not shown. You can remove it whenever you want from your warranty.',
+      noPhoto: 'This product cannot appear in the carousel: the company that issued it has not added its photo yet.',
+      productPhoto: 'Photo of {model}'
+    }
   },
   incoming: {
     eyebrow: 'Change of owner',
@@ -178,6 +209,19 @@ const en: Messages = {
     linkElsewhere: 'You opened this link from another browser. If you do not have it, generate a new one: the previous one stops working.',
     linkExpired: 'The transfer link expired before anyone accepted it. The product is still in your name.',
     issuedBy: 'Issued by', writeIssuer: 'Write to the company', callIssuer: 'Call the company',
+    photoAlt: 'Photo of {model}',
+    showcase: {
+      on: 'Shown on the home page',
+      off: 'Not shown on the home page',
+      show: 'Show on home page',
+      hide: 'Remove from home page',
+      noPhoto: 'It cannot be shown on the home page: the company has not added the product’s photo yet.',
+      confirmTitle: 'Show this product on the home page',
+      confirmMessage: 'Anyone who visits the Verifire home page will see the product’s photo, its model, the company that issued it, its destination country and the verification date. Your account and your email are not shown. You can remove it whenever you want.',
+      confirmYes: 'Show it',
+      shown: 'Your product now appears on the home page.',
+      hidden: 'We removed your product from the home page.'
+    },
     linkLabel: 'Link for the new owner',
     linkOpen: 'Transfer open: the product moves to whoever opens the link with their Verifire account and accepts it.',
     linkReady: 'Link ready. Share it with the new owner: the product moves to their account when they accept it.',

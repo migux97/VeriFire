@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Icon } from './Icon';
 
 export interface IssuerInfo {
@@ -30,10 +31,13 @@ const initials = (name: string) =>
 export function IssuerBadge({ issuer, labels, subject }: IssuerBadgeProps) {
   const mail = issuer.email ? `mailto:${issuer.email}${subject ? `?subject=${encodeURIComponent(subject)}` : ''}` : null;
   const tel = issuer.phone ? `tel:${issuer.phone.replace(/[^+\d]/g, '')}` : null;
+  // The address of a logo that failed to load: the initials take its place instead of a broken image.
+  const [failed, setFailed] = useState<string | null>(null);
+  const logo = issuer.logoUrl && issuer.logoUrl !== failed ? issuer.logoUrl : null;
   return (
     <div className="issuer">
-      <span className={`issuer-mark${issuer.logoUrl ? ' has-logo' : ''}`} aria-hidden="true">
-        {issuer.logoUrl ? <img src={issuer.logoUrl} alt="" loading="lazy" decoding="async" /> : initials(issuer.name)}
+      <span className={`issuer-mark${logo ? ' has-logo' : ''}`} aria-hidden="true">
+        {logo ? <img src={logo} alt="" loading="lazy" decoding="async" onError={() => setFailed(logo)} /> : initials(issuer.name)}
       </span>
       <span className="issuer-text">
         <small>{labels.issuedBy}</small>

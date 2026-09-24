@@ -75,7 +75,9 @@ const summaryOf = (purchase: DemoPurchase, now = Date.now()): PurchaseSummary =>
     registeredOnChain: 0,
     pendingOnChain: 0,
     claimed: paid ? purchase.claimed : 0,
-    shippedAt: purchase.shippedAt
+    shippedAt: purchase.shippedAt,
+    // Sample batches live only in this browser: there is no server to keep a photo.
+    photoUrl: null
   };
 };
 

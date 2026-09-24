@@ -571,7 +571,8 @@ const es = {
       ship: 'Marcar como despachado',
       hidePayment: 'Ocultar QR de pago',
       showPayment: 'Ver QR de pago',
-      ledger: 'Ver pago de emisión en Stellar'
+      ledger: 'Ver pago de emisión en Stellar',
+      photoAlt: (model: string) => `Foto de ${model}`
     },
     labels: {
       intro: 'Cada producto tiene dos QR:',
@@ -613,6 +614,26 @@ const es = {
     warning:
       'Pagá una sola vez: este QR es una transferencia real y se puede volver a pagar, pero un segundo pago no genera otro lote.',
     demoWarning: 'Modo demo: este QR no es un pago real. El pago se confirma solo en unos segundos.'
+  },
+  photo: {
+    title: 'Foto del producto',
+    hint: 'Es la foto del modelo, la misma para todo el lote. Se muestra en la garantía del comprador y en la verificación pública del QR, y sin ella el comprador no puede mostrar el producto en la página de inicio.',
+    optional: 'Opcional',
+    choose: 'Elegir foto',
+    add: 'Agregar foto',
+    change: 'Cambiar foto',
+    remove: 'Quitar foto',
+    alt: 'Foto del lote',
+    saving: 'Guardando la foto…',
+    saved: 'Foto guardada.',
+    removed: 'Foto quitada.',
+    demo: 'En el modo demostración no se guardan fotos.',
+    uploadFailed: 'El lote se creó, pero no se pudo guardar la foto. Agregala desde Mis lotes.',
+    errors: {
+      type: 'Usá una imagen JPG, PNG o WebP.',
+      size: 'La foto pesa demasiado. Probá con una más liviana.',
+      read: 'No pudimos leer esa imagen. Probá con otra.'
+    }
   },
   configurator: {
     steps: ['Producto', 'Lote y unidades', 'Etiquetas', 'Revisar'],
@@ -1241,7 +1262,8 @@ const en: CompanyMessages = {
       ship: 'Mark as shipped',
       hidePayment: 'Hide payment QR',
       showPayment: 'See payment QR',
-      ledger: 'See the issuance payment on Stellar'
+      ledger: 'See the issuance payment on Stellar',
+      photoAlt: (model: string) => `Photo of ${model}`
     },
     labels: {
       intro: 'Every product has two QR codes:',
@@ -1282,6 +1304,26 @@ const en: CompanyMessages = {
     myBatches: 'See my batches',
     warning: 'Pay only once: this QR is a real transfer and can be paid again, but a second payment does not issue another batch.',
     demoWarning: 'Demo mode: this QR is not a real payment. It is confirmed on its own in a few seconds.'
+  },
+  photo: {
+    title: 'Product photo',
+    hint: 'It is the photo of the model, the same for the whole batch. It shows on the buyer’s warranty and on the public QR verification, and without it the buyer cannot show the product on the home page.',
+    optional: 'Optional',
+    choose: 'Choose photo',
+    add: 'Add photo',
+    change: 'Change photo',
+    remove: 'Remove photo',
+    alt: 'Batch photo',
+    saving: 'Saving the photo…',
+    saved: 'Photo saved.',
+    removed: 'Photo removed.',
+    demo: 'Demo mode does not save photos.',
+    uploadFailed: 'The batch was created, but the photo could not be saved. Add it from My batches.',
+    errors: {
+      type: 'Use a JPG, PNG or WebP image.',
+      size: 'The photo is too heavy. Try a lighter one.',
+      read: 'We could not read that image. Try another one.'
+    }
   },
   configurator: {
     steps: ['Product', 'Lot and units', 'Labels', 'Review'],

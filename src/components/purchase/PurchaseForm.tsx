@@ -1,4 +1,5 @@
 import { IssuanceConfigurator } from './IssuanceConfigurator';
+import { PhotoPicker } from './PhotoPicker';
 // Company purchase: pay a batch of tokens with Cosmos Pay. Once the payment is confirmed the batch, its labels and its
 // activation counters live in Mis lotes; this form only creates the purchase and follows its payment.
 import { useEffect, useMemo, useRef, useState, type SubmitEvent } from 'react';
@@ -9,8 +10,9 @@ import type { Message } from '@/components/ui/StatusMessage';
 import { Toast } from '@/components/ui/Toast';
 import { isDemoPurchase } from '@/lib/client/demo';
 import { createPurchase, fetchPurchase, migrateLegacyPurchase, savePurchase } from '@/lib/client/purchases';
+import { saveBatchPhoto } from '@/lib/client/photo';
 import { supportForNewBatch } from '@/lib/client/warranty-settings';
-import { userSession } from '@/lib/client/session';
+import { demoModeActive, userSession } from '@/lib/client/session';
 import { errorMessage } from '@/lib/errors';
 import type { CountryOption, CreatedPurchase } from '@/lib/types';
 
@@ -38,6 +40,9 @@ export function PurchaseForm({ countries, batchesHref = '/batches', embedded = f
   const [submitting, setSubmitting] = useState(false);
   const [batchReady, setBatchReady] = useState(false);
   const [country, setCountry] = useState('');
+  // The photo of the batch of the simple form; the configurator keeps its own.
+  const [photo, setPhoto] = useState('');
+  const [demo, setDemo] = useState(false);
   const purchaseId = useRef('');
   const pollTimer = useRef<number | undefined>(undefined);
   // Set when the form closes: a poll that was mid-request must not schedule the next one.
@@ -47,6 +52,7 @@ export function PurchaseForm({ countries, batchesHref = '/batches', embedded = f
   const destination = countries.find((option) => option.code === country)?.destination;
 
   useEffect(() => {
+    setDemo(demoModeActive());
     if (userSession.isActive()) migrateLegacyPurchase();
     return () => {
       stopped.current = true;
@@ -104,10 +110,21 @@ export function PurchaseForm({ countries, batchesHref = '/batches', embedded = f
 
       // Saved right away: the purchase is already in Mis lotes, even if this page is closed before paying.
       savePurchase(purchase.purchaseId);
+      // The photo of the batch, if one was chosen. The purchase stands without it: it can be added from Mis lotes.
+      const photo = String(formData.get('photo') ?? '');
+      let photoFailed = false;
+      if (photo && !isDemoPurchase(purchase.purchaseId)) {
+        try {
+          await saveBatchPhoto(purchase.purchaseId, photo, t.photo.uploadFailed);
+        } catch {
+          photoFailed = true;
+        }
+      }
       purchaseId.current = purchase.purchaseId;
       form.reset();
       setCountry('');
-      setMessage(null);
+      setPhoto('');
+      setMessage(photoFailed ? { text: t.photo.uploadFailed, tone: 'error' } : null);
       setPayment(purchase);
       setPaymentStatus(t.purchase.waiting);
       void pollPurchase();
@@ -155,6 +172,7 @@ export function PurchaseForm({ countries, batchesHref = '/batches', embedded = f
           </p>
           <label htmlFor="token-quantity">Cantidad de tokens</label>
           <input id="token-quantity" name="quantity" type="number" min={1} max={500} defaultValue={3} required />
+          <PhotoPicker value={photo} onChange={setPhoto} disabled={demo} />
           <button className="button button-primary" type="submit" disabled={submitting}>
             {submitting ? 'Preparando pago…' : 'Generar lote y pagar'}
           </button>

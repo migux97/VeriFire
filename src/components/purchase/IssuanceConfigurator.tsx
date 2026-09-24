@@ -5,6 +5,8 @@ import { useEffect, useState, type SubmitEvent } from 'react';
 import type { CountryOption } from '@/lib/types';
 import type { IssuanceOptions } from '@/lib/issuance';
 import { readAccountData, writeAccountData } from '@/lib/client/account-data';
+import { demoModeActive } from '@/lib/client/session';
+import { PhotoPicker } from './PhotoPicker';
 
 const savedTemplates = () => readAccountData<unknown>('issuance-templates', 'verifire-issuance-templates');
 const savedProducts = () => readAccountData<unknown>('issuance-products', 'verifire-issuance-products');
@@ -38,8 +40,13 @@ export function IssuanceConfigurator({
   const [products, setProducts] = useState<Saved[]>([]);
   const [name, setName] = useState('');
   const [notice, setNotice] = useState('');
+  // The photo of the batch: prepared in the browser and sent by the purchase form once the purchase exists.
+  const [photo, setPhoto] = useState('');
+  // Read in the browser: the server that renders this page has no storage.
+  const [demo, setDemo] = useState(false);
   const update = <K extends keyof Draft>(key: K, value: Draft[K]) => setDraft((old) => ({ ...old, [key]: value }));
   useEffect(() => {
+    setDemo(demoModeActive());
     const user = storedUser();
     // The same company the support settings of the new batch belong to (see supportForNewBatch).
     const company = currentWorkspace(user)?.companyName ?? '';
@@ -177,6 +184,7 @@ export function IssuanceConfigurator({
               {companyName ? t.brandFromCompany : t.brandHint}
             </small>
           </label>
+          <PhotoPicker value={photo} onChange={setPhoto} disabled={demo} />
           <button type="button" className="button button-secondary" onClick={() => persist(true)}>
             {t.saveProduct}
           </button>

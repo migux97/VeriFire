@@ -48,6 +48,8 @@ export interface PublicProduct {
   lastTransfer: { to: string; at: string } | null;
   // The company's published brand, when it published one. Nothing private: only what it chose to show to everyone.
   issuer: Issuer | null;
+  // What the batch looks like, when its company added a photo.
+  photoUrl: string | null;
 }
 
 export interface Warranty extends PublicProduct {
@@ -68,6 +70,29 @@ export interface Warranty extends PublicProduct {
   support: { company: string; email: string } | null;
   // Who issued it for its owner: the published brand, or the name and email set for support when there is none.
   issuer: Issuer | null;
+  // The owner chose to show it on the home page, and whether that is possible: only with a photo of the batch.
+  showcase: boolean;
+  canShowcase: boolean;
+}
+
+// What a buyer learns about a product when its secret QR is read, before activating it: enough to decide whether to
+// show it on the home page.
+export interface ClaimPreview {
+  model: string;
+  photoUrl: string | null;
+  canShowcase: boolean;
+}
+
+// A product on the home page: only what its owner agreed to show. The owner's account is never part of it.
+export interface ShowcaseItem {
+  token: string;
+  model: string;
+  lot: string;
+  destination: string;
+  photoUrl: string;
+  verifiedAt: string;
+  issuer: { name: string; logoUrl: string | null } | null;
+  onChain: boolean;
 }
 
 // Answer of POST /api/products, the only one that carries the secret code of a single product.
@@ -119,6 +144,7 @@ interface BatchBase {
 
 export interface PublicBatch extends BatchBase {
   issuer: Issuer | null;
+  photoUrl: string | null;
   tokens: BatchToken[];
 }
 
@@ -149,6 +175,8 @@ export interface PurchaseSummary {
   claimed: number;
   // When the company marked the batch as shipped to its destination.
   shippedAt: string | null;
+  // The photo of the batch, when the company added one.
+  photoUrl: string | null;
 }
 
 export type PurchaseStatus =

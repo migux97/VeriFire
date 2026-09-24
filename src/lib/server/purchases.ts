@@ -9,6 +9,7 @@ import { config } from './config';
 import { HttpError } from './errors';
 import type { JsonBody } from './http';
 import { publishedIssuerOf } from './brands';
+import { photoPathOf, purchaseOfBatch } from './photos';
 import { batchUrl, qrImage, secretUrl, verificationUrl } from './links';
 import { anchorPendingProducts, isCurrentOnChain, isPendingOnChain, mintProduct, readProductFields } from './products';
 import { explorerTxUrl, isTxHash } from './stellar';
@@ -41,7 +42,8 @@ const batchBase = (batch: Batch, baseUrl: string) => ({
 
 export const publicBatchView = (batch: Batch, baseUrl: string): PublicBatch => ({
   ...batchBase(batch, baseUrl),
-  issuer: publishedIssuerOf(batch.batchId, baseUrl),
+  issuer: publishedIssuerOf(batch.batchId),
+  photoUrl: photoPathOf(purchaseOfBatch(batch.batchId)),
   tokens: batch.tokens.map((product) => ({ token: product.token, status: product.claimed ? 'CLAIMED_IN_WARRANTY' : 'SEALED' }))
 });
 
@@ -148,7 +150,8 @@ const purchaseSummary = (purchase: Purchase): PurchaseSummary => {
     registeredOnChain: tokens.filter(isCurrentOnChain).length,
     pendingOnChain: chain.enabled ? tokens.filter(isPendingOnChain).length : 0,
     claimed: tokens.filter((product) => product.claimed).length,
-    shippedAt: (purchase.batchId && store.batches.get(purchase.batchId)?.shippedAt) || null
+    shippedAt: (purchase.batchId && store.batches.get(purchase.batchId)?.shippedAt) || null,
+    photoUrl: photoPathOf(purchase)
   };
 };
 

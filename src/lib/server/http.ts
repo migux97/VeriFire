@@ -17,16 +17,16 @@ export const errorResponse = (error: unknown, fallbackStatus: number, fallbackMe
   return json({ error: fallbackMessage }, fallbackStatus);
 };
 
-export const readJson = async (request: Request): Promise<JsonBody> => {
+export const readJson = async (request: Request, maxBytes = MAX_BODY_BYTES): Promise<JsonBody> => {
   const tooLarge = () => new HttpError(413, 'El cuerpo de la solicitud es demasiado grande.');
-  if (Number(request.headers.get('content-length') || 0) > MAX_BODY_BYTES) throw tooLarge();
+  if (Number(request.headers.get('content-length') || 0) > maxBytes) throw tooLarge();
   if (!request.body) return {};
 
   const chunks: Uint8Array[] = [];
   let size = 0;
   for await (const chunk of request.body) {
     size += chunk.length;
-    if (size > MAX_BODY_BYTES) throw tooLarge();
+    if (size > maxBytes) throw tooLarge();
     chunks.push(chunk);
   }
   if (!size) return {};
@@ -57,9 +57,9 @@ export const isAdminRequest = (request: Request) => {
 };
 
 // For endpoints where an unreadable body must answer 400 instead of the fallback of the operation that follows.
-export const readJsonBody = async (request: Request, logLabel: string) => {
+export const readJsonBody = async (request: Request, logLabel: string, maxBytes?: number) => {
   try {
-    return await readJson(request);
+    return await readJson(request, maxBytes);
   } catch (error) {
     if (error instanceof HttpError) throw error;
     console.error(logLabel, error);

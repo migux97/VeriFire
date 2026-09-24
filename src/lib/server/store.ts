@@ -55,6 +55,9 @@ export interface Product extends ProductFields {
   events?: StoredEvent[];
   // Open transfer link: the public key of its secret, who offered it and when it expires.
   transfer?: { key: string; from: string; offeredAt: string; expiresAt?: string };
+  // The owner chose to show this product on the home page, and when. Only possible when its batch has a photo, and it
+  // ends by itself when the product changes owner: the next one did not choose it.
+  showcase?: { at: string };
 }
 
 export interface Batch extends ProductFields {
@@ -79,6 +82,9 @@ export interface Purchase extends ProductFields {
   batchId?: string;
   txHash?: string | null;
   support?: SupportSettings;
+  // The photo of the batch, as a data URL (see photos.ts), and a short hash that changes with it.
+  photo?: string;
+  photoVersion?: string;
 }
 
 // What a company shows to its buyers on each warranty (see brands.ts). The logo is a PNG data URL, served at

@@ -3,8 +3,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { IssuerBadge } from '@/components/ui/IssuerBadge';
 import { ACCOUNT_DATA_EVENT } from '@/lib/client/account-data';
+import type { PublicBrand } from '@/lib/brand';
 import { currentBrand, brandStatus, publishBrand, readPublishedBrand, unpublishBrand, type BrandStatus, type PublishedBrand } from '@/lib/client/brand';
-import { COMPANY_PROFILE_EVENT, readCompanyProfile } from '@/lib/client/company-profile';
+import { COMPANY_PROFILE_EVENT, emptyProfile, readCompanyProfile } from '@/lib/client/company-profile';
 import { downloadBlob } from '@/lib/client/download';
 import { demoModeActive } from '@/lib/client/session';
 import { storedUser } from '@/lib/client/account';
@@ -18,11 +19,14 @@ interface Notice {
   tone: 'success' | 'error';
 }
 
+const emptyBrand: PublicBrand = { name: '', website: '', description: '', supportEmail: '', supportPhone: '', logo: '' };
+
 export function CompanyBrandSettings({ cavosAppId }: { cavosAppId: string }) {
   const t = useCompanyText();
   const text = t.settings.brand;
-  const [brand, setBrand] = useState(currentBrand);
-  const [profile, setProfile] = useState(readCompanyProfile);
+  // Empty until the page is in the browser: the server that renders it first has no storage to read them from.
+  const [brand, setBrand] = useState<PublicBrand>(emptyBrand);
+  const [profile, setProfile] = useState(emptyProfile);
   const [published, setPublished] = useState<PublishedBrand | null>(null);
   const [status, setStatus] = useState<BrandStatus>('unpublished');
   const [editable, setEditable] = useState(false);

@@ -11,6 +11,7 @@ import { shortAddress } from '../format';
 import { activationKeyFor, explorerTxUrl, isTxHash } from './stellar';
 import { hashSecret, saveState, store, type Product, type ProductFields, type StoredEvent } from './store';
 import { issuerOf, publishedIssuerOf } from './brands';
+import { photoOfBatch } from './photos';
 import { DEFAULT_WARRANTY_MONTHS, supportOf } from './support';
 
 const HOUR_MS = 60 * 60 * 1000;
@@ -125,7 +126,7 @@ export const recordRejectedClaim = (product: Product, claimant: string) => {
   recordEventQuietly(product, { kind: 'rejected', at: new Date().toISOString(), by: claimant });
 };
 
-export const publicProductView = (product: Product, baseUrl: string): PublicProduct => ({
+export const publicProductView = (product: Product): PublicProduct => ({
   token: product.token,
   model: product.model,
   lot: product.lot,
@@ -142,7 +143,8 @@ export const publicProductView = (product: Product, baseUrl: string): PublicProd
     const last = transfersOf(product).at(-1);
     return last ? { to: shortAddress(last.to), at: last.at } : null;
   })(),
-  issuer: publishedIssuerOf(product.batchId, baseUrl)
+  issuer: publishedIssuerOf(product.batchId),
+  photoUrl: photoOfBatch(product.batchId)
 });
 
 // Products this account passed on and no longer owns, the latest first. When it owned one twice, the last time counts.
@@ -165,7 +167,7 @@ export const transferredBy = (owner: string): TransferredWarranty[] =>
 // What the buyer may see is the certification only: the activation transaction signed by the issuing account.
 // The Cosmos Pay payment that bought the batch moves company money and never leaves the company panel.
 export const warrantyView = (product: Product, baseUrl: string): Warranty => ({
-  ...publicProductView(product, baseUrl),
+  ...publicProductView(product),
   certificateUrl: isTxHash(product.claimTransaction) ? explorerTxUrl(product.claimTransaction) : null,
   tokenId: product.tokenId,
   owner: product.owner,
@@ -182,7 +184,9 @@ export const warrantyView = (product: Product, baseUrl: string): Warranty => ({
     return support ? { company: support.companyName, email: support.email } : null;
   })(),
   // The same company as the buyer sees it: its name and, when it published them, its logo and how to reach it.
-  issuer: issuerOf(product, baseUrl, supportOf(product))
+  issuer: issuerOf(product, supportOf(product)),
+  showcase: Boolean(product.showcase),
+  canShowcase: photoOfBatch(product.batchId) !== null
 });
 
 export const mintedProductView = (product: Product, baseUrl: string): MintedProduct => ({
