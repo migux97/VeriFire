@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { currentTheme, setTheme, THEME_EVENT } from '@/lib/client/theme';
+import { Icon } from './Icon';
 
-// Light or dark, in the headers. The choice is the same one the profile menu and the settings write, so every switch
-// stays in step. The new look spreads in a circle from the button (see setTheme) while the sun turns into the moon.
-export function ThemeToggle({ label = 'Modo oscuro' }: { label?: string }) {
+// Light or dark, in the headers. The choice is the same one the profile menu writes, so every switch stays in step.
+// `animated` (the company panel): the sun turns into the moon while the page changes in a circle (see setTheme).
+export function ThemeToggle({ label = 'Modo oscuro', animated = false }: { label?: string; animated?: boolean }) {
   const [dark, setDark] = useState(false);
 
   useEffect(() => {
@@ -28,10 +29,14 @@ export function ThemeToggle({ label = 'Modo oscuro' }: { label?: string }) {
         setDark(!dark);
       }}
     >
-      <span className="theme-toggle-icons" aria-hidden="true">
-        <i className="fa-solid fa-sun theme-toggle-sun" />
-        <i className="fa-solid fa-moon theme-toggle-moon" />
-      </span>
+      {animated ? (
+        <span className="theme-toggle-icons" aria-hidden="true">
+          <i className="fa-solid fa-sun theme-toggle-sun" />
+          <i className="fa-solid fa-moon theme-toggle-moon" />
+        </span>
+      ) : (
+        <Icon name={dark ? 'fa-solid fa-moon' : 'fa-solid fa-sun'} />
+      )}
     </button>
   );
 }

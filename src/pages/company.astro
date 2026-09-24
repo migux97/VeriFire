@@ -109,8 +109,8 @@ const views = t.views;
         <span class="company-appbar-title" data-appbar-title>{views.dashboard.title}</span>
         <div class="company-appbar-actions">
           <div class="company-appbar-prefs">
-            <LanguageMenu locale={locale} label={landingText.nav.language} mode="query" />
-            <ThemeToggle client:load label={landingText.profile.dark} />
+            <LanguageMenu locale={locale} label={landingText.nav.language} mode="query" flags />
+            <ThemeToggle client:load label={landingText.profile.dark} animated />
           </div>
           <CompanyNotifications client:load locale={locale} />
           <CompanyIdentity client:load view="profile" locale={locale} />
