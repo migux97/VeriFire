@@ -13,6 +13,7 @@ import { HttpError } from './errors';
 import { textField, type JsonBody } from './http';
 import { secretFromQrKey } from './links';
 import { photoOfBatch } from './photos';
+import { showcaseBlockOf } from './showcase-rules';
 import { activationKeyOf, anchorPendingProducts, isCurrentOnChain, recordRejectedClaim, transferredBy, warrantyView } from './products';
 import { messages } from './messages';
 import { singleton } from './singleton';
@@ -34,9 +35,9 @@ const assertClaimable = (product: Product, owner: string) => {
   if (!isStellarAddress(owner)) throw new HttpError(400, messages.invalidOwner);
 };
 
-// Whether the buyer asked, when activating, to show the product on the home page. It counts only for a product whose
-// batch has a photo: without one there is nothing to show, whatever the request says.
-const wantsShowcase = (body: JsonBody, product: Product) => body['showcase'] === true && photoOfBatch(product.batchId) !== null;
+// Whether the buyer asked, when activating, to show the product on the home page. It counts only for a product that can
+// be shown (a photo of its batch and a verified issuer, see showcase-rules.ts), whatever the request says.
+const wantsShowcase = (body: JsonBody, product: Product) => body['showcase'] === true && showcaseBlockOf(product.batchId) === null;
 
 // Runs synchronously after the request body was read, so two concurrent claims cannot both pass the check.
 const completeClaim = (product: Product, owner: string, baseUrl: string, showcase: boolean, claimTransaction = `demo-${randomUUID()}`): Warranty => {
@@ -136,8 +137,8 @@ export const previewClaim = (body: JsonBody): ClaimPreview => {
   const key = textField(body, 'activationKey').toLowerCase();
   const product = /^[0-9a-f]{64}$/.test(key) ? [...store.products.values()].find((candidate) => activationKeyOf(candidate) === key) : undefined;
   if (!product) throw new HttpError(404, messages.qrNotFound);
-  const photoUrl = photoOfBatch(product.batchId);
-  return { model: product.model, photoUrl, canShowcase: photoUrl !== null && !product.claimed };
+  const blocked = product.claimed ? 'photo' : showcaseBlockOf(product.batchId);
+  return { model: product.model, photoUrl: photoOfBatch(product.batchId), canShowcase: blocked === null, blocked };
 };
 
 export const warrantiesOf = (owner: string, baseUrl: string) => {

@@ -23,10 +23,16 @@ const found = requestedToken.trim() ? findProduct(requestedToken) : undefined;
 if (found && withinBudget('verify-record', Astro.clientAddress, 30)) recordVerification(found);
 const product = found ? publicProductView(found) : null;
 
+// Only a verified issuer lets the page say "original": for anyone else the record proves the code is unique, not the product.
+const trust = product ? (product.issuer?.verified ? 'verified' : product.issuer ? 'unverified' : 'unknown') : null;
+
 let title = copy.product.title;
 let message = copy.product.lead;
 if (product) {
-  title = product.claimed ? copy.product.claimedTitle : copy.product.sealedTitle;
+  const original = trust === 'verified';
+  title = product.claimed
+    ? (original ? copy.product.claimedTitle : copy.product.registeredClaimedTitle)
+    : (original ? copy.product.sealedTitle : copy.product.registeredSealedTitle);
   if (product.lastTransfer) message = copy.product.transferred.replace('{to}', product.lastTransfer.to);
   else if (product.claimed) message = copy.product.claimed;
   else message = copy.product.sealed;
@@ -52,8 +58,16 @@ if (product) {
         </div>
       </div>
       <p class="verify-message">{message}</p>
+      {trust && (
+        <p class={`verify-trust is-${trust}`} role="note">
+          <i class={`fa-solid ${trust === 'verified' ? 'fa-circle-check' : 'fa-triangle-exclamation'}`} aria-hidden="true"></i>
+          {' '}
+          {copy.product.trust[trust]}
+          {trust === 'verified' && product?.issuer?.domain && ` ${copy.product.trust.verifiedSite.replace('{domain}', product.issuer.domain)}`}
+        </p>
+      )}
       {product?.photoUrl && <img class="verify-photo" src={product.photoUrl} alt={copy.photoAlt.replace('{model}', product.model)} loading="lazy" decoding="async" />}
-      {product?.issuer && <IssuerBadge issuer={product.issuer} labels={{ issuedBy: copy.issuer.issuedBy, write: copy.issuer.write, call: copy.issuer.call }} />}
+      {product?.issuer && <IssuerBadge issuer={product.issuer} labels={{ issuedBy: copy.issuer.issuedBy, write: copy.issuer.write, call: copy.issuer.call, verified: copy.issuer.verified, unverified: copy.issuer.unverified }} />}
       {product && <ProductDetails product={product} locale={locale} />}
       {
         product && product.history.length > 0 && (

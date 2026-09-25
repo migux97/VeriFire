@@ -7,14 +7,14 @@ const es = {
   },
   topbar: { home: 'Inicio', homeLabel: 'Volver a la página principal' },
   recovery: {
-    title: 'Activá la recuperación de tu cuenta',
-    lead: 'Hacelo una sola vez y vas a poder recuperar tu cuenta, tus garantías y tu wallet desde cualquier navegador o dispositivo, aunque olvides tu contraseña. Te mandamos un enlace a tu correo: abrilo en este navegador.',
-    sent: 'Te enviamos un enlace a {email}. Abrilo en este mismo navegador para terminar de activarla.',
-    action: 'Activar recuperación',
+    title: 'Activá tu cuenta',
+    lead: 'Activala una sola vez y vas a poder entrar a tu cuenta, tus garantías y tu wallet desde cualquier navegador o dispositivo, aunque olvides tu contraseña. Te mandamos un enlace a tu correo: abrilo en este navegador.',
+    sent: 'Te enviamos un enlace a {email}. Abrilo en este mismo navegador para terminar de activar tu cuenta.',
+    action: 'Activar cuenta',
     resend: 'Reenviar enlace',
     resendIn: 'Reenviar en {seconds} s',
     failed: 'No se pudo enviar el enlace.',
-    doneTitle: 'Recuperación activada',
+    doneTitle: 'Cuenta activada',
     doneText: 'Si olvidás tu contraseña, vas a poder recuperar tu cuenta desde cualquier navegador o dispositivo con un enlace a tu correo.',
     close: 'Cerrar'
   },
@@ -60,6 +60,7 @@ const es = {
       warningTitle: 'Antes de activar, tené en cuenta',
       warning: 'Si lo marcás, cualquier persona que entre a la página de inicio de Verifire va a ver la foto del producto, su modelo, la empresa que lo emitió, el país de destino y la fecha en que lo verificaste. Tu cuenta y tu correo no se muestran. Podés quitarlo cuando quieras desde tu garantía.',
       noPhoto: 'Este producto no puede aparecer en el carrusel: la empresa que lo emitió todavía no cargó su foto.',
+      unverified: 'Este producto no puede aparecer en el carrusel: la empresa que lo emitió todavía no está verificada por Verifire.',
       productPhoto: 'Foto de {model}'
     }
   },
@@ -86,6 +87,7 @@ const es = {
     linkElsewhere: 'Abriste este link desde otro navegador. Si no lo tenés, generá uno nuevo: el anterior deja de funcionar.',
     linkExpired: 'El link de transferencia venció sin que nadie lo aceptara. El producto sigue a tu nombre.',
     issuedBy: 'Emitido por', writeIssuer: 'Escribir a la empresa', callIssuer: 'Llamar a la empresa',
+    issuerVerified: 'Empresa verificada por Verifire', issuerUnverified: 'Empresa sin verificar',
     photoAlt: 'Foto de {model}',
     showcase: {
       on: 'Aparece en la página de inicio',
@@ -93,6 +95,7 @@ const es = {
       show: 'Mostrar en el inicio',
       hide: 'Quitar del inicio',
       noPhoto: 'No se puede mostrar en el inicio: la empresa todavía no cargó la foto del producto.',
+      unverified: 'No se puede mostrar en el inicio: la empresa que lo emitió todavía no está verificada por Verifire.',
       confirmTitle: 'Mostrar este producto en el inicio',
       confirmMessage: 'Cualquier persona que entre a la página de inicio de Verifire va a ver la foto del producto, su modelo, la empresa que lo emitió, el país de destino y la fecha de verificación. Tu cuenta y tu correo no se muestran. Podés quitarlo cuando quieras.',
       confirmYes: 'Mostrar',
@@ -156,14 +159,14 @@ const en: Messages = {
   },
   topbar: { home: 'Home', homeLabel: 'Back to the home page' },
   recovery: {
-    title: 'Turn on account recovery',
-    lead: 'Do it once and you will be able to recover your account, your warranties and your wallet from any browser or device, even if you forget your password. We send a link to your email: open it in this browser.',
-    sent: 'We sent a link to {email}. Open it in this same browser to finish turning it on.',
-    action: 'Turn on recovery',
+    title: 'Activate your account',
+    lead: 'Activate it once and you will be able to open your account, your warranties and your wallet from any browser or device, even if you forget your password. We send a link to your email: open it in this browser.',
+    sent: 'We sent a link to {email}. Open it in this same browser to finish activating your account.',
+    action: 'Activate account',
     resend: 'Resend link',
     resendIn: 'Resend in {seconds} s',
     failed: 'The link could not be sent.',
-    doneTitle: 'Recovery is on',
+    doneTitle: 'Account activated',
     doneText: 'If you forget your password, you will be able to recover your account from any browser or device with a link to your email.',
     close: 'Close'
   },
@@ -209,6 +212,7 @@ const en: Messages = {
       warningTitle: 'Before activating, keep in mind',
       warning: 'If you tick this, anyone who visits the Verifire home page will see the product’s photo, its model, the company that issued it, its destination country and the date you verified it. Your account and your email are not shown. You can remove it whenever you want from your warranty.',
       noPhoto: 'This product cannot appear in the carousel: the company that issued it has not added its photo yet.',
+      unverified: 'This product cannot appear in the carousel: the company that issued it has not been verified by Verifire yet.',
       productPhoto: 'Photo of {model}'
     }
   },
@@ -235,6 +239,7 @@ const en: Messages = {
     linkElsewhere: 'You opened this link from another browser. If you do not have it, generate a new one: the previous one stops working.',
     linkExpired: 'The transfer link expired before anyone accepted it. The product is still in your name.',
     issuedBy: 'Issued by', writeIssuer: 'Write to the company', callIssuer: 'Call the company',
+    issuerVerified: 'Company verified by Verifire', issuerUnverified: 'Unverified company',
     photoAlt: 'Photo of {model}',
     showcase: {
       on: 'Shown on the home page',
@@ -242,6 +247,7 @@ const en: Messages = {
       show: 'Show on home page',
       hide: 'Remove from home page',
       noPhoto: 'It cannot be shown on the home page: the company has not added the product’s photo yet.',
+      unverified: 'It cannot be shown on the home page: the company that issued it has not been verified by Verifire yet.',
       confirmTitle: 'Show this product on the home page',
       confirmMessage: 'Anyone who visits the Verifire home page will see the product’s photo, its model, the company that issued it, its destination country and the verification date. Your account and your email are not shown. You can remove it whenever you want.',
       confirmYes: 'Show it',

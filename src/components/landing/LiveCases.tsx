@@ -231,7 +231,10 @@ function LiveSlide({ item, eager, live, now, date, locale }: LiveSlideProps) {
           <IssuerMark issuer={item.issuer} />
           <span>
             <small>{live.specs.issuer}</small>
-            <strong>{item.issuer?.name ?? live.unknownIssuer}</strong>
+            <strong>
+              {item.issuer?.name ?? live.unknownIssuer}
+              {item.issuer && <i className="fa-solid fa-circle-check lp-live-check" title={live.verifiedIssuer} role="img" aria-label={live.verifiedIssuer} />}
+            </strong>
           </span>
         </div>
         <dl className="lp-case-specs tw:grid tw:gap-3">

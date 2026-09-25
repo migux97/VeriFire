@@ -17,10 +17,13 @@ const found = batchId ? findBatch(batchId) : undefined;
 const batch = found ? publicBatchView(found, publicBaseUrl(Astro.url)) : null;
 const claimed = batch?.tokens.filter((token) => token.status === 'CLAIMED_IN_WARRANTY').length ?? 0;
 
+// "Original" only for a verified issuer (see verify.astro).
+const trust = batch ? (batch.issuer?.verified ? 'verified' : batch.issuer ? 'unverified' : 'unknown') : null;
+
 let title = copy.batch.unavailableTitle;
 let message = copy.batch.lead;
 if (batch) {
-  title = copy.batch.title;
+  title = trust === 'verified' ? copy.batch.title : copy.batch.registeredTitle;
   message = copy.batch.summary.replace('{claimed}', String(claimed)).replace('{quantity}', String(batch.quantity));
 } else if (batchId) {
   message = copy.batch.notFound;
@@ -37,8 +40,16 @@ if (batch) {
       <span class="eyebrow">{copy.header.batchEyebrow}</span>
       <h1 id="batch-title">{title}</h1>
       <p class="verify-message">{message}</p>
+      {trust && (
+        <p class={`verify-trust is-${trust}`} role="note">
+          <i class={`fa-solid ${trust === 'verified' ? 'fa-circle-check' : 'fa-triangle-exclamation'}`} aria-hidden="true"></i>
+          {' '}
+          {copy.product.trust[trust]}
+          {trust === 'verified' && batch?.issuer?.domain && ` ${copy.product.trust.verifiedSite.replace('{domain}', batch.issuer.domain)}`}
+        </p>
+      )}
       {batch?.photoUrl && <img class="verify-photo" src={batch.photoUrl} alt={copy.photoAlt.replace('{model}', batch.model)} loading="lazy" decoding="async" />}
-      {batch?.issuer && <IssuerBadge issuer={batch.issuer} labels={{ issuedBy: copy.issuer.issuedBy, write: copy.issuer.write, call: copy.issuer.call }} />}
+      {batch?.issuer && <IssuerBadge issuer={batch.issuer} labels={{ issuedBy: copy.issuer.issuedBy, write: copy.issuer.write, call: copy.issuer.call, verified: copy.issuer.verified, unverified: copy.issuer.unverified }} />}
       {
         batch && (
           <DetailRows

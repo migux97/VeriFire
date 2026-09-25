@@ -675,7 +675,7 @@ export function AuthPanel({ cavosAppId }: AuthPanelProps) {
           }
           showNotice(result === 'other-device'
             ? 'Abrí el enlace en el navegador donde usás Verifire: es el que tiene la llave de tu wallet. Volvé a pedirlo desde "Mis garantías".'
-            : 'No se pudo activar la recuperación. Volvé a intentarlo desde "Mis garantías".', 'error');
+            : 'No se pudo activar tu cuenta. Volvé a intentarlo desde "Mis garantías".', 'error');
         } catch (error) {
           showNotice(describeAuthError(error, 'El enlace venció o ya fue usado. Pedí uno nuevo desde "Mis garantías".'), 'error');
         }

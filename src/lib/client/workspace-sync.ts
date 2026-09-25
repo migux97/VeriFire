@@ -7,6 +7,7 @@ import type { PublicBrand } from '../brand';
 import type { AccountDataEntry } from './account-data';
 import { bytesToBase64 } from './bytes';
 import { postJson } from './api';
+import type { VerificationState } from '../types';
 import { connectSigningWallet } from './wallet';
 
 export interface RemoteWorkspace {
@@ -18,6 +19,10 @@ export interface RemoteWorkspace {
   data?: Record<string, AccountDataEntry>;
   // Its published brand, if any: the slug that names it and the public address of its logo.
   brand: { slug: string; logoUrl: string | null } | null;
+  // Where its verification stands, as Verifire decided it.
+  verification?: VerificationState;
+  // Whether this wallet is one of the administrators of Verifire.
+  admin?: boolean;
 }
 
 interface WorkspaceChanges {

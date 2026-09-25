@@ -2649,3 +2649,310 @@ a.network-status:hover {
     width: 100%;
   }
 }
+
+/* Whether Verifire vouches for the company that issued a product: the check next to its name and the line under it. */
+.issuer-check {
+  margin-left: 6px;
+  color: var(--vf-success);
+  font-size: 0.85em;
+}
+
+.issuer-trust {
+  color: var(--vf-warning);
+  font-size: 0.6875rem;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.issuer-trust.is-verified {
+  color: var(--vf-success);
+}
+
+/* The public QR pages: what the record proves about the product, and whether its issuer was checked. */
+.verify-trust {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 4px 0 14px;
+  padding: 10px 12px;
+  border-left: 4px solid var(--vf-warning);
+  background: var(--vf-warning-soft);
+  color: var(--vf-text);
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.verify-trust i {
+  margin-top: 3px;
+  color: var(--vf-warning);
+}
+
+.verify-trust.is-verified {
+  border-left-color: var(--vf-success);
+  background: var(--vf-success-soft);
+}
+
+.verify-trust.is-verified i {
+  color: var(--vf-success);
+}
+
+/* ---------- /verificacion: the review of companies ---------- */
+.vadmin-shell {
+  width: min(1100px, 100%);
+}
+
+.vadmin-shell .verify-card {
+  max-width: none;
+}
+
+.vadmin {
+  display: grid;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.vadmin-filters {
+  display: flex;
+  gap: 8px;
+}
+
+.vadmin-filters button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1.5px solid var(--vf-line-strong);
+  border-radius: 999px;
+  background: var(--vf-paper);
+  color: var(--vf-ink);
+  font: 700 0.875rem var(--vf-font);
+  cursor: pointer;
+}
+
+.vadmin-filters button.is-current {
+  border-color: var(--vf-ink);
+  background: var(--vf-ink);
+  color: var(--vf-paper);
+}
+
+.vadmin-filters button span {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--vf-mist);
+  color: var(--vf-ink);
+  font-size: 0.75rem;
+}
+
+.vadmin-empty,
+.vadmin-status {
+  margin: 8px 0;
+  padding: 16px;
+  border: 1px dashed var(--vf-line-strong);
+  border-radius: 10px;
+  color: var(--vf-muted);
+}
+
+.vadmin-status.is-denied {
+  border-color: var(--vf-blush-line);
+  background: var(--vf-blush);
+  color: var(--vf-text);
+}
+
+.vadmin-notice {
+  padding: 10px 14px;
+  border-left: 4px solid var(--vf-success);
+  background: var(--vf-success-soft);
+  color: var(--vf-text);
+  font-weight: 700;
+}
+
+.vadmin-card {
+  display: grid;
+  gap: 14px;
+  padding: 20px;
+  border: 1px solid var(--vf-line);
+  border-left: 4px solid var(--vf-line-strong);
+  border-radius: 12px;
+  background: var(--vf-paper);
+}
+
+.vadmin-card.is-pending {
+  border-left-color: var(--vf-warning);
+}
+
+.vadmin-card.is-verified {
+  border-left-color: var(--vf-success);
+}
+
+.vadmin-card.is-paused {
+  border-left-color: var(--vf-warning);
+}
+
+.vadmin-card.is-rejected {
+  border-left-color: var(--vf-red);
+}
+
+.vadmin-card header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+
+.vadmin-card h3 {
+  margin: 0;
+  color: var(--vf-ink);
+  font-size: 1.25rem;
+}
+
+.vadmin-card header small {
+  color: var(--vf-muted);
+}
+
+.vadmin-card blockquote {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 10px 14px;
+  border-left: 4px solid var(--vf-info);
+  background: var(--vf-info-soft);
+  color: var(--vf-text);
+  font-size: 0.9rem;
+}
+
+.vadmin-card blockquote small {
+  color: var(--vf-muted);
+}
+
+.vadmin-data {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 10px 20px;
+  margin: 0;
+}
+
+.vadmin-data dt {
+  color: var(--vf-muted);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.vadmin-data dd {
+  margin: 2px 0 0;
+  color: var(--vf-ink);
+  font-size: 0.9375rem;
+  overflow-wrap: anywhere;
+}
+
+.vadmin-data dd.is-mono {
+  font-family: var(--vf-mono);
+  font-size: 0.8125rem;
+}
+
+.vadmin-data dd em {
+  color: var(--vf-muted);
+}
+
+.vadmin-checked {
+  margin: 0;
+  color: var(--vf-success);
+  font-size: 0.9rem;
+}
+
+.vadmin-checked.is-rejected {
+  color: var(--vf-error);
+}
+
+.vadmin-toggle {
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--vf-red);
+  font: 800 0.9rem var(--vf-font);
+  cursor: pointer;
+}
+
+.vadmin-review {
+  display: grid;
+  gap: 12px;
+  padding-top: 14px;
+  border-top: 1px solid var(--vf-line);
+}
+
+.vadmin-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.vadmin-review label {
+  display: grid;
+  gap: 6px;
+  color: var(--vf-ink);
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.vadmin-review label small {
+  color: var(--vf-muted);
+  font-weight: 500;
+}
+
+.vadmin-review input,
+.vadmin-review textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1.5px solid var(--vf-line-strong);
+  border-radius: 6px;
+  background: var(--vf-paper);
+  color: var(--vf-ink);
+  font: 600 0.9375rem var(--vf-font);
+}
+
+.vadmin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.vadmin-error {
+  margin: 0;
+  color: var(--vf-error);
+  font-weight: 700;
+}
+
+/* The state of a company's verification: on its own settings card and in the review list. */
+.verify-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  justify-self: start;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--vf-mist);
+  color: var(--vf-muted);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.verify-status.is-verified {
+  background: var(--vf-success-soft);
+  color: var(--vf-success);
+}
+
+.verify-status.is-pending,
+.verify-status.is-paused {
+  background: var(--vf-warning-soft);
+  color: var(--vf-warning);
+}
+
+.verify-status.is-rejected {
+  background: var(--vf-blush);
+  color: var(--vf-error);
+}

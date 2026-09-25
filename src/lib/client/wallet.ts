@@ -5,6 +5,7 @@ import { errorMessage } from '../errors';
 import { isStellarAddress } from '../validation';
 import { storedUser, updateStoredUser } from './account';
 import { DEVICE_CODE_KEY, userSession, WALLET_KEY, WALLET_UPDATED_EVENT } from './session';
+import { chooseIdentity } from './identity-choice';
 import { enrollSocialRecovery, recoverWithSocial } from './social-recovery';
 import { readStored, writeStored } from './storage';
 
@@ -229,8 +230,10 @@ export const connectCavosWallet = async (appId: string, auth: CavosAuth, identit
 const openOwnWallet = async (appId: string, expectedAddress: string) => {
   const account = storedUser();
   const auth = await createCavosAuth(appId);
-  const sameAccount = Boolean(account?.email) && account?.email === userSession.email();
-  const identity = auth.restoreIdentity() ?? (sameAccount && account?.cavosUserId ? { userId: account.cavosUserId, email: account.email } : null);
+  const { identity, foreign } = chooseIdentity(auth.restoreIdentity(), account, userSession.email());
+  // The Cavos login left in this browser is another account's: it is dropped, with its token, so it cannot sign for this
+  // one and the account's own login (its saved user id) reopens its wallet instead.
+  if (foreign) auth.clearStoredIdentity();
   if (!identity) throw new EmailCodeRequiredError();
 
   let wallet;
@@ -242,7 +245,7 @@ const openOwnWallet = async (appId: string, expectedAddress: string) => {
     throw error;
   }
   if (wallet.address !== expectedAddress) {
-    throw new Error('La wallet Cavos de este navegador no coincide con la de tu cuenta. Cerrá sesión y volvé a entrar.');
+    throw new Error('La wallet Cavos de este navegador no coincide con la de tu cuenta. Cerrá sesión y volvé a entrar con tu correo: te enviamos un código y se corrige.');
   }
   return wallet;
 };

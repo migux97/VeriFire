@@ -37,7 +37,9 @@ export function ShowcaseConsent({ preview, checking, checked, onChange, disabled
           </label>
         </>
       ) : (
-        <p className="showcase-consent-note"><Icon name="fa-regular fa-image" /> {text.noPhoto}</p>
+        <p className="showcase-consent-note">
+          <Icon name={preview.blocked === 'unverified' ? 'fa-solid fa-shield-halved' : 'fa-regular fa-image'} /> {preview.blocked === 'unverified' ? text.unverified : text.noPhoto}
+        </p>
       )}
     </fieldset>
   );

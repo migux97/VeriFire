@@ -11,6 +11,7 @@ import { HttpError } from './errors';
 import type { Issuer } from '../types';
 import type { Brand, Product } from './store';
 import { store } from './store';
+import { isVerified } from './verification';
 
 const text = (value: unknown, limit: number, message: string) => {
   const trimmed = typeof value === 'string' ? value.trim() : '';
@@ -79,20 +80,41 @@ export const logoBytes = (brand: Brand) => {
 export const logoPathOf = (brand: Brand) =>
   brand.logo ? `/api/brand/${encodeURIComponent(brand.slug)}/logo.png?v=${brand.logoVersion ?? ''}` : null;
 
-// The brand published by whoever bought a batch, as anyone may see it. It comes from the wallet that owns the purchase
-// of the batch, and a purchase only gets an owner through a signed request, so a company cannot borrow another one's
-// name by claiming its wallet. A company that never published one shows nothing here: this is what the public QR uses.
+// Who issued a batch, as anyone may see it. It comes from the wallet that owns the purchase of the batch, and a purchase
+// only gets an owner through a signed request, so a company cannot borrow another one's name by claiming its wallet.
+//  - With a published brand: that brand, marked verified only if Verifire verified the company and it still shows the
+//    verified name (see verification.ts).
+//  - Without one: nothing, unless the company is verified, and then the name that was checked.
+// This is what the public QR uses; `verified` is what tells a buyer whether "original" can be said.
 export const publishedIssuerOf = (batchId: string | undefined): Issuer | null => {
   const purchase = batchId ? [...store.purchases.values()].find((candidate) => candidate.batchId === batchId) : undefined;
-  const brand = purchase?.owner ? store.workspaces.get(purchase.owner)?.brand : undefined;
-  if (!brand) return null;
-  return {
-    name: brand.name,
-    logoUrl: logoPathOf(brand),
-    website: brand.website ?? null,
-    email: brand.supportEmail ?? null,
-    phone: brand.supportPhone ?? null
-  };
+  const workspace = purchase?.owner ? store.workspaces.get(purchase.owner) : undefined;
+  const verified = isVerified(workspace);
+  const domain = verified ? workspace?.verification?.domain ?? null : null;
+  const brand = workspace?.brand;
+  if (brand) {
+    return {
+      name: brand.name,
+      logoUrl: logoPathOf(brand),
+      website: brand.website ?? (domain ? `https://${domain}` : null),
+      email: brand.supportEmail ?? null,
+      phone: brand.supportPhone ?? null,
+      verified,
+      domain
+    };
+  }
+  if (verified && workspace?.verification?.name) {
+    return {
+      name: workspace.verification.name,
+      logoUrl: null,
+      website: domain ? `https://${domain}` : null,
+      email: null,
+      phone: null,
+      verified: true,
+      domain
+    };
+  }
+  return null;
 };
 
 // Who issued a product, for its owner: the published brand, and without one the name and email the company set for
@@ -100,5 +122,5 @@ export const publishedIssuerOf = (batchId: string | undefined): Issuer | null =>
 export const issuerOf = (product: Product, support: { companyName: string; email: string } | undefined): Issuer | null => {
   const published = publishedIssuerOf(product.batchId);
   if (published) return { ...published, email: published.email ?? support?.email ?? null };
-  return support ? { name: support.companyName, logoUrl: null, website: null, email: support.email, phone: null } : null;
+  return support ? { name: support.companyName, logoUrl: null, website: null, email: support.email, phone: null, verified: false, domain: null } : null;
 };

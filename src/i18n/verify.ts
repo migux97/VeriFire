@@ -10,13 +10,22 @@ const es = {
     batchDescription: 'Verificación pública de un lote de productos Verifire.'
   },
   header: { network: 'Verificación pública', eyebrow: 'QR público del producto', batchEyebrow: 'QR público del lote' },
-  issuer: { issuedBy: 'Emitido por', write: 'Escribir a la empresa', call: 'Llamar a la empresa' },
+  issuer: { issuedBy: 'Emitido por', write: 'Escribir a la empresa', call: 'Llamar a la empresa', verified: 'Empresa verificada por Verifire', unverified: 'Empresa sin verificar' },
   photoAlt: 'Foto de {model}',
   product: {
     title: 'Verificá tu producto',
     lead: 'Escaneá el QR de la caja o ingresá el código público del producto.',
     claimedTitle: 'Producto original · garantía activa',
     sealedTitle: 'Producto original · sellado',
+    // The issuer was not verified by Verifire: the code is real and unique, and that is all it says.
+    registeredClaimedTitle: 'Producto registrado · garantía activa',
+    registeredSealedTitle: 'Producto registrado · sellado',
+    trust: {
+      verified: 'Lo emitió una empresa verificada por Verifire.',
+      verifiedSite: 'Sitio confirmado: {domain}.',
+      unverified: 'La empresa que emitió este producto todavía no fue verificada por Verifire. El registro prueba que este código es único y no fue copiado, pero no que el producto sea original: confirmalo con la empresa.',
+      unknown: 'Este producto no tiene una empresa emisora identificada. El registro prueba que este código es único y no fue copiado, pero no quién lo fabricó: confirmalo antes de comprar.'
+    },
     transferred: 'Este producto fue transferido al usuario {to}. La garantía sigue vigente a su nombre.',
     claimed: 'La garantía de este producto ya fue activada por su comprador.',
     sealed: 'La caja está sellada en fábrica y la garantía todavía no fue activada.',
@@ -38,6 +47,7 @@ const es = {
     unavailableTitle: 'Lote no disponible',
     lead: 'Escaneá el QR público del lote para ver sus productos.',
     title: 'Productos originales certificados',
+    registeredTitle: 'Lote registrado en Verifire',
     summary: '{claimed} de {quantity} productos con la garantía activada. Este QR no revela códigos secretos.',
     notFound: 'El lote no existe.',
     rows: { model: 'Modelo', lot: 'Lote', destination: 'Destino', products: 'Productos' },
@@ -55,13 +65,21 @@ const en: Messages = {
     batchDescription: 'Public check of a batch of Verifire products.'
   },
   header: { network: 'Public verification', eyebrow: 'Public product QR', batchEyebrow: 'Public batch QR' },
-  issuer: { issuedBy: 'Issued by', write: 'Write to the company', call: 'Call the company' },
+  issuer: { issuedBy: 'Issued by', write: 'Write to the company', call: 'Call the company', verified: 'Company verified by Verifire', unverified: 'Unverified company' },
   photoAlt: 'Photo of {model}',
   product: {
     title: 'Check your product',
     lead: 'Scan the QR on the box or enter the public code of the product.',
     claimedTitle: 'Original product · warranty active',
     sealedTitle: 'Original product · sealed',
+    registeredClaimedTitle: 'Registered product · warranty active',
+    registeredSealedTitle: 'Registered product · sealed',
+    trust: {
+      verified: 'It was issued by a company verified by Verifire.',
+      verifiedSite: 'Confirmed site: {domain}.',
+      unverified: 'The company that issued this product has not been verified by Verifire yet. The record proves this code is unique and was not copied, but not that the product is original: confirm it with the company.',
+      unknown: 'This product has no identified issuing company. The record proves this code is unique and was not copied, but not who made it: confirm it before buying.'
+    },
     transferred: 'This product was transferred to user {to}. The warranty remains valid in their name.',
     claimed: 'The warranty of this product has already been activated by its buyer.',
     sealed: 'The box is sealed at the factory and the warranty has not been activated yet.',
@@ -83,6 +101,7 @@ const en: Messages = {
     unavailableTitle: 'Batch unavailable',
     lead: 'Scan the public QR of the batch to see its products.',
     title: 'Certified original products',
+    registeredTitle: 'Batch registered in Verifire',
     summary: '{claimed} of {quantity} products with the warranty activated. This QR reveals no secret codes.',
     notFound: 'That batch does not exist.',
     rows: { model: 'Model', lot: 'Batch', destination: 'Destination', products: 'Products' },

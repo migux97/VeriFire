@@ -109,6 +109,15 @@ directamente con Node.
   `<DATA_FILE>.bak`. Si el archivo principal aparece dañado al arrancar, se carga esa copia.
 - Antes de activar o transferir, el servidor lee el contrato: una transacción confirmada después de que dejó de
   esperarla (o durante un reinicio) se adopta acá, en vez de dejar al comprador sin su garantía.
+- **Empresas verificadas.** Cualquiera puede registrar una empresa y emitir etiquetas, así que Verifire solo promete que
+  un código es único y no fue copiado; que el producto sea original lo respalda únicamente la verificación de quien lo
+  emitió. Una empresa la pide desde Configuración → Verificación, y un administrador la revisa en `/verificacion` (razón
+  social, CUIT, sitio) y la aprueba o rechaza con su billetera: las billeteras que pueden hacerlo se listan en
+  `ADMIN_WALLETS` (`.env`). La aprobación guarda el nombre comercial que se verificó y solo vale mientras la empresa siga
+  mostrando ese nombre (`src/lib/server/verification.ts`), así una empresa verificada no puede firmar como otra.
+  Los QR públicos dicen "Producto original" solo para un emisor verificado; para el resto dicen "Producto registrado" y
+  que el emisor no fue verificado. Los productos de empresas sin verificar tampoco pueden aparecer en el carrusel del
+  inicio (`showcase-rules.ts`).
 - Los códigos secretos de un lote se piden con `POST /api/purchases/detail` y el id va en el cuerpo, no en la URL.
   `GET /api/purchases/:id` responde solo el resumen.
 - Los endpoints abiertos (`/api/purchases`, `/api/warranties` y la preparación de una activación) tienen un límite de
@@ -127,6 +136,7 @@ directamente con Node.
 | `/app` | Panel del comprador: escanear QR y ver garantías |
 | `/batches` | Panel de empresa: lotes, etiquetas y activaciones |
 | `/admin` | Compra de un lote con Cosmos Pay |
+| `/verificacion` | Revisión y aprobación de empresas (solo billeteras de `ADMIN_WALLETS`) |
 | `/verify?token=VF-XXXXXXXX` | Verificación pública de un producto (renderizada en el servidor) |
 | `/batch?batch=BATCH-0001` | Verificación pública de un lote |
 

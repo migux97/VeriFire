@@ -59,6 +59,8 @@ export default defineConfig({
       CAVOS_APP_ID: runtimeVar(),
       // Enables POST /api/products with `Authorization: Bearer <token>`.
       ADMIN_API_TOKEN: runtimeVar(),
+      // Wallets (G...) of the people who verify companies, separated by commas: they open /verificacion.
+      ADMIN_WALLETS: runtimeVar(),
       CORS_ORIGIN: runtimeVar(),
       // Base of the links printed in the QR labels. Defaults to the address the request came from.
       PUBLIC_APP_URL: runtimeVar(),
