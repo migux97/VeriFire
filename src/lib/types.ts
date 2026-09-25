@@ -22,13 +22,42 @@ export interface ApiErrorBody {
   retryable?: boolean;
 }
 
-// Who issued a product, as the company chose to show itself. "Issued by", not "verified": the name is self-declared.
+// Who issued a product, as the company chose to show itself. `verified` is the only part Verifire vouches for: it means
+// an administrator checked the company by hand and the name is still the one that was checked (see verification.ts).
+// Without it the name is only what the company wrote about itself.
 export interface Issuer {
   name: string;
   logoUrl: string | null;
   website: string | null;
   email: string | null;
   phone: string | null;
+  verified: boolean;
+  // The site of the company that Verifire confirmed, when it did.
+  domain: string | null;
+}
+
+// Where a company stands in its verification, for the company itself and for whoever reviews it.
+export interface VerificationState {
+  status: 'none' | 'pending' | 'verified' | 'rejected';
+  // Verified and still showing the verified name: the only case that reaches the public.
+  active: boolean;
+  name?: string;
+  domain?: string;
+  note?: string;
+  message?: string;
+  requestedAt?: string;
+  decidedAt?: string;
+}
+
+// One company in the review panel: what it declared and what it did, so the person deciding has something to check.
+export interface CompanyForReview {
+  owner: string;
+  companyName: string;
+  brandName: string | null;
+  verification: VerificationState;
+  profile: Record<'legalName' | 'taxId' | 'website' | 'email' | 'phone' | 'country' | 'address' | 'industry', string>;
+  stats: { purchases: number; batches: number; products: number; claimed: number };
+  updatedAt: string;
 }
 
 // What the QR on the outside of the box shows to anyone, without a session. Owners appear only shortened, in the history.
@@ -70,9 +99,11 @@ export interface Warranty extends PublicProduct {
   support: { company: string; email: string } | null;
   // Who issued it for its owner: the published brand, or the name and email set for support when there is none.
   issuer: Issuer | null;
-  // The owner chose to show it on the home page, and whether that is possible: only with a photo of the batch.
+  // The owner chose to show it on the home page, and whether that is possible: it needs a photo of the batch and an issuer
+  // verified by Verifire. `showcaseBlocked` says which of the two is missing.
   showcase: boolean;
   canShowcase: boolean;
+  showcaseBlocked: 'photo' | 'unverified' | null;
 }
 
 // What a buyer learns about a product when its secret QR is read, before activating it: enough to decide whether to
@@ -81,6 +112,8 @@ export interface ClaimPreview {
   model: string;
   photoUrl: string | null;
   canShowcase: boolean;
+  // Why it cannot be shown on the home page, when it cannot.
+  blocked: 'photo' | 'unverified' | null;
 }
 
 // A product on the home page: only what its owner agreed to show. The owner's account is never part of it.

@@ -1,6 +1,6 @@
 import { join } from 'node:path';
 import {
-  ADMIN_API_TOKEN, CAVOS_APP_ID, CORS_ORIGIN, COSMOS_PAY_AMOUNT, COSMOS_PAY_API_KEY, COSMOS_PAY_DESTINATION, DATA_FILE,
+  ADMIN_API_TOKEN, ADMIN_WALLETS, CAVOS_APP_ID, CORS_ORIGIN, COSMOS_PAY_AMOUNT, COSMOS_PAY_API_KEY, COSMOS_PAY_DESTINATION, DATA_FILE,
   PUBLIC_APP_URL, RESEND_API_KEY, RESEND_FROM, STELLAR_ADMIN_SECRET, STELLAR_CONTRACT_ID, STELLAR_ISSUER_SECRET, STELLAR_NETWORK,
   STELLAR_PREVIOUS_CONTRACT_ID, STELLAR_RPC_URL
 } from 'astro:env/server';
@@ -23,6 +23,8 @@ export const config = {
     from: RESEND_FROM || 'Verifire <onboarding@resend.dev>'
   },
   adminApiToken: ADMIN_API_TOKEN || '',
+  // Who verifies companies: only these wallets, and only with their signature (see verification-actions.ts).
+  adminWallets: (ADMIN_WALLETS ?? '').split(/[\s,;]+/).filter((wallet) => /^G[A-Z2-7]{55}$/.test(wallet)),
   corsOrigin: CORS_ORIGIN || '',
   publicAppUrl: PUBLIC_APP_URL?.replace(/\/$/, '') || '',
   // Relative to where the server is started, which is the project root for every npm script.

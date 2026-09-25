@@ -8,11 +8,13 @@ export interface IssuerInfo {
   website: string | null;
   email: string | null;
   phone: string | null;
+  // Verifire checked the company. Absent in the company's own preview, where it is not shown.
+  verified?: boolean;
 }
 
 interface IssuerBadgeProps {
   issuer: IssuerInfo;
-  labels: { issuedBy: string; write: string; call: string };
+  labels: { issuedBy: string; write: string; call: string; verified?: string; unverified?: string };
   // Subject of the email a buyer writes from here.
   subject?: string;
 }
@@ -25,9 +27,9 @@ const initials = (name: string) =>
     .join('')
     .toUpperCase() || 'VF';
 
-// Who issued a product: the company's logo and name, and the shortest way to reach it. It says "issued by", never
-// "verified": the name is what the company wrote about itself. The same badge is the buyer's card and the company's
-// own preview of it.
+// Who issued a product: the company's logo and name, and the shortest way to reach it. "Verified" appears only when
+// Verifire checked the company by hand (see verification.ts); otherwise the name is what the company wrote about itself,
+// and the badge says so. The same badge is the buyer's card and the company's own preview of it.
 export function IssuerBadge({ issuer, labels, subject }: IssuerBadgeProps) {
   const mail = issuer.email ? `mailto:${issuer.email}${subject ? `?subject=${encodeURIComponent(subject)}` : ''}` : null;
   const tel = issuer.phone ? `tel:${issuer.phone.replace(/[^+\d]/g, '')}` : null;
@@ -41,7 +43,13 @@ export function IssuerBadge({ issuer, labels, subject }: IssuerBadgeProps) {
       </span>
       <span className="issuer-text">
         <small>{labels.issuedBy}</small>
-        <strong>{issuer.name}</strong>
+        <strong>
+          {issuer.name}
+          {issuer.verified && labels.verified && <i className="fa-solid fa-circle-check issuer-check" title={labels.verified} role="img" aria-label={labels.verified} />}
+        </strong>
+        {issuer.verified !== undefined && (issuer.verified ? labels.verified : labels.unverified) && (
+          <em className={`issuer-trust${issuer.verified ? ' is-verified' : ''}`}>{issuer.verified ? labels.verified : labels.unverified}</em>
+        )}
       </span>
       {(mail || tel) && (
         <span className="issuer-actions">

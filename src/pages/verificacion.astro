@@ -1,0 +1,37 @@
+---
+// The review of companies, for the administrators of Verifire (ADMIN_WALLETS). Anyone can open the page; only a signature
+// from an administrator wallet gets the list from the server.
+import StandaloneHeader from '@/components/layout/StandaloneHeader.astro';
+import { VerificationAdmin } from '@/components/company/VerificationAdmin';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { publicConfig } from '@/lib/server/config';
+---
+
+<BaseLayout
+  title="Verifire | Verificación de empresas"
+  description="Revisión y aprobación de las empresas que emiten productos en Verifire."
+  bodyClass="verify-page"
+  session="protected"
+>
+  <main class="verify-shell vadmin-shell">
+    <StandaloneHeader brandHref="/app">
+      <a class="network-status" href="/company"><span></span>Panel de empresa</a>
+    </StandaloneHeader>
+
+    <section class="verify-card" aria-labelledby="vadmin-title">
+      <span class="eyebrow">Administración</span>
+      <h1 id="vadmin-title">Verificación de empresas</h1>
+      <p class="verify-message">
+        Una empresa verificada puede decir "original" en lo que escanea el comprador. Revisá su razón social, su CUIT y su sitio antes de aprobarla:
+        la aprobación vale mientras la empresa siga mostrando el nombre que verificaste.
+      </p>
+      <VerificationAdmin client:load cavosAppId={publicConfig.cavosAppId} />
+    </section>
+  </main>
+
+  <script>
+    import { guardSession } from '@/lib/client/session';
+
+    guardSession();
+  </script>
+</BaseLayout>

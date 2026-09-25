@@ -5,6 +5,7 @@ import { addPurchaseIds, forgottenPurchaseIds, PURCHASES_CHANGED_EVENT, savedPur
 import { userSession } from '@/lib/client/session';
 import { companyMemberships } from '@/lib/client/workspace';
 import { resolveWalletAddress } from '@/lib/client/wallet';
+import { writeAdmin, writeVerification } from '@/lib/client/verification';
 import { syncWorkspace } from '@/lib/client/workspace-sync';
 import { errorMessage } from '@/lib/errors';
 
@@ -43,6 +44,9 @@ export function WorkspaceSync({ cavosAppId }: { cavosAppId: string }) {
         });
         addPurchaseIds(remote.purchaseIds);
         applyAccountData(remote.data);
+        // The verification is Verifire's decision: this browser only shows it.
+        writeVerification(remote.verification);
+        writeAdmin(remote.admin);
         // A company account stays a company account on every device. A member of another company's team is not made
         // one: earlier versions sent "business" for members too, and the server may still hold that.
         const member = !company && Boolean(account && companyMemberships(account.email).length);

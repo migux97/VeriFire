@@ -12,6 +12,7 @@ import { activationKeyFor, explorerTxUrl, isTxHash } from './stellar';
 import { hashSecret, saveState, store, type Product, type ProductFields, type StoredEvent } from './store';
 import { issuerOf, publishedIssuerOf } from './brands';
 import { photoOfBatch } from './photos';
+import { showcaseBlockOf } from './showcase-rules';
 import { DEFAULT_WARRANTY_MONTHS, supportOf } from './support';
 
 const HOUR_MS = 60 * 60 * 1000;
@@ -191,7 +192,8 @@ export const warrantyView = (product: Product, baseUrl: string): Warranty => ({
   // The same company as the buyer sees it: its name and, when it published them, its logo and how to reach it.
   issuer: issuerOf(product, supportOf(product)),
   showcase: Boolean(product.showcase),
-  canShowcase: photoOfBatch(product.batchId) !== null
+  canShowcase: showcaseBlockOf(product.batchId) === null,
+  showcaseBlocked: showcaseBlockOf(product.batchId)
 });
 
 export const mintedProductView = (product: Product, baseUrl: string): MintedProduct => ({

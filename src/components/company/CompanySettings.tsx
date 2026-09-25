@@ -6,6 +6,7 @@ import { defaultPrefs, notify, readPrefs, savePrefs, type LeadHours, type Notifi
 import { motionEnabled, setMotionEnabled } from '@/lib/client/theme';
 import type { Locale } from '@/lib/locale';
 import { CompanyBrandSettings } from './CompanyBrandSettings';
+import { CompanyVerification } from './CompanyVerification';
 import { CompanyProfileSettings } from './CompanyProfileSettings';
 import { CompanyRoleSettings } from './CompanyRoleSettings';
 import { CompanyWarrantySettings } from './CompanyWarrantySettings';
@@ -94,6 +95,7 @@ function Settings({ cavosAppId }: { cavosAppId: string }) {
     <div className="settings-grid">
       <CompanyProfileSettings cavosAppId={cavosAppId} />
       <CompanyBrandSettings cavosAppId={cavosAppId} />
+      <CompanyVerification cavosAppId={cavosAppId} />
 
       <CompanyWarrantySettings cavosAppId={cavosAppId} />
 

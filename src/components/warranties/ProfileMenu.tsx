@@ -5,6 +5,7 @@ import { leaveSession } from '@/lib/client/session';
 import { currentTheme, setTheme, THEME_EVENT } from '@/lib/client/theme';
 import { CREATE_COMPANY_PATH, hasOwnCompany } from '@/lib/client/company-signup';
 import { companyMemberships } from '@/lib/client/workspace';
+import { isAdminAccount, VERIFICATION_EVENT } from '@/lib/client/verification';
 import { getLandingMessages, type LandingMessages } from '@/i18n/landing';
 
 export function ProfileMenu({ labels = getLandingMessages().profile }: { labels?: LandingMessages['profile'] } = {}) {
@@ -12,6 +13,7 @@ export function ProfileMenu({ labels = getLandingMessages().profile }: { labels?
   const [user, setUser] = useState<StoredUser | null>(null);
   const [companyAccess, setCompanyAccess] = useState(false);
   const [dark, setDark] = useState(false);
+  const [admin, setAdmin] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
@@ -20,12 +22,17 @@ export function ProfileMenu({ labels = getLandingMessages().profile }: { labels?
       const currentUser = storedUser();
       setUser(currentUser);
       setCompanyAccess(Boolean(currentUser && (currentUser.accountType === 'business' || companyMemberships(currentUser.email).length)));
+      setAdmin(Boolean(currentUser) && isAdminAccount());
     };
     read();
     setDark(currentTheme() === 'dark');
     // The company side of the account can arrive from the server a moment after the page opens (WorkspaceSync).
     window.addEventListener(ACCOUNT_UPDATED_EVENT, read);
-    return () => window.removeEventListener(ACCOUNT_UPDATED_EVENT, read);
+    window.addEventListener(VERIFICATION_EVENT, read);
+    return () => {
+      window.removeEventListener(ACCOUNT_UPDATED_EVENT, read);
+      window.removeEventListener(VERIFICATION_EVENT, read);
+    };
   }, []);
 
   // The header has a switch too: both show the same state.
@@ -87,6 +94,9 @@ export function ProfileMenu({ labels = getLandingMessages().profile }: { labels?
         </button>
         {companyAccess && <button className="profile-action" type="button" onClick={() => { window.location.href = '/company'; }}>
           <Icon name="fa-solid fa-building" /> {labels.company}
+        </button>}
+        {admin && <button className="profile-action" type="button" onClick={() => { window.location.href = '/verificacion'; }}>
+          <Icon name="fa-solid fa-shield-halved" /> Verificar empresas
         </button>}
         {user && !hasOwnCompany(user) && <button className="profile-action" type="button" onClick={() => { window.location.href = CREATE_COMPANY_PATH; }}>
           <Icon name="fa-solid fa-plus" /> {labels.createCompany}

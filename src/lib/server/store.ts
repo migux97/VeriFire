@@ -101,6 +101,23 @@ export interface Brand {
   updatedAt: string;
 }
 
+// Whether Verifire confirmed who a company is (see verification.ts). It is decided by hand by an administrator, never by
+// the company: `name` is the trade name that was checked, and the verification only counts while the company shows that
+// same name to its buyers.
+export interface Verification {
+  status: 'pending' | 'verified' | 'rejected';
+  // When the company asked, and what it wrote for whoever reviews it.
+  requestedAt?: string;
+  message?: string;
+  // The decision: when, by which administrator wallet, and for what name and site.
+  decidedAt?: string;
+  by?: string;
+  name?: string;
+  domain?: string;
+  // Why it was rejected: the company reads it.
+  note?: string;
+}
+
 // What a company account keeps beside its wallet, so another browser finds the same panel (see workspaces.ts).
 export interface Workspace {
   owner: string;
@@ -111,6 +128,7 @@ export interface Workspace {
   // the newest copy wins over the one another browser sends. The server never looks inside a value.
   data?: Record<string, { value: unknown; updatedAt: string }>;
   brand?: Brand;
+  verification?: Verification;
   updatedAt: string;
 }
 

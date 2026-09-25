@@ -99,7 +99,7 @@ export function WarrantyCard({ warranty, transferLink, busy, status, onOfferTran
       {warranty.issuer && (
         <IssuerBadge
           issuer={warranty.issuer}
-          labels={{ issuedBy: card.issuedBy, write: card.writeIssuer, call: card.callIssuer }}
+          labels={{ issuedBy: card.issuedBy, write: card.writeIssuer, call: card.callIssuer, verified: card.issuerVerified, unverified: card.issuerUnverified }}
           subject={fillIn(labels.support.subject, { model: warranty.model, token: warranty.token })}
         />
       )}
@@ -113,7 +113,7 @@ export function WarrantyCard({ warranty, transferLink, busy, status, onOfferTran
             {warranty.showcase ? card.showcase.hide : card.showcase.show}
           </button>
         ) : (
-          <small className="field-hint">{card.showcase.noPhoto}</small>
+          <small className="field-hint">{warranty.showcaseBlocked === 'unverified' ? card.showcase.unverified : card.showcase.noPhoto}</small>
         )}
       </div>
       <dl className="warranty-meta">

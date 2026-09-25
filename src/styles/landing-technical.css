@@ -189,3 +189,4 @@
 .lp-live-art-brand { position: absolute; top: 16px; left: 16px; z-index: 1; display: inline-flex; align-items: center; gap: 10px; max-width: calc(100% - 32px); padding: 6px 14px 6px 6px; border: 1px solid #e2e2e2; border-radius: 999px; background: #fff; box-shadow: 0 6px 18px rgba(0, 0, 0, .08); color: #1b1b1b; }
 .lp-live-art-brand strong { overflow: hidden; font-size: .875rem; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
 .lp-live-art-brand .lp-live-issuer-mark { width: 36px; height: 36px; border: 0; border-radius: 50%; }
+.lp-live-check { margin-left: 6px; color: #4fd18b; font-size: .8em; }

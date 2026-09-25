@@ -6,6 +6,7 @@ import { HttpError } from './errors';
 import { publishedIssuerOf } from './brands';
 import { isCurrentOnChain, warrantyView } from './products';
 import { photoOfBatch } from './photos';
+import { showcaseBlockOf } from './showcase-rules';
 import { saveState, store } from './store';
 import { isStellarAddress } from '../validation';
 
@@ -17,7 +18,8 @@ export const showcaseItems = (limit = SHOWCASE_LIMIT): ShowcaseItem[] =>
       // Checked first: looking the photo up walks the purchases, and only the products shown need it.
       if (!product.claimed || !product.showcase || !product.claimedAt) return [];
       const photoUrl = photoOfBatch(product.batchId);
-      if (!photoUrl) return [];
+      // Only products of verified companies: a product of an unverified one must not be advertised as verified.
+      if (!photoUrl || showcaseBlockOf(product.batchId)) return [];
       const issuer = publishedIssuerOf(product.batchId);
       return [{
         token: product.token,
@@ -38,7 +40,9 @@ export const setShowcase = (owner: string, token: unknown, visible: unknown, bas
   const product = typeof token === 'string' ? store.products.get(token.trim().toUpperCase()) : undefined;
   if (!product?.claimed || !isStellarAddress(owner) || product.owner !== owner) throw new HttpError(404, 'No encontramos ese producto en tu cuenta.');
   if (typeof visible !== 'boolean') throw new HttpError(400, 'Indicá si querés mostrarlo o no.');
-  if (visible && !photoOfBatch(product.batchId)) throw new HttpError(409, 'Este producto no tiene foto: la empresa que lo emitió todavía no la cargó.');
+  const blocked = visible ? showcaseBlockOf(product.batchId) : null;
+  if (blocked === 'photo') throw new HttpError(409, 'Este producto no tiene foto: la empresa que lo emitió todavía no la cargó.');
+  if (blocked === 'unverified') throw new HttpError(409, 'La empresa que emitió este producto todavía no está verificada por Verifire, así que no puede aparecer en el inicio.');
   const before = product.showcase;
   if (visible) product.showcase ??= { at: new Date().toISOString() };
   else delete product.showcase;

@@ -8,6 +8,7 @@ import { buildBrand } from './brands';
 import { HttpError } from './errors';
 import { withoutSampleEntries } from '../sample-data';
 import { saveState, store, type Workspace } from './store';
+import { verificationView } from './verification';
 
 const MAX_PURCHASES = 500;
 // A team, an agenda and a logo fit well inside this; the body of a request is capped at 64 KiB anyway.
@@ -59,7 +60,9 @@ export const workspaceView = (owner: string) => {
     companyName: workspace?.companyName ?? null,
     data: workspace?.data ?? {},
     // Only what is needed to build the address of the logo; the brand itself is read by whoever shows it.
-    brand: workspace?.brand ? { slug: workspace.brand.slug, hasLogo: Boolean(workspace.brand.logo) } : null
+    brand: workspace?.brand ? { slug: workspace.brand.slug, hasLogo: Boolean(workspace.brand.logo) } : null,
+    // Where its verification stands. It is decided here, never by the browser: nothing a company sends changes it.
+    verification: verificationView(workspace)
   };
 };
 
@@ -135,6 +138,8 @@ export const mergeWorkspace = (owner: string, changes: {
     ...(companyName ? { companyName } : {}),
     ...(data && Object.keys(data).length ? { data } : {}),
     ...(brand ? { brand } : {}),
+    // Decided by an administrator, never by the browser: whatever the company saves, it stays as it was.
+    ...(current?.verification ? { verification: current.verification } : {}),
     updatedAt: new Date().toISOString()
   });
   saveState();

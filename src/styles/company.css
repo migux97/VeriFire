@@ -3509,3 +3509,53 @@ html[data-motion='off'] .lp-language-menu[open] > ul {
   transition: none;
   animation: none;
 }
+
+/* Verificación de la empresa (Configuración). */
+.company-verification .verify-status {
+  margin-top: 4px;
+}
+
+.verify-status-text {
+  margin: 10px 0 0;
+  color: var(--vf-text);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.verify-request {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--vf-line);
+}
+
+.verify-checklist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.verify-checklist li {
+  color: var(--vf-muted);
+  font-size: 0.875rem;
+}
+
+.verify-checklist li.is-done {
+  color: var(--vf-success);
+  font-weight: 700;
+}
+
+.verify-request-message textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1.5px solid var(--vf-line-strong);
+  border-radius: 6px;
+  background: var(--vf-paper);
+  color: var(--vf-ink);
+  font: 500 0.9375rem var(--vf-font);
+  resize: vertical;
+}
