@@ -3,6 +3,7 @@
 import type { CompanyForReview } from '../types';
 import { isStellarAddress } from '../validation';
 import { config } from './config';
+import { publishIssuerVerification } from './endorsements';
 import { HttpError } from './errors';
 import { saveState, store, type Verification, type Workspace } from './store';
 import { sameName, verificationView } from './verification';
@@ -145,6 +146,7 @@ export const decideVerification = (admin: string, target: unknown, action: 'appr
       name,
       ...(domain ? { domain } : {})
     });
+    publishIssuerVerification(owner, name);
   } else {
     const note = cleanText(input.note, NOTE_LIMIT);
     if (!note) throw new HttpError(400, 'Escribí el motivo: la empresa lo lee para corregirlo.');
@@ -155,6 +157,8 @@ export const decideVerification = (admin: string, target: unknown, action: 'appr
       by: admin,
       note
     });
+    // Only a company that was verified has something to withdraw on-chain.
+    if (previous?.status === 'verified') publishIssuerVerification(owner, null);
   }
   return verificationView(workspace);
 };

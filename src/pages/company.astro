@@ -147,7 +147,7 @@ const views = t.views;
               </a>
             </div>
             <div class="company-card company-batches">
-              <BatchList client:load locale={locale} pageSize={6} layout="grid" />
+              <BatchList client:load locale={locale} pageSize={6} layout="grid" cavosAppId={publicConfig.cavosAppId} />
             </div>
           </div>
           <div class="company-subview" data-catalog-view="products" hidden>

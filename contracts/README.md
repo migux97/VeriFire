@@ -10,6 +10,9 @@ Contrato Soroban para registrar productos en Stellar testnet.
 - `get_issuer(token_id)`: la wallet de la empresa que co-firmó el producto, o `None` si lo registró VeriFire solo (`mint_product`).
 - `set_issuer_verification(issuer, name)`: solo admin. Deja escrito on-chain que la wallet `issuer` pertenece a la empresa con ese nombre comercial; `None` lo retira.
 - `issuer_verification(issuer)`: el nombre verificado de una wallet emisora, o `None` si no está verificada.
+- `endorse_batch(issuer, root)`: la empresa firma con su wallet la raíz Merkle de un lote entero (una sola firma para todos sus productos). Exige la firma de `issuer`; una raíz ya firmada por otra empresa no se puede tomar.
+- `batch_issuer(root)`: la wallet que firmó esa raíz, o `None`.
+- `link_issuer(token_id, root, index, proof)`: cualquiera puede llamarla. Recalcula la hoja del producto con lo que el contrato guarda de él y la comprueba contra la raíz firmada; si coincide, guarda la empresa como emisora del producto (`get_issuer`).
 - `get_product(token_id)`: consulta los datos públicos, propietario y estado.
 - `get_product_by_code(public_code)`: busca un producto por su QR público.
 - `activation_message(token_id, claimant)`: devuelve los bytes exactos que hay que firmar para activar. Se puede obtener simulando la llamada.
@@ -22,7 +25,7 @@ Contrato Soroban para registrar productos en Stellar testnet.
 - `import_claimed_product(...)`: solo admin. Registra un producto ya activado, con su dueño, al pasar los productos a un contrato nuevo.
 - `upgrade(new_wasm_hash)`: solo admin. Reemplaza el código del contrato sin cambiar su dirección ni sus datos. Se usa con `npm run contract:upgrade` después de compilar.
 
-La activación y la transferencia emiten los eventos `activated` y `transfer`; `mint_product_for` emite `issued` y `set_issuer_verification` emite `verified`.
+La activación y la transferencia emiten los eventos `activated` y `transfer`; `mint_product_for` y `link_issuer` emiten `issued`, `endorse_batch` emite `endorsed` y `set_issuer_verification` emite `verified`.
 
 ## Quién emitió el producto
 
@@ -30,6 +33,14 @@ Con `mint_product` solo firma VeriFire, así que quien verifica un producto tien
 
 1. `get_issuer(token_id)`: qué wallet autorizó el producto. Lo prueba la firma de la empresa, no la palabra de VeriFire.
 2. `issuer_verification(issuer)`: qué nombre comercial verificó VeriFire para esa wallet. Esta es la única parte que sigue siendo una afirmación de VeriFire, y queda pública y con fecha en el historial de eventos.
+
+### Firma por lote
+
+La wallet Cavos de la empresa solo puede firmar transacciones en las que ella es la cuenta de origen, y firmar una por producto serían cientos de firmas por lote. Por eso la empresa firma una sola vez `endorse_batch` con la raíz del lote, y después el servidor llama a `link_issuer` por cada producto con su prueba (`src/lib/server/endorsements.ts`). La prueba no le da poder al servidor: el contrato arma la hoja con los datos del producto tal como están guardados, así que solo puede vincular los productos que la empresa firmó.
+
+- Hoja: `sha256(0x00 || xdr(public_code) || xdr(model) || xdr(lot) || xdr(destination) || activation_key)`, con cada texto como `ScVal` string en XDR.
+- Nodo: `sha256(0x01 || izquierda || derecha)`. Las hojas se completan con ceros de 32 bytes hasta una potencia de dos, y el bit `i` del índice dice de qué lado está el nodo en cada nivel. Las pruebas tienen como máximo 16 niveles.
+- El servidor calcula la raíz recién cuando todos los productos del lote están registrados, porque un código puede cambiar al registrarse si ya estaba tomado.
 
 Los datos nuevos se guardan en claves aparte, así que el `Product` no cambia de forma: los productos ya registrados y el servidor actual siguen funcionando igual después de un `upgrade`.
 
@@ -102,6 +113,7 @@ El comprador solo ve el certificado de su producto: la transacción de activaci�
 ## Cómo lo usa el servidor
 
 - **Emisión:** cuando Cosmos Pay confirma el pago de un lote, el servidor (`src/lib/server/purchases.ts`) llama a `mint_product` por cada producto desde la cuenta admin (`src/lib/server/stellar.ts`).
+- **Firma del lote:** desde el panel, la empresa firma el lote con su wallet (`endorse_batch`) y el servidor vincula cada producto (`link_issuer`). `/verify` muestra la wallet que firmó, leída del contrato. Hasta que el contrato desplegado tenga estas funciones (`npm run contract:upgrade`), el panel no ofrece firmar.
 - **Activación:** el navegador deriva la clave de activación del QR secreto, pide `activation_message`, lo firma y envía solo la clave pública y la firma. El servidor arma la transacción `activate_product`; la wallet Cavos del comprador firma únicamente su autorización (`require_auth`). La cuenta admin la envía y paga la comisión, así que el comprador no necesita XLM.
 - **Comprobación:** el servidor guarda la garantía recién cuando `get_product` muestra al comprador como dueño, con el hash de la transacción como certificado público.
 - **Cambio de dueño:** desde Mis garantías el dueño abre un link (`/app#t=<secreto>`). El secreto va después del `#`, así que nunca llega al servidor. Quien lo abre deriva la clave, firma `transfer_message` y su wallet Cavos autoriza `accept_transfer`. Igual que en la activación, la cuenta emisora paga la comisión (`src/lib/server/transfers.ts`).
