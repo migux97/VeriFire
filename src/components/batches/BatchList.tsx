@@ -234,7 +234,7 @@ function Batches({ pageSize, layout, cavosAppId }: { pageSize: number; layout: '
     if (!cavosAppId) return;
     for (const purchaseId of purchaseIds) {
       const summary = summaries[purchaseId];
-      if (isSummary(summary) && summary.batchId) signBatchInBackground(cavosAppId, purchaseId);
+      if (isSummary(summary) && summary.batchId) signBatchInBackground(cavosAppId, purchaseId, () => void refreshSummary(purchaseId));
     }
   }, [cavosAppId, purchaseIds, summaries]);
 

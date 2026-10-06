@@ -588,6 +588,8 @@ const es = {
       hidePayment: 'Ocultar QR de pago',
       showPayment: 'Ver QR de pago',
       ledger: 'Ver pago de emisión en Stellar',
+      // The company's wallet signed the batch on its own (see signBatchInBackground).
+      signed: 'Firmado en Stellar por tu empresa',
       photoAlt: (model: string) => `Foto de ${model}`
     },
     labels: {
@@ -1306,6 +1308,7 @@ const en: CompanyMessages = {
       hidePayment: 'Hide payment QR',
       showPayment: 'See payment QR',
       ledger: 'See the issuance payment on Stellar',
+      signed: 'Signed on Stellar by your company',
       photoAlt: (model: string) => `Photo of ${model}`
     },
     labels: {

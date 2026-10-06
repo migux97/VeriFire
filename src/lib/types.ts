@@ -215,6 +215,8 @@ export interface PurchaseSummary {
   // network: where the payment is made, for paying from a browser wallet (a dv_ key pays on testnet).
   payment: { qr: string | null; uri: string | null; network?: 'public' | 'testnet' } | null;
   issuanceTxUrl: string | null;
+  // The company's signature of the batch on Stellar, once its wallet signed it (see endorsements.ts).
+  signatureTxUrl: string | null;
   registeredOnChain: number;
   pendingOnChain: number;
   claimed: number;
