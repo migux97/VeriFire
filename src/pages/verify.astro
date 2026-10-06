@@ -9,6 +9,7 @@ import { ProductHistory } from '@/components/verification/ProductHistory';
 import { VerifyScanner } from '@/components/verification/VerifyScanner';
 import { getVerifyMessages } from '@/i18n/verify';
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import { shortAddress } from '@/lib/format';
 import { pageLocale } from '@/lib/server/page-locale';
 import { findProduct, publicProductView, recordVerification } from '@/lib/server/products';
 import { withinBudget } from '@/lib/server/rate-limit';
@@ -68,6 +69,19 @@ if (product) {
       )}
       {product?.photoUrl && <img class="verify-photo" src={product.photoUrl} alt={copy.photoAlt.replace('{model}', product.model)} loading="lazy" decoding="async" />}
       {product?.issuer && <IssuerBadge issuer={product.issuer} labels={{ issuedBy: copy.issuer.issuedBy, write: copy.issuer.write, call: copy.issuer.call, verified: copy.issuer.verified, unverified: copy.issuer.unverified }} />}
+      {
+        product?.signedBy && (
+          <p class="verify-signed" role="note">
+            <i class="fa-solid fa-signature" aria-hidden="true"></i>
+            <span>
+              {copy.signedBy.text.replace('{wallet}', shortAddress(product.signedBy.wallet))}{' '}
+              <a href={product.signedBy.walletUrl} target="_blank" rel="noopener noreferrer">{copy.signedBy.wallet}</a>
+              {' · '}
+              <a href={product.signedBy.signatureUrl} target="_blank" rel="noopener noreferrer">{copy.signedBy.signature}</a>
+            </span>
+          </p>
+        )
+      }
       {product && <ProductDetails product={product} locale={locale} />}
       {
         product && product.history.length > 0 && (

@@ -2,7 +2,7 @@
 
 use soroban_sdk::{
     contract, contractimpl, contracttype, symbol_short, xdr::ToXdr, Address, Bytes, BytesN, Env,
-    String,
+    String, Vec,
 };
 
 const DAY_IN_LEDGERS: u32 = 17_280;
@@ -20,6 +20,9 @@ const TRANSFER_DOMAIN: &[u8] = b"verifire-transfer-v1";
 /// A transfer link can be accepted for this long after the owner opens it. Must match TRANSFER_LINK_MS in
 /// src/lib/server/products.ts.
 pub const TRANSFER_LINK_SECONDS: u64 = 15 * 60;
+
+/// Deepest Merkle proof `link_issuer` accepts: 2^16 products in one batch, far more than a batch can hold.
+const MAX_PROOF_DEPTH: u32 = 16;
 
 #[derive(Clone)]
 #[contracttype]
@@ -53,6 +56,8 @@ enum DataKey {
     Issuer(u64),
     /// Trade name VeriFire checked for an issuer wallet. Absent while the issuer is not verified.
     VerifiedIssuer(Address),
+    /// Company wallet that signed a batch, by the Merkle root of its products (see `endorse_batch`).
+    BatchIssuer(BytesN<32>),
 }
 
 #[contract]
@@ -83,6 +88,27 @@ fn save_product(env: &Env, product: &Product) {
         storage.extend_ttl(&issuer, TTL_THRESHOLD, TTL_EXTEND_TO);
     }
     env.storage().instance().extend_ttl(TTL_THRESHOLD, TTL_EXTEND_TO);
+}
+
+/// Leaf of a product in the Merkle tree of its batch: everything the public QR page shows about it, plus the key of
+/// its sealed QR. Off-chain it is `sha256(0x00 || xdr(code) || xdr(model) || xdr(lot) || xdr(destination) || key)`,
+/// with each text as the XDR of a Soroban string.
+fn product_leaf(env: &Env, product: &Product) -> BytesN<32> {
+    let mut data = Bytes::from_array(env, &[0u8]);
+    data.append(&product.public_code.clone().to_xdr(env));
+    data.append(&product.model.clone().to_xdr(env));
+    data.append(&product.lot.clone().to_xdr(env));
+    data.append(&product.destination.clone().to_xdr(env));
+    data.append(&Bytes::from(product.activation_key.clone()));
+    env.crypto().sha256(&data).into()
+}
+
+/// Inner node of the batch tree: `sha256(0x01 || left || right)`. The prefixes keep leaves and nodes apart.
+fn merkle_node(env: &Env, left: &BytesN<32>, right: &BytesN<32>) -> BytesN<32> {
+    let mut data = Bytes::from_array(env, &[1u8]);
+    data.append(&Bytes::from(left.clone()));
+    data.append(&Bytes::from(right.clone()));
+    env.crypto().sha256(&data).into()
 }
 
 /// The product, checking that `owner` holds it and authorized this call.
@@ -148,6 +174,58 @@ impl VerifireProduct {
     /// The company wallet that co-signed the product, or None for products registered by VeriFire alone.
     pub fn get_issuer(env: Env, token_id: u64) -> Option<Address> {
         env.storage().persistent().get(&DataKey::Issuer(token_id))
+    }
+
+    /// A company signs a whole batch at once: `root` is the Merkle root of its products (see `product_leaf`). After
+    /// this, `link_issuer` attaches the company to each product of the batch, whoever sends it, so the company signs
+    /// one transaction per batch instead of one per product. The same root cannot be claimed by another wallet.
+    pub fn endorse_batch(env: Env, issuer: Address, root: BytesN<32>) {
+        issuer.require_auth();
+        let key = DataKey::BatchIssuer(root.clone());
+        let current: Option<Address> = env.storage().persistent().get(&key);
+        if current.is_some_and(|current| current != issuer) {
+            panic!("batch already endorsed by another issuer");
+        }
+        save_persistent(&env, &key, &issuer);
+        env.events().publish((symbol_short!("endorsed"), issuer), root);
+    }
+
+    /// The company wallet that signed the batch with this root, if any.
+    pub fn batch_issuer(env: Env, root: BytesN<32>) -> Option<Address> {
+        env.storage().persistent().get(&DataKey::BatchIssuer(root))
+    }
+
+    /// Attaches the company that signed a batch to one of its products. `proof` is the path from the product's leaf
+    /// (at position `index`) to the batch root. It needs no signature: the proof is checked against the product as the
+    /// contract stores it, so it only ever records what the company signed.
+    pub fn link_issuer(env: Env, token_id: u64, root: BytesN<32>, index: u32, proof: Vec<BytesN<32>>) {
+        if proof.len() > MAX_PROOF_DEPTH {
+            panic!("proof is too long");
+        }
+        let issuer: Address = env
+            .storage()
+            .persistent()
+            .get(&DataKey::BatchIssuer(root.clone()))
+            .unwrap_or_else(|| panic!("batch is not endorsed"));
+        if env.storage().persistent().has(&DataKey::Issuer(token_id)) {
+            panic!("product already has an issuer");
+        }
+        let product = Self::get_product(env.clone(), token_id);
+        let mut node = product_leaf(&env, &product);
+        let mut position = index;
+        for sibling in proof.iter() {
+            node = if position & 1 == 0 {
+                merkle_node(&env, &node, &sibling)
+            } else {
+                merkle_node(&env, &sibling, &node)
+            };
+            position >>= 1;
+        }
+        if position != 0 || node != root {
+            panic!("product is not in the endorsed batch");
+        }
+        save_persistent(&env, &DataKey::Issuer(token_id), &issuer);
+        env.events().publish((symbol_short!("issued"), token_id), issuer);
     }
 
     /// VeriFire's statement that `issuer` belongs to the company with this trade name. `None` withdraws it.
@@ -750,5 +828,124 @@ mod test {
             .try_set_issuer_verification(&issuer, &Some(String::from_str(&env, "Andes Audio")))
             .is_err());
         assert_eq!(client.issuer_verification(&issuer), None);
+    }
+
+    /// Mints `codes` as one batch and returns their token ids, the root of the batch and the proof of each one,
+    /// building the tree the way the server does: leaves padded with zeros to a power of two.
+    fn batch(env: &Env, client: &VerifireProductClient<'_>, codes: &[&str]) -> (Vec<u64>, BytesN<32>, Vec<Vec<BytesN<32>>>) {
+        let mut tokens = Vec::new();
+        let mut level = Vec::new();
+        for code in codes {
+            let token_id = mint(env, client, code, code.as_bytes());
+            level.push(product_leaf(env, &client.get_product(&token_id)));
+            tokens.push(token_id);
+        }
+        let mut size = 1;
+        while size < level.len() {
+            size *= 2;
+        }
+        while level.len() < size {
+            level.push(BytesN::from_array(env, &[0u8; 32]));
+        }
+        let mut proofs: Vec<Vec<BytesN<32>>> = codes.iter().map(|_| Vec::new()).collect();
+        let mut positions: Vec<usize> = (0..codes.len()).collect();
+        while level.len() > 1 {
+            for (proof, position) in proofs.iter_mut().zip(positions.iter_mut()) {
+                proof.push(level[*position ^ 1].clone());
+                *position /= 2;
+            }
+            level = level.chunks(2).map(|pair| merkle_node(env, &pair[0], &pair[1])).collect();
+        }
+        (tokens, level[0].clone(), proofs)
+    }
+
+    fn proof_vec(env: &Env, proof: &[BytesN<32>]) -> soroban_sdk::Vec<BytesN<32>> {
+        let mut list = soroban_sdk::Vec::new(env);
+        for node in proof {
+            list.push_back(node.clone());
+        }
+        list
+    }
+
+    #[test]
+    fn a_signed_batch_names_its_company_on_every_product() {
+        let env = Env::default();
+        let client = setup(&env);
+        let issuer = Address::generate(&env);
+        let (tokens, root, proofs) = batch(&env, &client, &["VF-050", "VF-051", "VF-052"]);
+
+        client.endorse_batch(&issuer, &root);
+        assert!(env.auths().iter().any(|(address, _)| *address == issuer));
+        assert_eq!(client.batch_issuer(&root), Some(issuer.clone()));
+        for (index, (token_id, proof)) in tokens.iter().zip(proofs.iter()).enumerate() {
+            client.link_issuer(token_id, &root, &(index as u32), &proof_vec(&env, proof));
+            assert_eq!(client.get_issuer(token_id), Some(issuer.clone()));
+        }
+    }
+
+    #[test]
+    fn a_batch_needs_the_company_signature() {
+        let env = Env::default();
+        let client = setup(&env);
+        let issuer = Address::generate(&env);
+        let (_, root, _) = batch(&env, &client, &["VF-053"]);
+        env.set_auths(&[]);
+        assert!(client.try_endorse_batch(&issuer, &root).is_err());
+        assert_eq!(client.batch_issuer(&root), None);
+    }
+
+    #[test]
+    fn another_company_cannot_take_a_signed_batch() {
+        let env = Env::default();
+        let client = setup(&env);
+        let issuer = Address::generate(&env);
+        let other = Address::generate(&env);
+        let (_, root, _) = batch(&env, &client, &["VF-054", "VF-055"]);
+
+        client.endorse_batch(&issuer, &root);
+        assert!(client.try_endorse_batch(&other, &root).is_err());
+        assert_eq!(client.batch_issuer(&root), Some(issuer));
+    }
+
+    #[test]
+    fn only_products_of_the_signed_batch_are_linked() {
+        let env = Env::default();
+        let client = setup(&env);
+        let issuer = Address::generate(&env);
+        let (tokens, root, proofs) = batch(&env, &client, &["VF-056", "VF-057"]);
+        let outsider = mint(&env, &client, "VF-058", b"VF-058");
+
+        // Not endorsed yet.
+        assert!(client.try_link_issuer(&tokens[0], &root, &0, &proof_vec(&env, &proofs[0])).is_err());
+        client.endorse_batch(&issuer, &root);
+        // A product from outside the batch, a proof for another position, and a product linked twice.
+        assert!(client.try_link_issuer(&outsider, &root, &0, &proof_vec(&env, &proofs[0])).is_err());
+        assert!(client.try_link_issuer(&tokens[0], &root, &1, &proof_vec(&env, &proofs[0])).is_err());
+        assert!(client.try_link_issuer(&tokens[0], &root, &2, &proof_vec(&env, &proofs[0])).is_err());
+        client.link_issuer(&tokens[0], &root, &0, &proof_vec(&env, &proofs[0]));
+        assert!(client.try_link_issuer(&tokens[0], &root, &0, &proof_vec(&env, &proofs[0])).is_err());
+        assert_eq!(client.get_issuer(&outsider), None);
+    }
+
+    /// The server builds the same leaves (src/lib/server/batch-tree.ts): this value is checked on both sides.
+    #[test]
+    fn leaf_matches_the_server() {
+        let env = Env::default();
+        let product = Product {
+            token_id: 1,
+            public_code: String::from_str(&env, "VF-050"),
+            model: String::from_str(&env, "Smartwatch X9"),
+            lot: String::from_str(&env, "1043"),
+            destination: String::from_str(&env, "AR"),
+            activation_key: BytesN::from_array(&env, &[7u8; 32]),
+            owner: None,
+            claimed: false,
+            transfer_key: None,
+        };
+        let expected: [u8; 32] = [
+            0xc8, 0x26, 0xd0, 0xef, 0xbd, 0xd7, 0x68, 0x1d, 0x65, 0x2a, 0x27, 0x9d, 0x24, 0x0b, 0x94, 0x50, 0xc5, 0x85,
+            0xf3, 0xc8, 0x46, 0x30, 0x81, 0xdb, 0x85, 0xdb, 0xb0, 0x80, 0x07, 0x51, 0xec, 0x1f,
+        ];
+        assert_eq!(product_leaf(&env, &product), BytesN::from_array(&env, &expected));
     }
 }

@@ -77,6 +77,8 @@ export interface PublicProduct {
   lastTransfer: { to: string; at: string } | null;
   // The company's published brand, when it published one. Nothing private: only what it chose to show to everyone.
   issuer: Issuer | null;
+  // The company wallet that signed the product's batch on Stellar, once the contract names it (see endorsements.ts).
+  signedBy: { wallet: string; walletUrl: string; signatureUrl: string; linkUrl: string | null } | null;
   // What the batch looks like, when its company added a photo.
   photoUrl: string | null;
 }
@@ -188,6 +190,14 @@ export interface CompanyBatch extends BatchBase {
   tokens: ProductLabel[];
   payment: { amount: string; asset: 'XLM'; pricePerToken: string };
 }
+
+// Where the company's signature of a batch on Stellar stands (see endorsements.ts). `unavailable`: the contract or
+// the batch cannot take one yet; `registering`: its products are still being registered; `ready`: it can be signed.
+export type EndorsementView =
+  | { status: 'unavailable' }
+  | { status: 'registering' }
+  | { status: 'ready' }
+  | { status: 'signed'; issuer: string; txUrl: string; linked: number; total: number };
 
 // What the company's list of batches shows for a purchase: no secret codes and no QR images.
 export interface PurchaseSummary {

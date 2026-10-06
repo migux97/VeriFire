@@ -78,17 +78,19 @@ interface BatchListProps {
   // How many batches each page shows, and whether they stack or sit in a grid (the company panel uses a grid).
   pageSize?: number;
   layout?: 'list' | 'grid';
+  // Lets the company sign each batch with its wallet (see BatchSignature).
+  cavosAppId?: string | undefined;
 }
 
-export function BatchList({ locale, pageSize = 10, layout = 'list' }: BatchListProps) {
+export function BatchList({ locale, pageSize = 10, layout = 'list', cavosAppId }: BatchListProps) {
   return (
     <CompanyTextProvider locale={locale}>
-      <Batches pageSize={pageSize} layout={layout} />
+      <Batches pageSize={pageSize} layout={layout} cavosAppId={cavosAppId} />
     </CompanyTextProvider>
   );
 }
 
-function Batches({ pageSize, layout }: { pageSize: number; layout: 'list' | 'grid' }) {
+function Batches({ pageSize, layout, cavosAppId }: { pageSize: number; layout: 'list' | 'grid'; cavosAppId?: string | undefined }) {
   const t = useCompanyText();
   const purchaseIds = useStore($purchaseIds);
   const summaries = useStore($summaries);
@@ -391,6 +393,7 @@ function Batches({ pageSize, layout }: { pageSize: number; layout: 'list' | 'gri
             isBusy={(action) => busy.has(`${purchaseId}:${action}`)}
             onAction={(action) => void handleAction(purchaseId, action)}
             onPhotoSaved={() => void refreshSummary(purchaseId)}
+            cavosAppId={cavosAppId}
           />
         ))}
       </div>

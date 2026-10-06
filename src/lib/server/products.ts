@@ -9,7 +9,7 @@ import { activationUrl, secretUrl, verificationUrl } from './links';
 import { singleton } from './singleton';
 import { shortAddress } from '../format';
 import { activationKeyFor, explorerTxUrl, isTxHash } from './stellar';
-import { hashSecret, saveState, store, type Product, type ProductFields, type StoredEvent } from './store';
+import { hashSecret, saveState, store, type Batch, type Product, type ProductFields, type StoredEvent } from './store';
 import { issuerOf, publishedIssuerOf } from './brands';
 import { photoOfBatch } from './photos';
 import { showcaseBlockOf } from './showcase-rules';
@@ -62,6 +62,22 @@ export const isCurrentOnChain = (product: Product): product is Product & { chain
     // otherwise to the current one (see store.ts). Treating it as unregistered made it be minted again, which the
     // contract refuses: it stayed "registrándose" forever.
     && (product.chain.contractId ?? (config.previousContractId || config.contractId)) === config.contractId);
+
+// The company's signature of a batch, when it was made in the contract this server uses now (see endorsements.ts).
+export const currentEndorsement = (batch: Batch | undefined) =>
+  batch?.endorsement && batch.endorsement.contractId === config.contractId ? batch.endorsement : null;
+
+// Who signed a product's batch on-chain, for its public page: only once the contract itself names the company.
+export const onChainIssuerOf = (product: Product): PublicProduct['signedBy'] => {
+  const signed = currentEndorsement(product.batchId ? store.batches.get(product.batchId) : undefined);
+  if (!signed || !isCurrentOnChain(product) || product.chain.issuerTx === undefined) return null;
+  return {
+    wallet: signed.issuer,
+    walletUrl: `https://stellar.expert/explorer/testnet/account/${signed.issuer}`,
+    signatureUrl: explorerTxUrl(signed.txHash),
+    linkUrl: isTxHash(product.chain.issuerTx) ? explorerTxUrl(product.chain.issuerTx) : null
+  };
+};
 
 const txUrlOf = (tx: string | undefined) => (isTxHash(tx) ? explorerTxUrl(tx) : null);
 
@@ -150,6 +166,7 @@ export const publicProductView = (product: Product): PublicProduct => ({
     return last ? { to: shortAddress(last.to), at: last.at } : null;
   })(),
   issuer: publishedIssuerOf(product.batchId),
+  signedBy: onChainIssuerOf(product),
   photoUrl: photoOfBatch(product.batchId)
 });
 
