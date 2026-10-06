@@ -58,8 +58,9 @@ Each unit gets **two QR codes** and one record in a Soroban smart contract:
 1. Sign up, choose the company workspace and fill in the profile (legal name, tax ID, website).
 2. Buy a batch of tokens at `/admin`. Payment is a Stellar testnet payment through Cosmos Pay.
 3. When the payment is confirmed, the server registers every product on the contract (`mint_product`).
-4. **Sign the batch** from the batches panel with the company wallet: one signature covers the whole batch
-   (`endorse_batch`), and from then on the contract names the company as the issuer of each of its products.
+4. The panel **signs the batch on its own** with the company wallet as soon as the payment is confirmed, with no button
+   to press: one signature covers the whole batch (`endorse_batch`), and the contract then names the company as the
+   issuer of each product as it is registered.
 5. Print the labels (public QR outside, secret QR inside) and mark the batch as shipped from the batches panel.
 6. Ask for verification from Settings → Verification. Until an administrator approves it, its products show as "registered".
 

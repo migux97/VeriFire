@@ -11,6 +11,7 @@ import type { Message } from '@/components/ui/StatusMessage';
 import { Toast } from '@/components/ui/Toast';
 import { ApiError } from '@/lib/client/api';
 import { downloadBatchCsv, downloadDataUrl } from '@/lib/client/download';
+import { signBatchInBackground } from '@/lib/client/endorsement';
 import {
   fetchPurchase,
   fetchPurchaseDetail,
@@ -78,7 +79,7 @@ interface BatchListProps {
   // How many batches each page shows, and whether they stack or sit in a grid (the company panel uses a grid).
   pageSize?: number;
   layout?: 'list' | 'grid';
-  // Lets the company sign each batch with its wallet (see BatchSignature).
+  // Lets the panel sign each batch with the company's wallet (see signBatchInBackground).
   cavosAppId?: string | undefined;
 }
 
@@ -227,6 +228,15 @@ function Batches({ pageSize, layout, cavosAppId }: { pageSize: number; layout: '
     openId.current = '';
     setOpen(null);
   };
+
+  // Every batch is signed on Stellar by the company's wallet as soon as it exists, without asking anything.
+  useEffect(() => {
+    if (!cavosAppId) return;
+    for (const purchaseId of purchaseIds) {
+      const summary = summaries[purchaseId];
+      if (isSummary(summary) && summary.batchId) signBatchInBackground(cavosAppId, purchaseId);
+    }
+  }, [cavosAppId, purchaseIds, summaries]);
 
   // A purchase paid while its payment QR is open shows its labels instead.
   const openSummary = open ? summaries[open.purchaseId] : undefined;
@@ -393,7 +403,6 @@ function Batches({ pageSize, layout, cavosAppId }: { pageSize: number; layout: '
             isBusy={(action) => busy.has(`${purchaseId}:${action}`)}
             onAction={(action) => void handleAction(purchaseId, action)}
             onPhotoSaved={() => void refreshSummary(purchaseId)}
-            cavosAppId={cavosAppId}
           />
         ))}
       </div>
