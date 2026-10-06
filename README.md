@@ -8,6 +8,23 @@ ownership live on-chain and follow the product when it is resold.
 - Soroban contract (testnet): [`CDFW7UROVQAU462KD2HI2XTOTP7BFSIQE3Q32K3FRN7ONPKGYIQV2EI6`](https://stellar.expert/explorer/testnet/contract/CDFW7UROVQAU462KD2HI2XTOTP7BFSIQE3Q32K3FRN7ONPKGYIQV2EI6)
 - Everything runs on **Stellar testnet**. No real money moves.
 
+## For the jury: a 3-minute tour
+
+1. **Check a product with no account:** open [`/verify?token=VF-013`](https://verifire.cosmosapp.lat/verify?token=VF-013).
+   It shows the product, its issuer and its warranty, with a link to the activation transaction on Stellar Expert.
+2. **Activate one yourself:** take a pair of QR codes from [`docs/demo-qrs/`](docs/demo-qrs/), open
+   [`/app`](https://verifire.cosmosapp.lat/app), sign in with any email and upload the secret QR. Your wallet becomes
+   the product's owner in the contract; the public QR now says so.
+3. **Audit it without us:** open the [contract on Stellar Expert](https://stellar.expert/explorer/testnet/contract/CDFW7UROVQAU462KD2HI2XTOTP7BFSIQE3Q32K3FRN7ONPKGYIQV2EI6)
+   and read `get_product_by_code`, `get_issuer` and `issuer_verification`: owner, issuing company and verified name
+   come from the network, not from our server.
+4. **Watch the videos:** [full demo](PITCH/video-demo.md) and [an external user with no help](PITCH/video-usuario-externo.md).
+
+The question we get most: *"if Verifire runs the server, why should I trust it?"* You do not have to for the parts that
+matter. The buyer's ownership is set by the buyer's own signature, the company signs its own batches with its own
+wallet, and both are checked by the Soroban contract. The only statement that is still Verifire's word is "this wallet
+belongs to company X", and it is written on-chain, public and dated (`set_issuer_verification`).
+
 ## The problem
 
 When you buy electronics, watches, perfume or wine, you have to take the seller's word that the product is genuine and
@@ -41,16 +58,20 @@ Each unit gets **two QR codes** and one record in a Soroban smart contract:
 1. Sign up, choose the company workspace and fill in the profile (legal name, tax ID, website).
 2. Buy a batch of tokens at `/admin`. Payment is a Stellar testnet payment through Cosmos Pay.
 3. When the payment is confirmed, the server registers every product on the contract (`mint_product`).
-4. Print the labels (public QR outside, secret QR inside) and mark the batch as shipped from the batches panel.
-5. Ask for verification from Settings → Verification. Until an administrator approves it, its products show as "registered".
+4. **Sign the batch** from the batches panel with the company wallet: one signature covers the whole batch
+   (`endorse_batch`), and from then on the contract names the company as the issuer of each of its products.
+5. Print the labels (public QR outside, secret QR inside) and mark the batch as shipped from the batches panel.
+6. Ask for verification from Settings → Verification. Until an administrator approves it, its products show as "registered".
 
 ### Verifire administrator
 1. Sign in with a wallet listed in `ADMIN_WALLETS` and open `/verificacion`.
 2. Review what each company declared (legal name, tax ID, website) and approve or reject it, signing with the wallet.
 3. The approval stores the business name that was checked and only holds while the company keeps showing that name.
+   It is also written to the contract (`set_issuer_verification`), and a later rejection withdraws it there too.
 
 ### Anyone in a shop (before buying)
-1. Scan the public QR: `/verify?token=VF-XXXXXXXX` shows the product and its issuer, with no app and no account.
+1. Scan the public QR: `/verify?token=VF-XXXXXXXX` shows the product and its issuer, with no app and no account. When
+   the company signed the batch, the page also shows the company wallet that signed it, read from the contract.
 
 ### Buyer
 1. Scan the secret QR in `/app` and sign in (email or Google). A Cavos wallet is created if there is none.
@@ -66,6 +87,9 @@ Each unit gets **two QR codes** and one record in a Soroban smart contract:
 - **Soroban verifies the proof on-chain.** The contract checks the ed25519 signature derived from the secret QR and the
   buyer's authorization (`require_auth`), and it activates a product only once. The rule is enforced by the network,
   not by our server.
+- **The company signs its own products.** A batch of up to 500 products is signed once by the company wallet: it
+  signs the Merkle root of the batch, and each product is then linked to it with a proof that the contract checks
+  against the product as it is stored. Verifire cannot attach a company to a product the company did not sign.
 - **Fees are low and sponsored.** Each activation or transfer is one small transaction paid by the issuing account, so
   the buyer never holds XLM. Fees depend on the resources each operation uses; the server compares the fee of the
   signed transaction with its simulation before paying it.
@@ -98,6 +122,9 @@ Port 5501 is fixed on purpose: Cavos stores each wallet's signing key per site a
 | `npm run contract:deploy` | Deploys the contract to testnet and writes its data to `.env` |
 | `npm run contract:upgrade` | Replaces the contract code keeping its address and data |
 | `npm run contract:test-activation` | End-to-end activation against testnet |
+
+GitHub Actions runs the type check, the tests and the build, plus the contract tests and its wasm build, on every pull
+request and on every push to `main` and `dev`.
 
 Without `STELLAR_CONTRACT_ID` the app runs in **demo mode**: warranties are stored only locally and the interface says
 so. Set the contract and the issuing account to make them real.
@@ -171,13 +198,18 @@ Planned, not built yet:
 
 `initialize`, `mint_product`, `get_product`, `get_product_by_code`, `activation_message`, `activate_product`,
 `offer_transfer`, `transfer_times`, `cancel_transfer`, `transfer_message`, `accept_transfer`, `import_claimed_product`
-and `upgrade`. Activation and transfer emit the `activated` and `transfer` events. The details, and why the secret is
+and `upgrade`. Activation and transfer emit the `activated` and `transfer` events.
+
+Who issued a product: `mint_product_for` (admin and company sign together), `endorse_batch` and `link_issuer` (the
+company signs a whole batch once), `get_issuer`, `batch_issuer`, and `set_issuer_verification` / `issuer_verification`
+for the name Verifire verified for a company wallet. They emit `issued`, `endorsed` and `verified`. The details, and why the secret is
 never sent in a transaction, are in [`contracts/README.md`](contracts/README.md).
 
 ### What lives on-chain and what does not
 
 - **On the Soroban contract:** each product's record (public code, model, batch, destination), its owner, whether the
-  warranty was activated, the open transfer offer and the `activated` and `transfer` events. This is what a buyer or a
+  warranty was activated, the open transfer offer, the company wallet that signed it, the business name Verifire
+  verified for that wallet, and the `activated`, `transfer`, `issued`, `endorsed` and `verified` events. This is what a buyer or a
   third party can audit without trusting Verifire.
 - **In the server's JSON store:** accounts, company workspaces and profiles, batches and purchases, the verification
   decision for each company, the carousel opt-in and the secret codes of a batch until it is printed. It is a single
@@ -234,6 +266,10 @@ imports with a `.ts` extension, because `scripts/` run it directly with Node.
 - Before activating or transferring, the server reads the contract: a transaction confirmed after the server stopped
   waiting for it (or during a restart) is adopted, instead of leaving the buyer without a warranty.
 - The secret codes of a batch are requested with `POST /api/purchases/detail`, with the id in the body, not the URL.
+- **Purchase endpoints need the company's session.** Signing in with the wallet (`POST /api/workspace`) sets an
+  HttpOnly, SameSite=Strict cookie signed by the server; reading a purchase, its secret codes, its photo or its
+  support settings, and marking it paid or shipped, only work for the wallet that owns it. A leaked purchase id is not
+  enough to print someone else's labels.
 - Open endpoints (`/api/purchases`, `/api/warranties` and the activation preparation) are rate limited per minute and per address.
 - Company data (team, agenda, issuance templates, profile, permissions, notices) travels with the account: it is written with
   `writeAccountData` (`src/lib/client/account-data.ts`) and the newest copy of each item wins. To make a new feature follow
