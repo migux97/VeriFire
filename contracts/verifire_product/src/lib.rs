@@ -49,6 +49,10 @@ enum DataKey {
     TransferExpiry(u64),
     /// Ledger time when the owner last opened a transfer link for a product.
     LastTransferOffer(u64),
+    /// Wallet of the company that co-signed the registration of a product (see `mint_product_for`).
+    Issuer(u64),
+    /// Trade name VeriFire checked for an issuer wallet. Absent while the issuer is not verified.
+    VerifiedIssuer(Address),
 }
 
 #[contract]
@@ -72,6 +76,12 @@ fn signed_message(env: &Env, domain: &[u8], token_id: u64, account: &Address) ->
 fn save_product(env: &Env, product: &Product) {
     save_persistent(env, &DataKey::Product(product.token_id), product);
     save_persistent(env, &DataKey::TokenByCode(product.public_code.clone()), &product.token_id);
+    // The issuer lives as long as its product: it is what the public page shows.
+    let issuer = DataKey::Issuer(product.token_id);
+    let storage = env.storage().persistent();
+    if storage.has(&issuer) {
+        storage.extend_ttl(&issuer, TTL_THRESHOLD, TTL_EXTEND_TO);
+    }
     env.storage().instance().extend_ttl(TTL_THRESHOLD, TTL_EXTEND_TO);
 }
 
@@ -114,6 +124,46 @@ impl VerifireProduct {
     ) -> u64 {
         admin(&env).require_auth();
         Self::insert_product(&env, public_code, model, lot, destination, activation_key, None)
+    }
+
+    /// Registers a product in the name of a company. The company's wallet signs too, so a product can carry a
+    /// company's name only if that company authorized it: VeriFire alone cannot issue in someone else's name.
+    pub fn mint_product_for(
+        env: Env,
+        issuer: Address,
+        public_code: String,
+        model: String,
+        lot: String,
+        destination: String,
+        activation_key: BytesN<32>,
+    ) -> u64 {
+        admin(&env).require_auth();
+        issuer.require_auth();
+        let token_id = Self::insert_product(&env, public_code, model, lot, destination, activation_key, None);
+        save_persistent(&env, &DataKey::Issuer(token_id), &issuer);
+        env.events().publish((symbol_short!("issued"), token_id), issuer);
+        token_id
+    }
+
+    /// The company wallet that co-signed the product, or None for products registered by VeriFire alone.
+    pub fn get_issuer(env: Env, token_id: u64) -> Option<Address> {
+        env.storage().persistent().get(&DataKey::Issuer(token_id))
+    }
+
+    /// VeriFire's statement that `issuer` belongs to the company with this trade name. `None` withdraws it.
+    pub fn set_issuer_verification(env: Env, issuer: Address, name: Option<String>) {
+        admin(&env).require_auth();
+        let key = DataKey::VerifiedIssuer(issuer.clone());
+        match name.clone() {
+            Some(name) => save_persistent(&env, &key, &name),
+            None => env.storage().persistent().remove(&key),
+        }
+        env.events().publish((symbol_short!("verified"), issuer), name);
+    }
+
+    /// The trade name VeriFire verified for an issuer wallet, or None while it is not verified.
+    pub fn issuer_verification(env: Env, issuer: Address) -> Option<String> {
+        env.storage().persistent().get(&DataKey::VerifiedIssuer(issuer))
     }
 
     /// Carries over a product whose warranty was already activated, keeping its owner. Used when products move to a
@@ -613,5 +663,92 @@ mod test {
         let key = BytesN::from_array(&env, &key);
         client.offer_transfer(&token_id, &seller, &key);
         assert!(client.get_product(&token_id).transfer_key.is_some());
+    }
+
+    fn mint_for(env: &Env, client: &VerifireProductClient<'_>, issuer: &Address, code: &str) -> u64 {
+        let public_key = signing_key(env, code.as_bytes()).verifying_key().to_bytes();
+        client.mint_product_for(
+            issuer,
+            &String::from_str(env, code),
+            &String::from_str(env, "Smartwatch X9"),
+            &String::from_str(env, "1043"),
+            &String::from_str(env, "AR"),
+            &BytesN::from_array(env, &public_key),
+        )
+    }
+
+    #[test]
+    fn products_minted_for_a_company_name_their_issuer() {
+        let env = Env::default();
+        let client = setup(&env);
+        let issuer = Address::generate(&env);
+
+        let token_id = mint_for(&env, &client, &issuer, "VF-040");
+        // The company's wallet had to authorize the registration, next to VeriFire's.
+        assert!(env.auths().iter().any(|(address, _)| *address == issuer));
+        assert_eq!(client.get_issuer(&token_id), Some(issuer));
+        assert_eq!(client.get_issuer(&mint(&env, &client, "VF-041", b"VF-041")), None);
+    }
+
+    #[test]
+    fn a_company_must_sign_its_own_products() {
+        let env = Env::default();
+        let client = setup(&env);
+        let issuer = Address::generate(&env);
+        // No more mocked signatures: neither VeriFire's nor the company's.
+        env.set_auths(&[]);
+        let public_key = signing_key(&env, b"VF-042").verifying_key().to_bytes();
+        assert!(client
+            .try_mint_product_for(
+                &issuer,
+                &String::from_str(&env, "VF-042"),
+                &String::from_str(&env, "Smartwatch X9"),
+                &String::from_str(&env, "1043"),
+                &String::from_str(&env, "AR"),
+                &BytesN::from_array(&env, &public_key),
+            )
+            .is_err());
+    }
+
+    #[test]
+    fn issuer_keeps_its_products_through_activation_and_transfer() {
+        let env = Env::default();
+        let client = setup(&env);
+        let issuer = Address::generate(&env);
+        let seller = Address::generate(&env);
+        let buyer = Address::generate(&env);
+
+        let token_id = mint_for(&env, &client, &issuer, "VF-043");
+        client.activate_product(&token_id, &seller, &sign(&env, &client, b"VF-043", token_id, &seller));
+        offer(&env, &client, token_id, &seller, b"LINK-1");
+        client.accept_transfer(&token_id, &buyer, &sign_transfer(&env, &client, b"LINK-1", token_id, &buyer));
+        assert_eq!(client.get_product(&token_id).owner, Some(buyer));
+        assert_eq!(client.get_issuer(&token_id), Some(issuer));
+    }
+
+    #[test]
+    fn verifire_states_and_withdraws_who_an_issuer_is() {
+        let env = Env::default();
+        let client = setup(&env);
+        let issuer = Address::generate(&env);
+        let name = String::from_str(&env, "Andes Audio");
+
+        assert_eq!(client.issuer_verification(&issuer), None);
+        client.set_issuer_verification(&issuer, &Some(name.clone()));
+        assert_eq!(client.issuer_verification(&issuer), Some(name));
+        client.set_issuer_verification(&issuer, &None);
+        assert_eq!(client.issuer_verification(&issuer), None);
+    }
+
+    #[test]
+    fn only_verifire_can_verify_an_issuer() {
+        let env = Env::default();
+        let client = setup(&env);
+        let issuer = Address::generate(&env);
+        env.set_auths(&[]);
+        assert!(client
+            .try_set_issuer_verification(&issuer, &Some(String::from_str(&env, "Andes Audio")))
+            .is_err());
+        assert_eq!(client.issuer_verification(&issuer), None);
     }
 }
