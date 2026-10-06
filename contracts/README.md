@@ -6,6 +6,10 @@ Contrato Soroban para registrar productos en Stellar testnet.
 
 - `initialize(admin)`: configura la cuenta administradora una sola vez.
 - `mint_product(public_code, model, lot, destination, activation_key)`: registra un producto sellado. `activation_key` es la clave pública ed25519 derivada del secreto interno; el secreto nunca se envía a la red.
+- `mint_product_for(issuer, public_code, model, lot, destination, activation_key)`: registra un producto en nombre de una empresa. Exige la firma del admin **y** la de la wallet de la empresa (`issuer`), así que un producto solo puede llevar el nombre de una empresa si esa empresa lo autorizó: VeriFire solo no puede emitir a nombre de otro.
+- `get_issuer(token_id)`: la wallet de la empresa que co-firmó el producto, o `None` si lo registró VeriFire solo (`mint_product`).
+- `set_issuer_verification(issuer, name)`: solo admin. Deja escrito on-chain que la wallet `issuer` pertenece a la empresa con ese nombre comercial; `None` lo retira.
+- `issuer_verification(issuer)`: el nombre verificado de una wallet emisora, o `None` si no está verificada.
 - `get_product(token_id)`: consulta los datos públicos, propietario y estado.
 - `get_product_by_code(public_code)`: busca un producto por su QR público.
 - `activation_message(token_id, claimant)`: devuelve los bytes exactos que hay que firmar para activar. Se puede obtener simulando la llamada.
@@ -18,7 +22,16 @@ Contrato Soroban para registrar productos en Stellar testnet.
 - `import_claimed_product(...)`: solo admin. Registra un producto ya activado, con su dueño, al pasar los productos a un contrato nuevo.
 - `upgrade(new_wasm_hash)`: solo admin. Reemplaza el código del contrato sin cambiar su dirección ni sus datos. Se usa con `npm run contract:upgrade` después de compilar.
 
-La activación y la transferencia emiten los eventos `activated` y `transfer`.
+La activación y la transferencia emiten los eventos `activated` y `transfer`; `mint_product_for` emite `issued` y `set_issuer_verification` emite `verified`.
+
+## Quién emitió el producto
+
+Con `mint_product` solo firma VeriFire, así que quien verifica un producto tiene que confiar en que VeriFire dice la verdad sobre la empresa. Con `mint_product_for` la empresa firma la emisión con su propia wallet, y cualquiera puede comprobar en la red dos cosas por separado:
+
+1. `get_issuer(token_id)`: qué wallet autorizó el producto. Lo prueba la firma de la empresa, no la palabra de VeriFire.
+2. `issuer_verification(issuer)`: qué nombre comercial verificó VeriFire para esa wallet. Esta es la única parte que sigue siendo una afirmación de VeriFire, y queda pública y con fecha en el historial de eventos.
+
+Los datos nuevos se guardan en claves aparte, así que el `Product` no cambia de forma: los productos ya registrados y el servidor actual siguen funcionando igual después de un `upgrade`.
 
 ## Por qué el secreto no viaja en la transacción
 
