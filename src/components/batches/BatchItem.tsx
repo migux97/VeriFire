@@ -124,6 +124,7 @@ export function BatchItem({ purchaseId, summary, open, detail, itemRef, isBusy, 
         </div>
         {summary.batchId && <BatchPhoto purchaseId={purchaseId} photoUrl={summary.photoUrl} onSaved={onPhotoSaved} />}
         {summary.issuanceTxUrl && <LedgerLink href={summary.issuanceTxUrl}>{text.ledger}</LedgerLink>}
+        {summary.signatureTxUrl && <LedgerLink href={summary.signatureTxUrl}>{text.signed}</LedgerLink>}
       </>
     );
   };

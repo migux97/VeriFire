@@ -11,7 +11,7 @@ import type { JsonBody } from './http';
 import { publishedIssuerOf } from './brands';
 import { photoPathOf, purchaseOfBatch } from './photos';
 import { batchUrl, qrImage, secretUrl, verificationUrl } from './links';
-import { anchorPendingProducts, isCurrentOnChain, isPendingOnChain, mintProduct, readProductFields } from './products';
+import { anchorPendingProducts, currentEndorsement, isCurrentOnChain, isPendingOnChain, mintProduct, readProductFields } from './products';
 import { explorerTxUrl, isTxHash } from './stellar';
 import { saveState, store, type Batch, type Purchase } from './store';
 import { parseSupport } from './support';
@@ -142,7 +142,9 @@ const finalizePurchase = (purchase: Purchase, txHash: string | null) => {
 };
 
 const purchaseSummary = (purchase: Purchase): PurchaseSummary => {
-  const tokens = (purchase.batchId && store.batches.get(purchase.batchId)?.tokens) || [];
+  const batch = purchase.batchId ? store.batches.get(purchase.batchId) : undefined;
+  const tokens = batch?.tokens ?? [];
+  const signature = currentEndorsement(batch);
   return {
     purchaseId: purchase.purchaseId,
     model: purchase.model,
@@ -156,10 +158,11 @@ const purchaseSummary = (purchase: Purchase): PurchaseSummary => {
     batchId: purchase.batchId ?? null,
     payment: purchase.batchId ? null : { qr: purchase.paymentQr ?? null, uri: purchase.paymentUri ?? null, network: paymentNetwork() },
     issuanceTxUrl: isTxHash(purchase.txHash) ? explorerTxUrl(purchase.txHash) : null,
+    signatureTxUrl: signature ? explorerTxUrl(signature.txHash) : null,
     registeredOnChain: tokens.filter(isCurrentOnChain).length,
     pendingOnChain: chain.enabled ? tokens.filter(isPendingOnChain).length : 0,
     claimed: tokens.filter((product) => product.claimed).length,
-    shippedAt: (purchase.batchId && store.batches.get(purchase.batchId)?.shippedAt) || null,
+    shippedAt: batch?.shippedAt ?? null,
     photoUrl: photoPathOf(purchase)
   };
 };

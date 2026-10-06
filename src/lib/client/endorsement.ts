@@ -24,12 +24,15 @@ const signBatch = async (appId: string, purchaseId: string) => {
 const tried = new Set<string>();
 let queue = Promise.resolve();
 
-export const signBatchInBackground = (appId: string, purchaseId: string) => {
+// `onSigned` runs once this browser signed the batch, so the panel can show the signature.
+export const signBatchInBackground = (appId: string, purchaseId: string, onSigned?: () => void) => {
   if (tried.has(purchaseId)) return;
   tried.add(purchaseId);
   queue = queue.then(async () => {
     try {
-      if ((await fetchEndorsement(purchaseId)).status === 'ready') await signBatch(appId, purchaseId);
+      if ((await fetchEndorsement(purchaseId)).status !== 'ready') return;
+      await signBatch(appId, purchaseId);
+      onSigned?.();
     } catch (error) {
       console.warn(`No se pudo firmar el lote de ${purchaseId} en Stellar; se reintenta al volver a abrir el panel:`, error);
     }
