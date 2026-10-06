@@ -16,14 +16,16 @@ ownership live on-chain and follow the product when it is resold.
    [`/app`](https://verifire.cosmosapp.lat/app), sign in with any email and upload the secret QR. Your wallet becomes
    the product's owner in the contract; the public QR now says so.
 3. **Audit it without us:** open the [contract on Stellar Expert](https://stellar.expert/explorer/testnet/contract/CDFW7UROVQAU462KD2HI2XTOTP7BFSIQE3Q32K3FRN7ONPKGYIQV2EI6)
-   and read `get_product_by_code`, `get_issuer` and `issuer_verification`: owner, issuing company and verified name
-   come from the network, not from our server.
+   and read `get_product_by_code`: the product and its owner come from the network, not from our server. For products
+   of a batch signed by its company, `get_issuer` names that company's wallet and `issuer_verification` the name
+   Verifire verified for it. VF-013 was issued before batch signing existed, so `get_issuer` returns nothing for it.
 4. **Watch the videos:** [full demo](PITCH/video-demo.md) and [an external user with no help](PITCH/video-usuario-externo.md).
 
 The question we get most: *"if Verifire runs the server, why should I trust it?"* You do not have to for the parts that
 matter. The buyer's ownership is set by the buyer's own signature, the company signs its own batches with its own
 wallet, and both are checked by the Soroban contract. The only statement that is still Verifire's word is "this wallet
-belongs to company X", and it is written on-chain, public and dated (`set_issuer_verification`).
+belongs to company X": a person at Verifire reviews each company by hand (legal name, tax ID, website) before it is
+shown as verified, and that decision is written on-chain, public and dated (`set_issuer_verification`).
 
 ## The problem
 
@@ -311,3 +313,7 @@ GitHub. All `.env` variables are read at run time, so the same build serves any 
 The landing is in Spanish at `/` and English at `/en/`; the chosen language is kept in the `verifireLang` cookie and
 read by `/app`, `/verify` and `/batch`. The company panel is Spanish only. Details of the translations and the
 industry carousel are in [`docs/landing-notes.md`](docs/landing-notes.md).
+
+## License
+
+[MIT](LICENSE).
