@@ -113,7 +113,9 @@ so. Set the contract and the issuing account to make them real.
 derived key, authorizes as the buyer and activates it against testnet.
 
 **Videos:** [full demo walkthrough](PITCH/video-demo.md) and [an external user activating a product with no help from
-the team](PITCH/video-usuario-externo.md).
+the team](PITCH/video-usuario-externo.md). All pitch evidence (videos, slides and Stellar Expert transactions) is also
+in one [Drive folder](https://drive.google.com/drive/folders/17s4BeY92XrUjesj2LmWrNaO9rRf-65UM)
+([QR](PITCH/qr-drive.png)).
 
 ## Verifiable on-chain evidence
 
