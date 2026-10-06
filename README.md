@@ -114,8 +114,8 @@ derived key, authorizes as the buyer and activates it against testnet.
 
 **Videos:** [full demo walkthrough](PITCH/video-demo.md) and [an external user activating a product with no help from
 the team](PITCH/video-usuario-externo.md). All pitch materials (both videos, the slides and the pitch script) are also
-in one [Drive folder](https://drive.google.com/drive/folders/17s4BeY92XrUjesj2LmWrNaO9rRf-65UM)
-([QR](PITCH/qr-drive.png)), and the Stellar Expert links are gathered in [one page](PITCH/evidencia-stellar.md).
+in one [Drive folder](PITCH/drive-pitch.md)
+([QR](PITCH/qr-drive.png)).
 
 ## Verifiable on-chain evidence
 
