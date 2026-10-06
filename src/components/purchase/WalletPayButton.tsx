@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useCompanyText } from '@/components/company/CompanyText';
 import { postJson } from '@/lib/client/api';
+import { withCompanySession } from '@/lib/client/company-session';
 import { errorMessage } from '@/lib/errors';
 import type { PurchaseStatus } from '@/lib/types';
 
@@ -25,10 +26,8 @@ export function WalletPayButton({ purchaseId, uri, network, onPaid }: WalletPayB
     setBusy(true);
     setStatus({ text: text.confirming, tone: 'info' });
     try {
-      const confirmed = await postJson<PurchaseStatus>(
-        `/api/purchases/${encodeURIComponent(purchaseId)}/paid`,
-        { txHash: hash },
-        text.failed
+      const confirmed = await withCompanySession(() =>
+        postJson<PurchaseStatus>(`/api/purchases/${encodeURIComponent(purchaseId)}/paid`, { txHash: hash }, text.failed)
       );
       setStatus({ text: confirmed.succeeded ? text.paid : text.sent, tone: 'success' });
       onPaid?.(confirmed);

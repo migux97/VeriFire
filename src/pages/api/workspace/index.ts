@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { startCompanySession } from '@/lib/server/company-session';
 import { publicBaseUrl } from '@/lib/server/config';
 import { errorResponse, json, readJsonBody, textField } from '@/lib/server/http';
 import { rateLimit } from '@/lib/server/rate-limit';
@@ -9,7 +10,7 @@ import { isAdminWallet } from '@/lib/server/verification-actions';
 
 // Step two: with the signed nonce, the account's batches and its kind are read, and whatever the browser knows is
 // merged into them. A purchase id opens the secret codes of its batch, so nothing here answers without that proof.
-export const POST: APIRoute = async ({ request, clientAddress, url }) => {
+export const POST: APIRoute = async ({ request, clientAddress, url, cookies }) => {
   try {
     rateLimit('workspace', clientAddress, 60);
     const body = await readJsonBody(request, 'Workspace error:');
@@ -20,6 +21,8 @@ export const POST: APIRoute = async ({ request, clientAddress, url }) => {
       signature: textField(body, 'signature'),
       publicKey: textField(body, 'publicKey').trim()
     });
+    // The signature is remembered for a few hours, so the batches of this wallet open without signing each request.
+    startCompanySession(cookies, owner, publicBaseUrl(url).startsWith('https://'));
     // The email of the account, so a second registration with it is sent to the login instead (see accounts.ts).
     recordAccount(body['email'], owner);
     const hasChanges = ['purchaseIds', 'removedPurchaseIds', 'accountType', 'companyName', 'data', 'brand'].some((key) => body[key] !== undefined);

@@ -77,7 +77,8 @@ export const companyBatchView = async (batch: Batch, baseUrl: string): Promise<C
   };
 };
 
-export const createBatchPayment = async (body: JsonBody): Promise<CreatedPurchase> => {
+// `owner` is the signed-in wallet, when there is one: the purchase is its own from the start.
+export const createBatchPayment = async (body: JsonBody, owner?: string | null): Promise<CreatedPurchase> => {
   const quantity = Number(body['quantity']);
   const fields = readProductFields(body);
   if (!Number.isInteger(quantity) || quantity < 1 || quantity > MAX_QUANTITY || !fields) {
@@ -98,7 +99,7 @@ export const createBatchPayment = async (body: JsonBody): Promise<CreatedPurchas
   const purchaseId = `PUR-${randomUUID()}`;
   // The payment QR is kept so a pending purchase can be reopened from the company's list of batches.
   store.purchases.set(purchaseId, {
-    purchaseId, quantity, ...fields, ...(configuration ? { configuration } : {}), ...(support ? { support } : {}), total, intentId: intent.id,
+    purchaseId, ...(owner ? { owner } : {}), quantity, ...fields, ...(configuration ? { configuration } : {}), ...(support ? { support } : {}), total, intentId: intent.id,
     createdAt: new Date().toISOString(), paymentQr: intent.qr || null, paymentUri: intent.uri || null
   });
   try {
