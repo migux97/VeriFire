@@ -22,11 +22,20 @@ const leafOf = (product: Product) =>
     activationKey: activationKeyFor(product.secretCode ?? '')
   });
 
-// Only once every product is in the contract: a product whose code changes while it is registered (see
-// anchorPendingProducts) would otherwise leave the signature on a code that no longer exists.
+// Known as soon as the batch exists, before its products are registered: the contract takes the signature first and
+// checks each product only when it is linked. The panel signs it right after the payment (see BatchList).
 const treeOf = (batch: Batch) => {
-  if (!batch.tokens.length || !batch.tokens.every((product) => product.secretCode && isCurrentOnChain(product))) return null;
+  if (!batch.tokens.length || !batch.tokens.every((product) => product.secretCode)) return null;
   return batchTree(batch.tokens.map(leafOf));
+};
+
+// The signature still covers the batch as it is. A product whose code changed while it was registered (see
+// anchorPendingProducts) leaves it on a code that no longer exists: then the batch is signed again, and the products
+// already linked keep the company the contract recorded for them.
+const signatureOf = (batch: Batch | undefined) => {
+  const signed = currentEndorsement(batch);
+  const tree = batch && signed ? treeOf(batch) : null;
+  return signed && tree && tree.root.toString('hex') === signed.root ? { signed, tree } : null;
 };
 
 // Whether the deployed contract knows batch signatures, asked again every few minutes: it changes with an upgrade.
@@ -43,7 +52,7 @@ const endorsementsSupported = async () => {
 
 // Where the signature of a batch stands, for the company's panel.
 export const endorsementView = async (batch: Batch | undefined): Promise<EndorsementView> => {
-  const signed = currentEndorsement(batch);
+  const signed = signatureOf(batch)?.signed;
   if (batch && signed) {
     return {
       status: 'signed',
@@ -59,10 +68,10 @@ export const endorsementView = async (batch: Batch | undefined): Promise<Endorse
 
 const readyTree = async (batch: Batch | undefined) => {
   if (!batch) throw new HttpError(409, 'El lote todavía no existe: falta confirmar el pago.');
-  if (currentEndorsement(batch)) throw new HttpError(409, 'Este lote ya está firmado.');
+  if (signatureOf(batch)) throw new HttpError(409, 'Este lote ya está firmado.');
   if (!(await endorsementsSupported())) throw new HttpError(409, 'El contrato de Stellar todavía no admite la firma de lotes.');
   const tree = treeOf(batch);
-  if (!tree) throw new HttpError(409, 'El lote todavía se está registrando en Stellar. Probá de nuevo en unos minutos.', { retryable: true });
+  if (!tree) throw new HttpError(409, 'El lote todavía no tiene sus códigos. Probá de nuevo en unos minutos.', { retryable: true });
   return tree;
 };
 
@@ -90,8 +99,9 @@ export const submitEndorsement = async (batch: Batch | undefined, issuer: string
   return endorsementView(signed);
 };
 
-// Links every product of a signed batch, one transaction each, paid by the issuing account. A failure is logged and
-// retried on the next pass (a new signature, a newly registered product or a restart).
+// Links every registered product of a signed batch, one transaction each, paid by the issuing account. A batch signed
+// before its products were registered is linked as they are (anchorPendingProducts runs this after each pass). A
+// failure is logged and retried on the next pass (a new signature, a newly registered product or a restart).
 const linking = singleton('issuer-linking', () => ({ running: false, again: false }));
 
 export const linkEndorsedProducts = () => {
@@ -105,9 +115,9 @@ export const linkEndorsedProducts = () => {
     do {
       linking.again = false;
       for (const batch of store.batches.values()) {
-        const signed = currentEndorsement(batch);
-        const tree = signed ? treeOf(batch) : null;
-        if (!signed || !tree || tree.root.toString('hex') !== signed.root) continue;
+        const signature = signatureOf(batch);
+        if (!signature) continue;
+        const { signed, tree } = signature;
         for (const [index, product] of batch.tokens.entries()) {
           if (!isCurrentOnChain(product) || product.chain.issuerTx !== undefined) continue;
           try {

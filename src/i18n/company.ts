@@ -588,16 +588,7 @@ const es = {
       hidePayment: 'Ocultar QR de pago',
       showPayment: 'Ver QR de pago',
       ledger: 'Ver pago de emisión en Stellar',
-      photoAlt: (model: string) => `Foto de ${model}`,
-      signature: {
-        registering: 'Cuando el lote termine de registrarse en Stellar vas a poder firmarlo con tu wallet.',
-        ready: 'Firmá el lote con tu wallet: así el contrato de Stellar dice que estos productos los emitió tu empresa, sin depender de Verifire.',
-        sign: 'Firmar el lote',
-        signed: 'Lote firmado por tu empresa en Stellar',
-        linked: (linked: number, total: number) => `${linked} de ${total} productos vinculados a tu firma`,
-        ledger: 'Ver la firma en Stellar',
-        failed: 'No se pudo firmar el lote.'
-      }
+      photoAlt: (model: string) => `Foto de ${model}`
     },
     labels: {
       intro: 'Cada producto tiene dos QR:',
@@ -1315,16 +1306,7 @@ const en: CompanyMessages = {
       hidePayment: 'Hide payment QR',
       showPayment: 'See payment QR',
       ledger: 'See the issuance payment on Stellar',
-      photoAlt: (model: string) => `Photo of ${model}`,
-      signature: {
-        registering: 'Once the batch finishes registering on Stellar you can sign it with your wallet.',
-        ready: 'Sign the batch with your wallet: the Stellar contract then says your company issued these products, without relying on Verifire.',
-        sign: 'Sign the batch',
-        signed: 'Batch signed by your company on Stellar',
-        linked: (linked: number, total: number) => `${linked} of ${total} products linked to your signature`,
-        ledger: 'See the signature on Stellar',
-        failed: 'The batch could not be signed.'
-      }
+      photoAlt: (model: string) => `Photo of ${model}`
     },
     labels: {
       intro: 'Every product has two QR codes:',

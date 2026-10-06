@@ -326,6 +326,11 @@ export const anchorPendingProducts = () => {
     } while (anchoring.again);
   })().finally(() => {
     anchoring.running = false;
+    // Batches signed before their products were registered (see endorsements.ts). Imported here, once this module
+    // is loaded, because endorsements.ts reads this one while it loads.
+    void import('./endorsements')
+      .then(({ linkEndorsedProducts }) => linkEndorsedProducts())
+      .catch((error: unknown) => console.error('No se pudieron vincular los productos con su empresa:', error));
   });
 };
 

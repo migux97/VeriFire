@@ -6,7 +6,6 @@ import type { CompanyMessages } from '@/i18n/company';
 import type { PurchaseSummary } from '@/lib/types';
 import type { SummaryEntry } from '@/stores/batches';
 import { BatchPhoto } from './BatchPhoto';
-import { BatchSignature } from './BatchSignature';
 
 export type BatchAction = 'toggle' | 'print' | 'csv' | 'lot-qr' | 'ship' | 'forget' | 'retry';
 
@@ -21,8 +20,6 @@ interface BatchItemProps {
   onAction: (action: BatchAction) => void;
   // The photo of the batch changed: the list reads its summary again.
   onPhotoSaved: () => void;
-  // Needed to sign the batch with the company's wallet; without it the signature is not offered.
-  cavosAppId?: string | undefined;
 }
 
 const batchState = (summary: PurchaseSummary, text: CompanyMessages['batches']['item']) => {
@@ -50,7 +47,7 @@ function ActivationProgress({ summary }: { summary: PurchaseSummary }) {
   );
 }
 
-export function BatchItem({ purchaseId, summary, open, detail, itemRef, isBusy, onAction, onPhotoSaved, cavosAppId }: BatchItemProps) {
+export function BatchItem({ purchaseId, summary, open, detail, itemRef, isBusy, onAction, onPhotoSaved }: BatchItemProps) {
   const t = useCompanyText();
   const text = t.batches.item;
   const shortDate = new Intl.DateTimeFormat(t.intl, { day: 'numeric', month: 'short', year: 'numeric' });
@@ -126,7 +123,6 @@ export function BatchItem({ purchaseId, summary, open, detail, itemRef, isBusy, 
             ]}
         </div>
         {summary.batchId && <BatchPhoto purchaseId={purchaseId} photoUrl={summary.photoUrl} onSaved={onPhotoSaved} />}
-        {summary.batchId && cavosAppId && <BatchSignature purchaseId={purchaseId} cavosAppId={cavosAppId} />}
         {summary.issuanceTxUrl && <LedgerLink href={summary.issuanceTxUrl}>{text.ledger}</LedgerLink>}
       </>
     );

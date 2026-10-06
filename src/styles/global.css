@@ -1752,27 +1752,6 @@ a.network-status:hover {
   color: var(--vf-red);
 }
 
-/* ---------- Batch signed by the company on Stellar ---------- */
-
-.batch-signature {
-  display: grid;
-  justify-items: start;
-  gap: 8px;
-  margin-top: 12px;
-}
-
-.batch-signature p {
-  margin: 0;
-}
-
-.batch-signature.is-signed i {
-  color: var(--vf-red);
-}
-
-.batch-signature .is-error {
-  color: var(--vf-error);
-}
-
 /* ---------- Products passed on to someone else ---------- */
 
 .vault-transferred {

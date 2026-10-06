@@ -192,7 +192,8 @@ export interface CompanyBatch extends BatchBase {
 }
 
 // Where the company's signature of a batch on Stellar stands (see endorsements.ts). `unavailable`: the contract or
-// the batch cannot take one yet; `registering`: its products are still being registered; `ready`: it can be signed.
+// the batch cannot take one yet; `registering`: its products have no codes yet; `ready`: it can be signed (or signed
+// again, when a code changed after the signature).
 export type EndorsementView =
   | { status: 'unavailable' }
   | { status: 'registering' }
