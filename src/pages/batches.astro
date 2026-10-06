@@ -29,7 +29,7 @@ import { publicConfig } from '@/lib/server/config';
       <BatchStats client:load />
     </section>
 
-    <BatchList client:load />
+    <BatchList client:load cavosAppId={publicConfig.cavosAppId} />
     <WorkspaceSync client:load cavosAppId={publicConfig.cavosAppId} />
   </main>
 

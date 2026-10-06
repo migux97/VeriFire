@@ -11,6 +11,8 @@ const es = {
   },
   header: { network: 'Verificación pública', eyebrow: 'QR público del producto', batchEyebrow: 'QR público del lote' },
   issuer: { issuedBy: 'Emitido por', write: 'Escribir a la empresa', call: 'Llamar a la empresa', verified: 'Empresa verificada por Verifire', unverified: 'Empresa sin verificar' },
+  // The company's own wallet signed the batch in the contract (see endorsements.ts).
+  signedBy: { text: 'La wallet {wallet} de la empresa firmó este producto en Stellar: no lo registró Verifire por ella.', wallet: 'Ver la wallet', signature: 'Ver la firma' },
   photoAlt: 'Foto de {model}',
   product: {
     title: 'Verificá tu producto',
@@ -66,6 +68,7 @@ const en: Messages = {
   },
   header: { network: 'Public verification', eyebrow: 'Public product QR', batchEyebrow: 'Public batch QR' },
   issuer: { issuedBy: 'Issued by', write: 'Write to the company', call: 'Call the company', verified: 'Company verified by Verifire', unverified: 'Unverified company' },
+  signedBy: { text: 'The company wallet {wallet} signed this product on Stellar: Verifire did not register it on its behalf.', wallet: 'View the wallet', signature: 'View the signature' },
   photoAlt: 'Photo of {model}',
   product: {
     title: 'Check your product',
