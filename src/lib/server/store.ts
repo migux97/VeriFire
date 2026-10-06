@@ -51,7 +51,9 @@ export interface Product extends ProductFields {
   activationKey?: string;
   // Set once the product is registered in the Stellar contract. contractId is missing on records made before
   // contracts were replaced: those belong to STELLAR_PREVIOUS_CONTRACT_ID, or to the current one if it is not set.
-  chain?: { tokenId: number; mintTx: string; contractId?: string; at?: string };
+  // issuerTx: the product was linked on-chain to the company that signed its batch ('' when the link is known from the
+  // contract but not its transaction). See endorsements.ts.
+  chain?: { tokenId: number; mintTx: string; contractId?: string; at?: string; issuerTx?: string };
   events?: StoredEvent[];
   // Open transfer link: the public key of its secret, who offered it and when it expires.
   transfer?: { key: string; from: string; offeredAt: string; expiresAt?: string };
@@ -67,6 +69,9 @@ export interface Batch extends ProductFields {
   txHash: string | null;
   shippedAt?: string;
   support?: SupportSettings;
+  // The company signed the batch on Stellar: the Merkle root of its products, the wallet that signed and the
+  // transaction, in the contract it was signed in (see endorsements.ts).
+  endorsement?: { root: string; issuer: string; txHash: string; contractId: string; at: string };
 }
 
 export interface Purchase extends ProductFields {

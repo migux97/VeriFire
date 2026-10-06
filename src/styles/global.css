@@ -1752,6 +1752,27 @@ a.network-status:hover {
   color: var(--vf-red);
 }
 
+/* ---------- Batch signed by the company on Stellar ---------- */
+
+.batch-signature {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.batch-signature p {
+  margin: 0;
+}
+
+.batch-signature.is-signed i {
+  color: var(--vf-red);
+}
+
+.batch-signature .is-error {
+  color: var(--vf-error);
+}
+
 /* ---------- Products passed on to someone else ---------- */
 
 .vault-transferred {
@@ -2694,6 +2715,22 @@ a.network-status:hover {
 }
 
 .verify-trust.is-verified i {
+  color: var(--vf-success);
+}
+
+/* The company's wallet signed the product's batch in the contract. */
+.verify-signed {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0 0 14px;
+  color: var(--vf-text);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.verify-signed i {
+  margin-top: 3px;
   color: var(--vf-success);
 }
 

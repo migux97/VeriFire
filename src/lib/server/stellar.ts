@@ -284,6 +284,50 @@ export const createStellarClient = ({ contractId, issuerSecret, rpcUrl = DEFAULT
       return { tokenId: tokenIdOf(returnValue), mintTx: txHash };
     },
 
+    // The company signs its batch: its wallet is the source of the transaction, as in every call a user signs.
+    buildEndorsement: async ({ issuer, root }: { issuer: string; root: Buffer }) =>
+      buildUserCall({ method: 'endorse_batch', source: issuer, args: [address(issuer), xdr.ScVal.scvBytes(root)] }),
+
+    // Returns the hash once the contract names the company as the signer of this root.
+    submitEndorsement: async ({ issuer, root, signedXdr }: { issuer: string; root: Buffer; signedXdr: string }) => {
+      const txHash = await submitUserCall({ method: 'endorse_batch', source: issuer, argCount: 2, expectedArgs: [issuer], signedXdr });
+      if ((await simulate('batch_issuer', xdr.ScVal.scvBytes(root))) !== issuer) {
+        throw new Error(`La transacción ${txHash} no dejó el lote firmado por ${issuer}.`);
+      }
+      return txHash;
+    },
+
+    // Attaches the company that signed the batch to one of its products. Needs no signature but the payer's.
+    linkIssuer: async ({ tokenId, root, index, proof }: { tokenId: number; root: Buffer; index: number; proof: Buffer[] }) => {
+      const { txHash } = await submitOperation(issuerKeypair(), contract().call(
+        'link_issuer',
+        u64(tokenId), xdr.ScVal.scvBytes(root), nativeToScVal(index, { type: 'u32' }),
+        xdr.ScVal.scvVec(proof.map((node) => xdr.ScVal.scvBytes(node)))
+      ));
+      return txHash;
+    },
+
+    // The company wallet the contract names for a product, or null.
+    issuerOf: async (tokenId: number) => ((await simulate('get_issuer', u64(tokenId))) as string | null | undefined) ?? null,
+
+    // Whether the deployed contract already knows batch signatures: a contract from before them answers with an error.
+    supportsEndorsements: async () => {
+      try {
+        await simulate('batch_issuer', xdr.ScVal.scvBytes(Buffer.alloc(32)));
+        return true;
+      } catch {
+        return false;
+      }
+    },
+
+    // VeriFire's statement of which company a wallet belongs to; null withdraws it.
+    setIssuerVerification: async (issuer: string, name: string | null) => {
+      const { txHash } = await submitOperation(issuerKeypair(), contract().call(
+        'set_issuer_verification', address(issuer), name === null ? xdr.ScVal.scvVoid() : text(name)
+      ));
+      return txHash;
+    },
+
     // Bytes the activation key signs in the browser. They bind this contract, the token and the claimant.
     activationMessage: async (tokenId: number, claimant: string) =>
       Buffer.from((await simulate('activation_message', u64(tokenId), address(claimant))) as Uint8Array),
