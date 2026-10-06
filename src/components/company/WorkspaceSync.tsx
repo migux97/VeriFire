@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { ACCOUNT_DATA_WRITTEN_EVENT, accountDataSnapshot, applyAccountData } from '@/lib/client/account-data';
 import { storedUser, updateStoredUser } from '@/lib/client/account';
+import { COMPANY_SESSION_NEEDED_EVENT, companySessionSettled } from '@/lib/client/company-session';
 import { addPurchaseIds, forgottenPurchaseIds, PURCHASES_CHANGED_EVENT, savedPurchaseIds } from '@/lib/client/purchases';
 import { userSession } from '@/lib/client/session';
 import { companyMemberships } from '@/lib/client/workspace';
@@ -62,6 +63,9 @@ export function WorkspaceSync({ cavosAppId }: { cavosAppId: string }) {
         if (again.current) {
           again.current = false;
           void sync();
+        } else {
+          // Requests waiting for the session cookie are tried again, with it or without it.
+          companySessionSettled();
         }
       }
     };
@@ -75,10 +79,12 @@ export function WorkspaceSync({ cavosAppId }: { cavosAppId: string }) {
     };
     void sync();
     window.addEventListener(PURCHASES_CHANGED_EVENT, onPurchasesChanged);
+    window.addEventListener(COMPANY_SESSION_NEEDED_EVENT, onPurchasesChanged);
     window.addEventListener(ACCOUNT_DATA_WRITTEN_EVENT, onDataWritten);
     return () => {
       window.clearTimeout(savedTimer);
       window.removeEventListener(PURCHASES_CHANGED_EVENT, onPurchasesChanged);
+      window.removeEventListener(COMPANY_SESSION_NEEDED_EVENT, onPurchasesChanged);
       window.removeEventListener(ACCOUNT_DATA_WRITTEN_EVENT, onDataWritten);
     };
   }, [cavosAppId]);

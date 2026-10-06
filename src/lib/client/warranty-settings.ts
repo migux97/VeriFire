@@ -6,6 +6,7 @@ import { storedUser } from './account';
 import { realPurchaseIds } from './purchases';
 import { readAccountData, writeAccountData } from './account-data';
 import { userSession } from './session';
+import { withCompanySession } from './company-session';
 
 export const WARRANTY_MONTH_OPTIONS = [6, 12, 18, 24, 36] as const;
 export type WarrantyMonths = (typeof WARRANTY_MONTH_OPTIONS)[number];
@@ -38,10 +39,12 @@ export const saveWarrantySettings = async (settings: WarrantySettings) => {
   const ids = realPurchaseIds();
   let updated = 0;
   if (ids.length) {
-    ({ updated } = await postJson<{ updated: number }>(
-      '/api/purchases/support',
-      { purchaseIds: ids, support: { companyName, ...settings } },
-      'No se pudo guardar la configuración de garantías.'
+    ({ updated } = await withCompanySession(() =>
+      postJson<{ updated: number }>(
+        '/api/purchases/support',
+        { purchaseIds: ids, support: { companyName, ...settings } },
+        'No se pudo guardar la configuración de garantías.'
+      )
     ));
   } else if (!companyName) {
     throw new Error('Completá el nombre de la empresa en el perfil antes de configurar las garantías.');

@@ -7,6 +7,7 @@ import { getJson, postJson } from './api';
 import { notify } from './notifications';
 import { accountKey, userSession } from './session';
 import { readStored, writeStored } from './storage';
+import { withCompanySession } from './company-session';
 
 const LEGACY_PURCHASE_KEY = 'verifireLastPurchase';
 const purchasesKey = () => `verifireCompanyPurchases:${userSession.email().toLowerCase()}`;
@@ -112,14 +113,18 @@ export const migrateLegacyPurchase = () => {
 // The summary of a purchase: enough to list and count batches, with no secret code and no QR image.
 export const fetchPurchase = async (purchaseId: string) =>
   trackPurchase(
-    await getJson<PurchaseStatus>(`/api/purchases/${encodeURIComponent(purchaseId)}`, 'No se pudo consultar la compra.')
+    await withCompanySession(() =>
+      getJson<PurchaseStatus>(`/api/purchases/${encodeURIComponent(purchaseId)}`, 'No se pudo consultar la compra.')
+    )
   );
 
 // The batch with the secret code and the QR images of every product. Asked for with the id in the body, never in the
 // URL: the id is the only key to those codes and it cannot be rotated.
 export const fetchPurchaseDetail = async (purchaseId: string) =>
   trackPurchase(
-    await postJson<PurchaseStatus>('/api/purchases/detail', { purchaseId }, 'No se pudo consultar la compra.')
+    await withCompanySession(() =>
+      postJson<PurchaseStatus>('/api/purchases/detail', { purchaseId }, 'No se pudo consultar la compra.')
+    )
   );
 
 export interface PurchaseRequest {
@@ -137,4 +142,6 @@ export const createPurchase = (request: PurchaseRequest, fallbackError: string) 
   postJson<CreatedPurchase>('/api/purchases', request, fallbackError);
 
 export const shipPurchase = (purchaseId: string, fallbackError: string) =>
-  postJson<{ purchase: PurchaseSummary }>(`/api/purchases/${encodeURIComponent(purchaseId)}/ship`, {}, fallbackError);
+  withCompanySession(() =>
+    postJson<{ purchase: PurchaseSummary }>(`/api/purchases/${encodeURIComponent(purchaseId)}/ship`, {}, fallbackError)
+  );

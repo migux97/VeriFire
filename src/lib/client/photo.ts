@@ -3,6 +3,7 @@
 // a photo from a phone weighs several MB, and it travels in one request.
 import { PHOTO_LIMIT, PHOTO_MAX_SIDE } from '../photo';
 import { postJson } from './api';
+import { withCompanySession } from './company-session';
 
 export type PhotoError = 'type' | 'size' | 'read';
 
@@ -57,4 +58,4 @@ export const preparePhoto = async (file: File): Promise<string> => {
 
 // Adds, replaces or removes (null) the photo of a batch. The answer is the address the server keeps it at.
 export const saveBatchPhoto = (purchaseId: string, photo: string | null, fallbackError: string) =>
-  postJson<{ photoUrl: string | null }>('/api/purchases/photo', { purchaseId, photo }, fallbackError);
+  withCompanySession(() => postJson<{ photoUrl: string | null }>('/api/purchases/photo', { purchaseId, photo }, fallbackError));
