@@ -21,6 +21,9 @@ ownership live on-chain and follow the product when it is resold.
    Verifire verified for it. VF-013 was issued before batch signing existed, so `get_issuer` returns nothing for it.
 4. **Watch the videos:** [full demo](PITCH/video-demo.md) and [an external user with no help](PITCH/video-usuario-externo.md).
 
+For a longer review (which test pins each claim, and what still depends on trusting us), see
+[`docs/judges.md`](docs/judges.md).
+
 The question we get most: *"if Verifire runs the server, why should I trust it?"* You do not have to for the parts that
 matter. The buyer's ownership is set by the buyer's own signature, the company signs its own batches with its own
 wallet, and both are checked by the Soroban contract. The only statement that is still Verifire's word is "this wallet
